@@ -38,7 +38,7 @@ export default function Navbar() {
     const closeMenu = () => setIsOpen(false)
 
     return (
-        <nav className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <nav className="bg-transparent text-gray-800 dark:text-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center">
@@ -53,8 +53,8 @@ export default function Navbar() {
                                     key={item.name}
                                     href={item.href}
                                     className={`${pathname === item.href
-                                            ? 'bg-blue-700 text-white'
-                                            : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                                            ? 'bg-gray-200 dark:bg-gray-700 text-white'
+                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                                         } px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors duration-200`}
                                 >
                                     <item.icon className="w-4 h-4 mr-2" />
@@ -97,11 +97,11 @@ export default function Navbar() {
                     <div className="md:hidden">
                         <Sheet open={isOpen} onOpenChange={setIsOpen}>
                             <SheetTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-white">
+                                <Button variant="ghost" size="icon" className="text-gray-800 dark:text-white">
                                     <Menu className="h-6 w-6" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="right" className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+                            <SheetContent side="right" className="bg-white dark:bg-gray-800 text-gray-800 dark:text-white">
                                 <SheetHeader>
                                     <SheetTitle className="text-white">Menú</SheetTitle>
                                     <SheetDescription className="text-blue-100">
@@ -114,8 +114,8 @@ export default function Navbar() {
                                             key={item.name}
                                             href={item.href}
                                             className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${pathname === item.href
-                                                    ? 'bg-blue-700 text-white'
-                                                    : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                                                    ? 'bg-gray-200 dark:bg-gray-700 text-white'
+                                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                                                 } transition-colors duration-200`}
                                             onClick={closeMenu}
                                         >
@@ -125,7 +125,7 @@ export default function Navbar() {
                                     ))}
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="w-full justify-start text-blue-100 hover:bg-blue-700 hover:text-white transition-colors duration-200">
+                                            <Button variant="ghost" className="w-full justify-start text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200">
                                                 <Avatar className="h-8 w-8 mr-2">
                                                     <AvatarImage src="/avatars/01.png" alt="@usuario" />
                                                     <AvatarFallback>U</AvatarFallback>
