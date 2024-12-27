@@ -1,0 +1,21 @@
+{
+    "short_name": "Wallet",
+    "name": "Wallet Pipe",
+    "icons": [
+        {
+            "src": "logo192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "logo512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "any maskable"
+        }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#1d4ed8",
+    "background_color": "#1d4ed8"
+}
