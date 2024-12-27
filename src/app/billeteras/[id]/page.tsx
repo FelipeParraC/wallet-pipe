@@ -1,39 +1,66 @@
 "use client"
 
-import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Pencil, Trash2, Wallet, CreditCard, Coins, Bitcoin } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, WalletIcon } from 'lucide-react'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { format } from 'date-fns'
+import { format, isSameDay, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { NewTransactionFloatingButton } from "@/components/NewTransactionFloatingButton"
-
-const wallets = [
-    { id: "1", name: "Efectivo", balance: 500, type: "cash", icon: Coins },
-    { id: "2", name: "Cuenta Corriente", balance: 2500, type: "bank", icon: CreditCard },
-    { id: "3", name: "Ahorros", balance: 10000, type: "savings", icon: Wallet },
-    { id: "4", name: "Crypto", balance: 5000, type: "crypto", icon: Bitcoin },
-]
-
-const transactionHistory = [
-    { date: '2023-05-01', amount: -50, category: 'Alimentación', description: 'Compra en supermercado' },
-    { date: '2023-05-02', amount: 1000, category: 'Ingresos', description: 'Pago de salario' },
-    { date: '2023-05-03', amount: -30, category: 'Transporte', description: 'Recarga de tarjeta de transporte' },
-    { date: '2023-05-04', amount: -100, category: 'Entretenimiento', description: 'Cena en restaurante' },
-    { date: '2023-05-05', amount: 0, category: 'Transferencia', description: 'Movimiento entre cuentas' },
-]
+import { TransactionDatePicker } from "@/components/transactions/TransactionDatePicker"
+import { TransactionActions } from "@/components/transactions/TransactionActions"
+import { TransactionForm } from "@/components/transactions/TransactionForm"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import type { Transaction } from "@/types/transaction"
+import type { Wallet } from "@/types/wallet"
+import { wallets, initialTransactions } from "@/seed/data"
 
 const getAmountColor = (amount: number) => {
-    if (amount > 0) return 'text-green-600'
-    if (amount < 0) return 'text-red-600'
-    return 'text-yellow-600'
+    if (amount > 0) return 'text-green-500'
+    if (amount < 0) return 'text-red-500'
+    return 'text-yellow-500'
 }
 
 export default function WalletDetail() {
     const params = useParams()
-    const wallet = wallets.find(w => w.id === params.id) || wallets[0]
+    const router = useRouter()
+    const [wallet, setWallet] = useState<Wallet | undefined>(undefined)
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+    const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([])
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+
+    useEffect(() => {
+        const foundWallet = wallets.find(w => w.id === params.id)
+        setWallet(foundWallet)
+        setTransactionHistory(initialTransactions.filter(t => t.wallet === foundWallet?.name))
+    }, [params.id])
+
+    const filteredTransactions = selectedDate
+        ? transactionHistory.filter(t => isSameDay(parseISO(t.date), selectedDate))
+        : transactionHistory
+
+    const handleEdit = (transaction: Transaction) => {
+        setEditingTransaction(transaction)
+        setIsEditModalOpen(true)
+    }
+
+    const handleDelete = (id: number) => {
+        setTransactionHistory(transactionHistory.filter(t => t.id !== id))
+    }
+
+    const handleUpdateTransaction = (updatedTransaction: Transaction) => {
+        setTransactionHistory(transactionHistory.map(t => t.id === updatedTransaction.id ? updatedTransaction : t))
+        setIsEditModalOpen(false)
+        setEditingTransaction(null)
+    }
+
+    if (!wallet) {
+        return <div>Cargando...</div>
+    }
 
     return (
         <div className="space-y-6">
@@ -43,7 +70,7 @@ export default function WalletDetail() {
                     Volver a Billeteras
                 </Link>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={() => router.push(`/billeteras/editar/${wallet.id}`)}>
                         <Pencil className="mr-2 h-4 w-4" /> Editar
                     </Button>
                     <Button variant="destructive">
@@ -51,7 +78,7 @@ export default function WalletDetail() {
                     </Button>
                     <Button asChild className="hidden md:inline-flex">
                         <Link href={`/transacciones/nueva?wallet=${wallet.id}`}>
-                            <Wallet className="mr-2 h-4 w-4" /> Nueva Transacción
+                            <WalletIcon className="mr-2 h-4 w-4" /> Nueva Transacción
                         </Link>
                     </Button>
                 </div>
@@ -69,6 +96,11 @@ export default function WalletDetail() {
                     <p className="text-sm text-muted-foreground capitalize">
                         Tipo: {wallet.type}
                     </p>
+                    {!wallet.includeInTotal && (
+                        <p className="text-sm text-yellow-500 mt-1">
+                            No incluida en el balance total
+                        </p>
+                    )}
                 </CardContent>
             </Card>
 
@@ -76,14 +108,34 @@ export default function WalletDetail() {
                 <CardHeader>
                     <CardTitle>Evolución del Saldo</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={transactionHistory}>
+                <CardContent className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                            data={transactionHistory}
+                            margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                        >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis />
-                            <Tooltip />
-                            <Line type="monotone" dataKey="amount" stroke="#8884d8" />
+                            <XAxis
+                                dataKey="date"
+                                tickFormatter={(date) => format(parseISO(date), "dd/MM")}
+                                tick={{ fontSize: 12 }}
+                            />
+                            <YAxis
+                                tickFormatter={(value) => `$${value}`}
+                                tick={{ fontSize: 12 }}
+                                width={60}
+                            />
+                            <Tooltip
+                                labelFormatter={(date) => format(parseISO(date), "d 'de' MMMM, yyyy", { locale: es })}
+                                formatter={(value: number) => [`$${value.toFixed(2)}`, "Monto"]}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="amount"
+                                stroke="#8884d8"
+                                strokeWidth={2}
+                                dot={{ r: 4 }}
+                            />
                         </LineChart>
                     </ResponsiveContainer>
                 </CardContent>
@@ -91,28 +143,55 @@ export default function WalletDetail() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Transacciones Recientes</CardTitle>
+                    <CardTitle>Transacciones</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                        {transactionHistory.map((transaction, index) => (
-                            <div key={index} className="flex justify-between items-start">
-                                <div>
-                                    <p className="font-medium">{transaction.category}</p>
-                                    <p className="text-sm text-muted-foreground">{transaction.description}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {format(new Date(transaction.date), "d 'de' MMMM, yyyy", { locale: es })}
-                                    </p>
-                                </div>
-                                <div className={`font-bold ${getAmountColor(transaction.amount)}`}>
-                                    ${Math.abs(transaction.amount).toFixed(2)}
-                                </div>
-                            </div>
-                        ))}
+                    <div className="mb-4 w-full max-w-sm">
+                        <TransactionDatePicker onDateSelect={setSelectedDate} />
                     </div>
+                    {filteredTransactions.length === 0 ? (
+                        <p className="text-center text-muted-foreground">No hay transacciones para la fecha seleccionada.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {filteredTransactions.map((transaction) => (
+                                <div key={transaction.id} className="flex justify-between items-start border-b pb-4">
+                                    <div>
+                                        <p className="font-medium">{transaction.title}</p>
+                                        <p className="text-sm text-muted-foreground">{transaction.category}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {format(parseISO(transaction.date), "d 'de' MMMM, yyyy", { locale: es })}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className={`font-bold ${getAmountColor(transaction.amount)}`}>
+                                            ${Math.abs(transaction.amount).toFixed(2)}
+                                        </div>
+                                        <TransactionActions
+                                            onEdit={() => handleEdit(transaction)}
+                                            onDelete={() => handleDelete(transaction.id)}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
             <NewTransactionFloatingButton walletId={wallet.id} />
+
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Editar Transacción</DialogTitle>
+                    </DialogHeader>
+                    {editingTransaction && (
+                        <TransactionForm
+                            transaction={editingTransaction}
+                            onSubmit={handleUpdateTransaction}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

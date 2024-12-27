@@ -38,7 +38,7 @@ export default function Navbar() {
     const closeMenu = () => setIsOpen(false)
 
     return (
-        <nav className="bg-blue-900 text-white shadow-lg">
+        <nav className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center">
@@ -53,9 +53,9 @@ export default function Navbar() {
                                     key={item.name}
                                     href={item.href}
                                     className={`${pathname === item.href
-                                            ? 'bg-blue-800 text-white'
-                                            : 'text-blue-300 hover:bg-blue-800 hover:text-white'
-                                        } px-3 py-2 rounded-md text-sm font-medium flex items-center`}
+                                            ? 'bg-blue-700 text-white'
+                                            : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                                        } px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors duration-200`}
                                 >
                                     <item.icon className="w-4 h-4 mr-2" />
                                     {item.name}
@@ -97,14 +97,14 @@ export default function Navbar() {
                     <div className="md:hidden">
                         <Sheet open={isOpen} onOpenChange={setIsOpen}>
                             <SheetTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" className="text-white">
                                     <Menu className="h-6 w-6" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="right" className="bg-blue-900 text-white">
+                            <SheetContent side="right" className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
                                 <SheetHeader>
                                     <SheetTitle className="text-white">Menú</SheetTitle>
-                                    <SheetDescription className="text-blue-300">
+                                    <SheetDescription className="text-blue-100">
                                         Navegación y acciones rápidas
                                     </SheetDescription>
                                 </SheetHeader>
@@ -114,9 +114,9 @@ export default function Navbar() {
                                             key={item.name}
                                             href={item.href}
                                             className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${pathname === item.href
-                                                    ? 'bg-blue-800 text-white'
-                                                    : 'text-blue-300 hover:bg-blue-800 hover:text-white'
-                                                }`}
+                                                    ? 'bg-blue-700 text-white'
+                                                    : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                                                } transition-colors duration-200`}
                                             onClick={closeMenu}
                                         >
                                             <item.icon className="w-4 h-4 mr-2" />
@@ -125,7 +125,7 @@ export default function Navbar() {
                                     ))}
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="w-full justify-start text-blue-300 hover:bg-blue-800 hover:text-white">
+                                            <Button variant="ghost" className="w-full justify-start text-blue-100 hover:bg-blue-700 hover:text-white transition-colors duration-200">
                                                 <Avatar className="h-8 w-8 mr-2">
                                                     <AvatarImage src="/avatars/01.png" alt="@usuario" />
                                                     <AvatarFallback>U</AvatarFallback>

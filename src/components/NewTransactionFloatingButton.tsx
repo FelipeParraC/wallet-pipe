@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 
 export function NewTransactionFloatingButton({ walletId }: { walletId?: string }) {
     const pathname = usePathname()
-    const isVisible = pathname === '/' || pathname.startsWith('/billeteras/')
+    const isVisible = pathname === '/' || pathname.startsWith('/billeteras/') || pathname === '/transacciones'
 
     if (!isVisible) return null
 
@@ -18,10 +18,10 @@ export function NewTransactionFloatingButton({ walletId }: { walletId?: string }
     return (
         <Button
             asChild
-            className="fixed bottom-4 right-4 rounded-full p-0 w-12 h-12 shadow-lg md:hidden bg-blue-600 hover:bg-blue-700"
+            className="fixed bottom-6 right-6 rounded-full p-0 w-14 h-14 md:w-16 md:h-16 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white"
         >
             <Link href={href}>
-                <Plus className="h-5 w-5" />
+                <Plus className="h-6 w-6 md:h-8 md:w-8 stroke-[3]" />
                 <span className="sr-only">Nueva Transacción</span>
             </Link>
         </Button>
