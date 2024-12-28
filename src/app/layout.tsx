@@ -8,7 +8,11 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
     title: 'Wallet Pipe',
-    description: 'Aplicación para gestionar tus finanzas personales',
+    description: 'La aplicación para gestionar tus finanzas personales',
+    manifest: '/manifest.json',
+    icons: {
+        apple: '/logo.png',
+    }
 }
 
 export default function RootLayout({
