@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlusCircle } from 'lucide-react'
 import { wallets } from "@/seed/data"
+import { currencyFormatWithSmallDecimals } from "@/utils/currency"
 
 export default function Billeteras() {
     const totalBalance = wallets
@@ -17,7 +18,7 @@ export default function Billeteras() {
                     <CardTitle className="text-white text-3xl md:text-4xl">Balance Total</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-4xl md:text-5xl font-bold text-white">${totalBalance.toFixed(2)}</p>
+                    <p className="text-4xl md:text-5xl font-bold text-white currency-with-small-decimals" dangerouslySetInnerHTML={{ __html: currencyFormatWithSmallDecimals(totalBalance) }} />
                     <p className="text-sm mt-2 text-blue-100">Total de todas las billeteras incluidas</p>
                 </CardContent>
             </Card>
@@ -33,9 +34,9 @@ export default function Billeteras() {
                                 <wallet.icon className="h-8 w-8 text-white" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-white">${wallet.balance.toFixed(2)}</div>
+                                <div className="text-2xl font-bold text-white currency-with-small-decimals" dangerouslySetInnerHTML={{ __html: currencyFormatWithSmallDecimals(wallet.balance) }} />
                                 <p className="text-xs text-white opacity-75 capitalize">
-                                    Tipo: {wallet.type}
+                                    {wallet.type}
                                 </p>
                                 {!wallet.includeInTotal && (
                                     <p className="text-xs text-white opacity-75 mt-1">

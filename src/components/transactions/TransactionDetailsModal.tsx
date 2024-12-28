@@ -2,6 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Transaction } from "@/types/transaction"
+import { getAmountColor } from "@/utils/currency"
+import { CurrencyDisplay } from '@/components/CurrencyDisplay'
 
 interface TransactionDetailsModalProps {
     isOpen: boolean
@@ -22,8 +24,11 @@ export function TransactionDetailsModal({ isOpen, onClose, transaction }: Transa
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-3 items-center gap-4">
                         <span className="font-bold">Monto:</span>
-                        <span className={`col-span-2 text-lg font-semibold ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                            {transaction.amount.toFixed(2)} €
+                        <span className={`col-span-2 text-lg font-semibold ${transaction.category === 'Transferencia' ? 'text-blue-400' : getAmountColor(transaction.amount)}`}>
+                            <CurrencyDisplay
+                                amount={Math.abs(transaction.amount)}
+                                showDecimals={true}
+                            />
                         </span>
                     </div>
                     <div className="grid grid-cols-3 items-center gap-4">

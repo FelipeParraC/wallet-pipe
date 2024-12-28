@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { NewTransactionFloatingButton } from "@/components/NewTransactionFloatingButton"
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { wallets, initialTransactions } from "@/seed/data"
+import { wallets, initialTransactions, currentUser } from "@/seed/data"
+import { getAmountColor } from "@/utils/currency"
+import { CurrencyDisplay } from '@/components/CurrencyDisplay'
 
 const quickLinks = [
     { name: 'Transacciones', href: '/transacciones', icon: Receipt },
@@ -21,17 +23,21 @@ export default function Dashboard() {
         .filter(wallet => wallet.includeInTotal)
         .reduce((sum, wallet) => sum + wallet.balance, 0);
 
+    const walletsToInclude = new Set(wallets.filter(w => w.includeInTotal).map(w => w.id));
+
     const totalExpenses = initialTransactions
-        .filter(t => t.amount < 0)
+        .filter(t => walletsToInclude.has(t.wallet) && t.amount < 0 && t.isVisible)
         .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     const totalIncome = initialTransactions
-        .filter(t => t.amount > 0)
+        .filter(t => walletsToInclude.has(t.wallet) && t.amount > 0 && t.isVisible)
         .reduce((sum, t) => sum + t.amount, 0);
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold md:text-3xl text-center">Bienvenido a Wallet Pipe</h1>
+            <h1 className="text-2xl font-bold md:text-3xl text-center">
+                {currentUser ? `Bienvenido, ${currentUser.name}` : 'Bienvenido a Wallet Pipe'}
+            </h1>
 
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 <Card className="bg-gradient-to-r from-blue-600 to-blue-800 text-white col-span-2 md:col-span-4 shadow-lg">
@@ -42,7 +48,11 @@ export default function Dashboard() {
                         <Wallet className="h-4 w-4" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold md:text-3xl text-white">${totalBalance.toFixed(2)}</div>
+                        <CurrencyDisplay
+                            amount={totalBalance}
+                            showDecimals={true}
+                            className="text-2xl font-bold md:text-3xl text-white"
+                        />
                         <p className="text-xs opacity-75">
                             Balance total de todas las billeteras incluidas
                         </p>
@@ -56,9 +66,13 @@ export default function Dashboard() {
                         <TrendingDown className="h-4 w-4" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-xl font-bold md:text-2xl">${totalExpenses.toFixed(2)}</div>
+                        <CurrencyDisplay
+                            amount={totalExpenses}
+                            showDecimals={true}
+                            className="text-lg font-bold md:text-2xl"
+                        />
                         <p className="text-xs opacity-75">
-                            Total de gastos registrados
+                            Total de gastos
                         </p>
                     </CardContent>
                 </Card>
@@ -70,9 +84,13 @@ export default function Dashboard() {
                         <TrendingUp className="h-4 w-4" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-xl font-bold md:text-2xl">${totalIncome.toFixed(2)}</div>
+                        <CurrencyDisplay
+                            amount={totalIncome}
+                            showDecimals={true}
+                            className="text-lg font-bold md:text-2xl"
+                        />
                         <p className="text-xs opacity-75">
-                            Total de ingresos registrados
+                            Total de ingresos
                         </p>
                     </CardContent>
                 </Card>
@@ -90,9 +108,13 @@ export default function Dashboard() {
                                     <CardTitle className="text-sm">{wallet.name}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-lg font-bold">${wallet.balance.toFixed(2)}</div>
+                                    <CurrencyDisplay
+                                        amount={wallet.balance}
+                                        showDecimals={true}
+                                        className="text-base font-bold truncate text-white"
+                                    />
                                     <p className="text-xs opacity-75 capitalize">
-                                        Tipo: {wallet.type}
+                                        {wallet.type}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -108,7 +130,10 @@ export default function Dashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-8">
-                            {recentTransactions.map((transaction, index) => (
+                            { recentTransactions.filter((transaction) => transaction.isVisible).length === 0 && (
+                                <p className="text-center text-muted-foreground">No hay transacciones recientes</p>
+                            )}
+                            {recentTransactions.map((transaction, index) => transaction.isVisible && (
                                 <div key={index} className="flex items-center">
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium leading-none">{transaction.title}</p>
@@ -117,8 +142,11 @@ export default function Dashboard() {
                                             {format(new Date(transaction.date), "d 'de' MMMM, yyyy", { locale: es })}
                                         </p>
                                     </div>
-                                    <div className={`ml-auto font-medium ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {transaction.amount.toFixed(2)}
+                                    <div className={`ml-auto font-medium ${ transaction.category !== 'Transferencia' ? getAmountColor(transaction.amount) : 'text-blue-400' }`}>
+                                        <CurrencyDisplay
+                                            amount={Math.abs(transaction.amount)}
+                                            showDecimals={true}
+                                        />
                                     </div>
                                 </div>
                             ))}

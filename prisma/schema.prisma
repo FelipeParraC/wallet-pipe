@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(cuid())
+  name        String
+  nickname    String
+  email       String    @unique
+  password    String
+  wallets     Wallet[]
+  transactions Transaction[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Wallet {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  name           String
+  balance        Float
+  type           WalletType
+  icon           String
+  color          String
+  includeInTotal Boolean
+  fareValue      Float?
+  isActive       Boolean       @default(true)
+  transactions   Transaction[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Transaction {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  walletId      String
+  wallet        Wallet    @relation(fields: [walletId], references: [id])
+  type          TransactionType
+  title         String
+  description   String
+  date          DateTime
+  categoryId    String
+  category      Category   @relation(fields: [categoryId], references: [id])
+  amount        Float
+  fareValue     Float?
+  numberOfTrips Int?
+  fromWalletId  String?
+  toWalletId    String?
+  isVisible     Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  color        String
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+enum WalletType {
+  EFECTIVO
+  CUENTA_BANCARIA
+  AHORROS
+  TRANSPORTE
+}
+
+enum TransactionType {
+  INGRESO
+  GASTO
+  TRANSPORTE
+  TRANSFERENCIA
+}

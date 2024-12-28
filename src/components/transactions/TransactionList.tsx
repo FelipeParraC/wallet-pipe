@@ -11,7 +11,7 @@ interface TransactionListProps {
 export function TransactionList({ transactions, onEdit, onDelete, onSelect }: TransactionListProps) {
     return (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {transactions.map((transaction) => (
+            {transactions.map((transaction) => transaction.isVisible && (
                 <TransactionCard
                     key={transaction.id}
                     transaction={transaction}

@@ -22,6 +22,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
+import { currentUser } from "@/seed/data"
 
 const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -37,13 +38,15 @@ export default function Navbar() {
 
     const closeMenu = () => setIsOpen(false)
 
+    const appName = currentUser ? `Wallet ${currentUser.nickname}` : 'Wallet Pipe'
+
     return (
         <nav className="bg-transparent text-gray-800 dark:text-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+                <div className="flex items-center justify-between h-16 pt-4">
                     <div className="flex items-center">
                         <Link href="/" className="flex-shrink-0">
-                            <span className="text-2xl font-bold">Wallet Pipe</span>
+                            <span className="text-2xl font-bold">{appName}</span>
                         </Link>
                     </div>
                     <div className="hidden md:block">
@@ -76,9 +79,9 @@ export default function Navbar() {
                             <DropdownMenuContent className="w-56" align="end" forceMount>
                                 <DropdownMenuLabel className="font-normal">
                                     <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">Usuario</p>
+                                        <p className="text-sm font-medium leading-none">{currentUser?.name || 'Usuario'}</p>
                                         <p className="text-xs leading-none text-muted-foreground">
-                                            usuario@example.com
+                                            {currentUser?.email || 'usuario@example.com'}
                                         </p>
                                     </div>
                                 </DropdownMenuLabel>
@@ -130,7 +133,7 @@ export default function Navbar() {
                                                     <AvatarImage src="/avatars/01.png" alt="@usuario" />
                                                     <AvatarFallback>U</AvatarFallback>
                                                 </Avatar>
-                                                <span>Usuario</span>
+                                                <span>{currentUser?.name || 'Usuario'}</span>
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent>

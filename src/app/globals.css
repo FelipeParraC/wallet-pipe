@@ -45,3 +45,7 @@
   }
 }
 
+.currency-with-small-decimals {
+  display: inline-flex;
+  align-items: flex-end;
+}

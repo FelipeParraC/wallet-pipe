@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Coins, CreditCard, WalletIcon, Bus } from 'lucide-react'
+import { currentUser } from "@/seed/data"
 
 const formSchema = z.object({
     name: z.string().min(1, "El nombre es requerido"),
@@ -33,6 +34,9 @@ const formSchema = z.object({
     type: z.string().min(1, "El tipo es requerido"),
     color: z.string().min(1, "El color es requerido"),
     includeInTotal: z.boolean().default(true),
+    fareValue: z.string().optional().refine((val) => !val || !isNaN(Number(val)), {
+        message: "Debe ser un número válido",
+    }),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -67,15 +71,20 @@ export function WalletForm({ wallet, onSubmit }: WalletFormProps) {
             type: wallet?.type || "",
             color: wallet?.color || "#3b82f6",
             includeInTotal: wallet?.includeInTotal ?? true,
+            fareValue: wallet?.fareValue?.toString() || "",
         },
     })
+
+    const watchType = form.watch("type")
 
     function handleSubmit(values: FormData) {
         const selectedType = walletTypes.find(t => t.value === values.type);
         onSubmit({
             ...values,
+            userId: currentUser.id, // Agregamos el userId
             balance: parseFloat(values.balance),
             icon: selectedType?.icon || Coins,
+            fareValue: values.fareValue ? parseFloat(values.fareValue) : undefined,
         })
     }
 
@@ -95,19 +104,21 @@ export function WalletForm({ wallet, onSubmit }: WalletFormProps) {
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="balance"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>{wallet ? "Cantidad" : "Cantidad Inicial"}</FormLabel>
-                            <FormControl>
-                                <Input type="number" step="0.01" placeholder="0.00" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                { !wallet && 
+                    (<FormField
+                        control={form.control}
+                        name="balance"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Cantidad Inicial</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
                 <FormField
                     control={form.control}
                     name="type"
@@ -135,6 +146,24 @@ export function WalletForm({ wallet, onSubmit }: WalletFormProps) {
                         </FormItem>
                     )}
                 />
+                {watchType === "Transporte" && (
+                    <FormField
+                        control={form.control}
+                        name="fareValue"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Valor del Pasaje</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    Ingrese el valor de un pasaje para esta tarjeta de transporte
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
                 <FormField
                     control={form.control}
                     name="color"

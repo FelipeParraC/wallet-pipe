@@ -3,6 +3,8 @@ import { Transaction } from "@/types/transaction"
 import { TransactionActions } from "@/components/transactions/TransactionActions"
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { CurrencyDisplay } from '@/components/CurrencyDisplay'
+import { getAmountColor } from "@/utils/currency"
 
 interface TransactionCardProps {
     transaction: Transaction
@@ -25,15 +27,17 @@ export function TransactionCard({ transaction, onEdit, onDelete, onClick }: Tran
             <CardHeader className="pb-2">
                 <CardTitle className="flex justify-between items-center">
                     <span className="truncate">{transaction.title}</span>
-                    <span className={`text-lg font-bold ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                        {transaction.amount.toFixed(2)} €
-                    </span>
+                    <CurrencyDisplay
+                        amount={Math.abs(transaction.amount)}
+                        showDecimals={true}
+                        className={`text-lg font-bold ${transaction.category === 'Transferencia' ? 'text-blue-400' : getAmountColor(transaction.amount)}`}
+                    />
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="card-content">
                     <p className="text-sm text-muted-foreground mb-1">{transaction.category}</p>
-                    <p className="text-sm text-muted-foreground mb-1">{transaction.wallet}</p>
+                    <p className="text-sm text-muted-foreground mb-1">{transaction.description}</p>
                     <p className="text-sm text-muted-foreground mb-2">
                         {format(parseISO(transaction.date), "d 'de' MMMM, yyyy", { locale: es })}
                     </p>

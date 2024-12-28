@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -32,15 +32,14 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { Transaction } from "@/types/transaction"
-import { wallets, categories } from "@/seed/data"
+import { Transaction, BaseTransaction, TransportTransaction, TransferTransaction } from "@/types/transaction"
+import { wallets, categories, currentUser } from "@/seed/data"
 
-const formSchema = z.object({
-    type: z.enum(["ingreso", "gasto", "transferencia"]),
+const standardFormSchema = z.object({
+    type: z.enum(["ingreso", "gasto"]),
     title: z.string().min(1, "El título es requerido"),
     amount: z.string().min(1, "El monto es requerido"),
     wallet: z.string().min(1, "La billetera es requerida"),
-    toWallet: z.string().optional(),
     category: z.string().min(1, "La categoría es requerida"),
     description: z.string().max(100, "La descripción no debe exceder 100 caracteres"),
     date: z.date({
@@ -48,6 +47,37 @@ const formSchema = z.object({
     }),
     time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido"),
 })
+
+const transportFormSchema = z.object({
+    type: z.literal("transporte"),
+    title: z.string().min(1, "El título es requerido"),
+    numberOfTrips: z.string().min(1, "El número de viajes es requerido"),
+    wallet: z.string().min(1, "La billetera es requerida"),
+    description: z.string().max(100, "La descripción no debe exceder 100 caracteres"),
+    date: z.date({
+        required_error: "La fecha es requerida",
+    }),
+    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido"),
+})
+
+const transferFormSchema = z.object({
+    type: z.literal("transferencia"),
+    title: z.string().min(1, "El título es requerido"),
+    amount: z.string().min(1, "El monto es requerido"),
+    fromWallet: z.string().min(1, "La billetera de origen es requerida"),
+    toWallet: z.string().min(1, "La billetera de destino es requerida"),
+    description: z.string().max(100, "La descripción no debe exceder 100 caracteres"),
+    date: z.date({
+        required_error: "La fecha es requerida",
+    }),
+    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido"),
+})
+
+const formSchema = z.discriminatedUnion("type", [
+    standardFormSchema,
+    transportFormSchema,
+    transferFormSchema,
+])
 
 type FormData = z.infer<typeof formSchema>
 
@@ -58,51 +88,98 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ defaultWallet, transaction, onSubmit }: TransactionFormProps) {
+    const [selectedWalletType, setSelectedWalletType] = useState<string>("")
+
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            type: transaction ? (transaction.amount > 0 ? "ingreso" : "gasto") : "gasto",
+            type: transaction
+                ? 'fareValue' in transaction
+                    ? "transporte"
+                    : 'fromWallet' in transaction && 'toWallet' in transaction
+                        ? "transferencia"
+                        : transaction.amount > 0 ? "ingreso" : "gasto"
+                : "gasto",
             title: transaction?.title || "",
             amount: transaction ? Math.abs(transaction.amount).toString() : "",
+            numberOfTrips: transaction && 'numberOfTrips' in transaction ? transaction.numberOfTrips.toString() : "1",
             wallet: transaction?.wallet || defaultWallet || "",
-            category: transaction?.category || "",
+            fromWallet: transaction && 'fromWallet' in transaction ? transaction.fromWallet : "",
+            toWallet: transaction && 'toWallet' in transaction ? transaction.toWallet : "",
+            category: transaction?.category || "Otros",
             description: transaction?.description || "",
             date: transaction ? parseISO(transaction.date) : new Date(),
             time: transaction ? format(parseISO(transaction.date), "HH:mm") : format(new Date(), "HH:mm"),
         },
     })
 
+    const watchWallet = form.watch("wallet")
+    const watchType = form.watch("type")
+
     useEffect(() => {
-        if (transaction) {
-            form.reset({
-                type: transaction.amount > 0 ? "ingreso" : "gasto",
-                title: transaction.title,
-                amount: Math.abs(transaction.amount).toString(),
-                wallet: transaction.wallet,
-                category: transaction.category,
-                description: transaction.description,
-                date: parseISO(transaction.date),
-                time: format(parseISO(transaction.date), "HH:mm"),
-            })
+        const selectedWallet = wallets.find(w => w.id === watchWallet)
+        setSelectedWalletType(selectedWallet?.type || "")
+    }, [watchWallet])
+
+    useEffect(() => {
+        if (selectedWalletType === "Transporte" && watchType !== "transferencia") {
+            form.setValue("type", "transporte")
+        } else if (watchType === "transporte" && selectedWalletType !== "Transporte") {
+            form.setValue("type", "gasto")
         }
-    }, [transaction, form])
+    }, [selectedWalletType, watchType, form])
 
     function handleSubmit(values: FormData) {
-        const combinedDateTime = new Date(values.date);
-        const [hours, minutes] = values.time.split(':');
-        combinedDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+        const combinedDateTime = new Date(values.date)
+        const [hours, minutes] = values.time.split(':')
+        combinedDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10))
 
-        const submissionData: Transaction = {
-            id: transaction?.id || Date.now(),
-            title: values.title,
-            description: values.description,
-            date: combinedDateTime.toISOString(),
-            amount: parseFloat(values.amount) * (values.type === 'gasto' ? -1 : 1),
-            category: values.category,
-            wallet: values.wallet,
-        };
-
-        onSubmit(submissionData);
+        if (values.type === "transporte") {
+            const selectedWallet = wallets.find(w => w.id === values.wallet)
+            const fareValue = selectedWallet?.fareValue || 0
+            const submissionData: TransportTransaction = {
+                id: transaction?.id || Date.now(),
+                userId: currentUser.id, // Agregamos el userId
+                title: values.title,
+                description: values.description,
+                date: combinedDateTime.toISOString(),
+                fareValue: fareValue,
+                numberOfTrips: parseInt(values.numberOfTrips),
+                category: 'Transporte',
+                wallet: values.wallet,
+                amount: -(fareValue * parseInt(values.numberOfTrips)),
+                isVisible: true,
+            }
+            onSubmit(submissionData)
+        } else if (values.type === "transferencia") {
+            const submissionData: TransferTransaction = {
+                id: transaction?.id || Date.now(),
+                userId: currentUser.id, // Agregamos el userId
+                title: values.title,
+                description: values.description,
+                date: combinedDateTime.toISOString(),
+                amount: -parseFloat(values.amount),
+                category: 'Transferencia',
+                fromWallet: values.fromWallet,
+                toWallet: values.toWallet,
+                wallet: values.fromWallet,
+                isVisible: true,
+            }
+            onSubmit(submissionData)
+        } else {
+            const submissionData: BaseTransaction = {
+                id: transaction?.id || Date.now(),
+                userId: currentUser.id, // Agregamos el userId
+                title: values.title,
+                description: values.description,
+                date: combinedDateTime.toISOString(),
+                amount: parseFloat(values.amount) * (values.type === 'gasto' ? -1 : 1),
+                category: values.category,
+                wallet: values.wallet,
+                isVisible: true,
+            }
+            onSubmit(submissionData)
+        }
     }
 
     return (
@@ -115,8 +192,8 @@ export function TransactionForm({ defaultWallet, transaction, onSubmit }: Transa
                         <FormItem className="space-y-3">
                             <FormLabel>Tipo de Transacción</FormLabel>
                             <FormControl>
-                                <div className="flex space-x-4">
-                                    {['gasto', 'ingreso', 'transferencia'].map((type) => (
+                                <div className="flex flex-wrap gap-4">
+                                    {(selectedWalletType === "Transporte" ? ['transporte'] : ['gasto', 'ingreso', 'transferencia']).map((type) => (
                                         <Button
                                             key={type}
                                             type="button"
@@ -127,73 +204,20 @@ export function TransactionForm({ defaultWallet, transaction, onSubmit }: Transa
                                             {type.charAt(0).toUpperCase() + type.slice(1)}
                                         </Button>
                                     ))}
+
                                 </div>
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Título</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Título de la transacción" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="amount"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Monto</FormLabel>
-                            <FormControl>
-                                <Input
-                                    placeholder="0.00"
-                                    {...field}
-                                    className="text-3xl h-16 text-center font-bold"
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="wallet"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Billetera</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger className="h-14">
-                                        <SelectValue placeholder="Selecciona una billetera" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {wallets.map((wallet) => (
-                                        <SelectItem key={wallet.id} value={wallet.id}>
-                                            {wallet.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                {form.watch("type") === "transferencia" && (
+                {watchType !== "transferencia" && (
                     <FormField
                         control={form.control}
-                        name="toWallet"
+                        name="wallet"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Billetera de Destino</FormLabel>
+                                <FormLabel>Billetera</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                         <SelectTrigger className="h-14">
@@ -215,28 +239,133 @@ export function TransactionForm({ defaultWallet, transaction, onSubmit }: Transa
                 )}
                 <FormField
                     control={form.control}
-                    name="category"
+                    name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Categoría</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger className="h-14">
-                                        <SelectValue placeholder="Selecciona una categoría" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {categories.map((category) => (
-                                        <SelectItem key={category} value={category}>
-                                            {category}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <FormLabel>Título</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Título de la transacción" {...field} />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+                {watchType === "transporte" ? (
+                    <FormField
+                        control={form.control}
+                        name="numberOfTrips"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Número de Viajes</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="number"
+                                        placeholder="1"
+                                        {...field}
+                                        className="text-3xl h-16 text-center font-bold"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                ) : (
+                    <FormField
+                        control={form.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Monto</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        placeholder="0.00"
+                                        {...field}
+                                        className="text-3xl h-16 text-center font-bold"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+                {watchType === "transferencia" && (
+                    <>
+                        <FormField
+                            control={form.control}
+                            name="fromWallet"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Billetera de Origen</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger className="h-14">
+                                                <SelectValue placeholder="Selecciona una billetera" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {wallets.map((wallet) => (
+                                                <SelectItem key={wallet.id} value={wallet.id}>
+                                                    {wallet.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="toWallet"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Billetera de Destino</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger className="h-14">
+                                                <SelectValue placeholder="Selecciona una billetera" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {wallets.filter(w => w.id !== form.watch("fromWallet")).map((wallet) => (
+                                                <SelectItem key={wallet.id} value={wallet.id}>
+                                                    {wallet.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </>
+                )}
+                {watchType !== "transferencia" && watchType !== "transporte" && (
+                    <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Categoría</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="h-14">
+                                            <SelectValue placeholder="Selecciona una categoría" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {categories.map((category) => (
+                                            <SelectItem key={category} value={category}>
+                                                {category}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
                 <FormField
                     control={form.control}
                     name="description"
