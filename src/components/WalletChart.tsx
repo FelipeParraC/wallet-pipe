@@ -1,19 +1,19 @@
 "use client"
 
-import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi } from 'lightweight-charts';
-import { Transaction, isTransferTransaction } from "@/types/transaction";
-import { format } from 'date-fns';
+import { useEffect, useRef, useState } from 'react'
+import { createChart, ColorType, IChartApi } from 'lightweight-charts'
+import { format } from 'date-fns'
+import { isTransferTransaction, Transaction } from '@/interfaces'
 
 interface WalletChartProps {
-    transactions: Transaction[];
-    color: string;
-    walletId: string;
+    transactions: Transaction[]
+    color: string
+    walletId: string
 }
 
 export function WalletChart({ transactions, color, walletId }: WalletChartProps) {
-    const chartContainerRef = useRef<HTMLDivElement>(null);
-    const [chart, setChart] = useState<IChartApi | null>(null);
+    const chartContainerRef = useRef<HTMLDivElement>(null)
+    const [chart, setChart] = useState<IChartApi | null>(null)
 
     useEffect(() => {
         if (chartContainerRef.current) {
@@ -34,9 +34,9 @@ export function WalletChart({ transactions, color, walletId }: WalletChartProps)
                 timeScale: {
                     borderVisible: false,
                 },
-            });
+            })
 
-            setChart(newChart);
+            setChart(newChart)
 
             const areaSeries = newChart.addAreaSeries({
                 lineColor: color,
@@ -46,33 +46,33 @@ export function WalletChart({ transactions, color, walletId }: WalletChartProps)
                 priceLineVisible: false,
                 crosshairMarkerVisible: true,
                 lineType: 2,
-            });
+            })
 
             const data = transactions
                 .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                 .reduce((acc, transaction) => {
-                    const lastBalance = acc.length > 0 ? acc[acc.length - 1].value : 0;
+                    const lastBalance = acc.length > 0 ? acc[acc.length - 1].value : 0
                     const transactionAmount = isTransferTransaction(transaction) && transaction.fromWallet === walletId
                         ? -transaction.amount
-                        : transaction.amount;
-                    const newBalance = lastBalance + transactionAmount;
-                    const existingEntry = acc.find(entry => entry.time === format(new Date(transaction.date), 'yyyy-MM-dd'));
+                        : transaction.amount
+                    const newBalance = lastBalance + transactionAmount
+                    const existingEntry = acc.find(entry => entry.time === format(new Date(transaction.date), 'yyyy-MM-dd'))
 
                     if (existingEntry) {
-                        existingEntry.value = newBalance;
+                        existingEntry.value = newBalance
                     } else {
-                        acc.push({ time: format(new Date(transaction.date), 'yyyy-MM-dd'), value: newBalance });
+                        acc.push({ time: format(new Date(transaction.date), 'yyyy-MM-dd'), value: newBalance })
                     }
 
-                    return acc;
-                }, [] as { time: string; value: number }[]);
+                    return acc
+                }, [] as { time: string; value: number }[])
 
             // Asegurarse de que los datos estén ordenados por tiempo
-            data.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+            data.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
 
-            areaSeries.setData(data);
+            areaSeries.setData(data)
 
-            newChart.timeScale().fitContent();
+            newChart.timeScale().fitContent()
 
             newChart.applyOptions({
                 leftPriceScale: {
@@ -93,24 +93,24 @@ export function WalletChart({ transactions, color, walletId }: WalletChartProps)
                     vertLines: { visible: false },
                     horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
                 },
-            });
+            })
 
             const handleResize = () => {
                 newChart.applyOptions({
                     width: chartContainerRef.current!.clientWidth,
                     height: Math.max(300, window.innerHeight * 0.4),
-                });
-            };
+                })
+            }
 
-            window.addEventListener('resize', handleResize);
-            handleResize();
+            window.addEventListener('resize', handleResize)
+            handleResize()
 
             return () => {
-                window.removeEventListener('resize', handleResize);
-                newChart.remove();
-            };
+                window.removeEventListener('resize', handleResize)
+                newChart.remove()
+            }
         }
-    }, [transactions, color, walletId]);
+    }, [transactions, color, walletId])
 
     useEffect(() => {
         const handleResize = () => {
@@ -118,19 +118,19 @@ export function WalletChart({ transactions, color, walletId }: WalletChartProps)
                 chart.applyOptions({
                     width: chartContainerRef.current.clientWidth,
                     height: Math.max(300, window.innerHeight * 0.4),
-                });
-                chart.timeScale().fitContent();
+                })
+                chart.timeScale().fitContent()
             }
-        };
+        }
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [chart]);
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [chart])
 
     return (
         <div className="flex justify-center items-center w-full h-full">
             <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />
         </div>
-    );
+    )
 }
 

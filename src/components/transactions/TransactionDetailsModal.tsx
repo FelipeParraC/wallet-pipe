@@ -1,9 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Transaction } from "@/types/transaction"
 import { getAmountColor } from "@/utils/currency"
 import { CurrencyDisplay } from '@/components/CurrencyDisplay'
+import { Transaction } from "@/interfaces"
 
 interface TransactionDetailsModalProps {
     isOpen: boolean

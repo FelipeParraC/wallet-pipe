@@ -1,6 +1,9 @@
+export type TransactionType = 'INGRESO' | 'GASTO' | 'TRANSPORTE' | 'TRANSFERENCIA'
+
 export interface BaseTransaction {
-    id: number
+    id: string
     userId: string
+    type: TransactionType
     wallet: string
     title: string
     description: string
@@ -34,3 +37,28 @@ export function isStandardTransaction(transaction: Transaction): transaction is 
     return !isTransportTransaction(transaction) && !isTransferTransaction(transaction)
 }
 
+export interface CreateTransactionInput {
+    walletId: string
+    type: TransactionType
+    title: string
+    description: string
+    date: Date
+    categoryId: string
+    amount: number
+    fareValue?: number
+    numberOfTrips?: number
+    fromWalletId?: string
+    toWalletId?: string
+}
+
+export interface UpdateTransactionInput {
+    title?: string
+    description?: string
+    date?: Date
+    categoryId?: string
+    amount: number
+    newAumount?: number
+    numberOfTrips?: number
+    fromWalletId?: string
+    toWalletId?: string
+}

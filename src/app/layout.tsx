@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="es" className="dark">
-            <body className={`${inter.className} bg-gray-950 text-gray-100 select-none`}>
+            <body className={`${inter.className} bg-gray-950 text-gray-100`}>
                 <Navbar />
                 <main className="container mx-auto px-4 py-8 pb-24">
                     {children}

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, IChartApi } from 'lightweight-charts';
-import { Transaction } from "@/types/transaction";
 import { format, parseISO } from 'date-fns';
+import { Transaction } from '@/interfaces';
 
 interface DailyTransactionsChartProps {
     transactions: Transaction[];

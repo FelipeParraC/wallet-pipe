@@ -1,15 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Transaction } from "@/types/transaction"
 import { TransactionActions } from "@/components/transactions/TransactionActions"
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { CurrencyDisplay } from '@/components/CurrencyDisplay'
 import { getAmountColor } from "@/utils/currency"
+import { Transaction } from "@/interfaces"
 
 interface TransactionCardProps {
     transaction: Transaction
     onEdit: (transaction: Transaction, e: React.MouseEvent) => void
-    onDelete: (id: number, e: React.MouseEvent) => void
+    onDelete: (id: string, e: React.MouseEvent) => void
     onClick: () => void
 }
 
