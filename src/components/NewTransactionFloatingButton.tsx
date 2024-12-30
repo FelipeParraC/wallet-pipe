@@ -1,15 +1,12 @@
-'use client'
-
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Button } from './ui'
 
-export function NewTransactionFloatingButton({ walletId }: { walletId?: string }) {
-    const pathname = usePathname()
-    const isVisible = pathname === '/' || pathname.startsWith('/billeteras/') || pathname === '/transacciones'
+interface NewTransactionFloatingButtonProps {
+    walletId: string
+}
 
-    if (!isVisible) return null
+export const NewTransactionFloatingButton = ({ walletId }: NewTransactionFloatingButtonProps) => {
 
     const href = walletId
         ? `/transacciones/nueva?walletId=${walletId}`
@@ -27,4 +24,3 @@ export function NewTransactionFloatingButton({ walletId }: { walletId?: string }
         </Button>
     )
 }
-

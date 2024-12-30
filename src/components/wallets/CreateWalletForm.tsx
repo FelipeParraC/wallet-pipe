@@ -4,16 +4,12 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import type { CreateWalletInput, WalletType } from '@/interfaces'
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Coins, CreditCard, WalletIcon, Bus } from 'lucide-react'
 
 //TODO: Cambiar currentUser por el usuario actual
 import { currentUser } from '@/seed/data'
 import { createWallet } from '@/actions'
+import { Button, Checkbox, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui'
 
 const suggestedColors = [
     '#3b82f6',
@@ -61,7 +57,7 @@ const onSubmit = (walletData: Partial<CreateWalletInput>) => {
     }
 }
 
-export function CreateWalletForm() {
+export const CreateWalletForm = () => {
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {

@@ -1,10 +1,9 @@
-import { Transaction } from './transaction.interface'
+import type { Transaction } from './transaction.interface'
 
 export interface Category {
     id: string
     name: string
     color: string
-    transactions: Transaction[]
     createdAt: Date
     updatedAt: Date
 }

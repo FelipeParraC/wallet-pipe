@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Wallet } from '@/interfaces'
+import type { Wallet } from '@/interfaces'
 import { currencyFormatWithSmallDecimals, getIcon } from '@/utils'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 
 interface WalletCardProps {
     wallet: Wallet

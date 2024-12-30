@@ -1,5 +1,5 @@
-import { Transaction } from '@/interfaces'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import type { Transaction } from '@/interfaces'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 import { WalletChart } from '../WalletChart'
 
 interface BalanceEvolutionChartProps {

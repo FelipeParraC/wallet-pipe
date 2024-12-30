@@ -42,7 +42,7 @@ export default async function BilleteraPage({ params }: Props) {
 
             <TransactionsList transactions={ transactions } walletId={ wallet.id } wallets={ walllets } />
             
-            <NewTransactionFloatingButton walletId={ wallet.id } />
+            <NewTransactionFloatingButton walletId={ walletId } />
         </div>
     )
 }

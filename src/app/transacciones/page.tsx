@@ -1,9 +1,9 @@
 
-import { Transaction } from '@/interfaces'
+import type { Transaction } from '@/interfaces'
 import { NewTransactionFloatingButton, TransactionsGrid } from '@/components'
 import { getTransactions } from '@/actions'
 
-export default async function TransactionsPage() {
+export default async function TransaccionesPage() {
 
     const transactions = await getTransactions() as Transaction[]
 
@@ -15,7 +15,7 @@ export default async function TransactionsPage() {
 
             <TransactionsGrid transactions={ transactions } />
 
-            <NewTransactionFloatingButton />
+            <NewTransactionFloatingButton walletId='' />
         </div>
     )
 }

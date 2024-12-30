@@ -1,23 +1,13 @@
 import { Pencil, Trash2 } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, Button } from '../ui'
+
 
 interface TransactionActionsProps {
     onEdit: (e: React.MouseEvent) => void
     onDelete: (e: React.MouseEvent) => void
 }
 
-export function TransactionActions({ onEdit, onDelete }: TransactionActionsProps) {
+export const TransactionActions = ({ onEdit, onDelete }: TransactionActionsProps) => {
     return (
         <div className="flex space-x-2">
             <Button variant="outline" size="icon" onClick={onEdit}>

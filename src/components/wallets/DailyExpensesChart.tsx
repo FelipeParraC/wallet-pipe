@@ -1,6 +1,6 @@
-import { Transaction } from '@/interfaces'
+import type { Transaction } from '@/interfaces'
 import { DailyTransactionsChart } from '../DailyTransactionsChart'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 
 interface DailyExpensesChartProps {
     transactions: Transaction[]

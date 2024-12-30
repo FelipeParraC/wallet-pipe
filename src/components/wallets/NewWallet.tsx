@@ -1,6 +1,6 @@
 import Link from "next/link"
-import { Card, CardContent } from "../ui/card"
 import { PlusCircle } from "lucide-react"
+import { Card, CardContent } from "../ui"
 
 export const NewWallet = () => {
     return (

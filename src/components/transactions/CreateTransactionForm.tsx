@@ -6,34 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { format } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
-
-import { Button } from '@/components/ui/button'
-import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from '@/components/ui/form'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Calendar } from '@/components/ui/calendar'
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover'
-import { wallets, categories } from '@/seed/data'
-import { CreateTransactionInput, Wallet } from '@/interfaces'
+import type { CreateTransactionInput, Wallet } from '@/interfaces'
+import { Button, Calendar, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '../ui'
 
 const standardFormSchema = z.object({
     type: z.enum(['INGRESO', 'GASTO']),
@@ -82,10 +56,12 @@ const formSchema = z.discriminatedUnion('type', [
 type FormData = z.infer<typeof formSchema>
 
 interface CreateTransactionFormProps {
+    wallets: Wallet[]
+    categories: string[]
     wallet?: Wallet
 }
 
-export function CreateTransactionForm({ wallet }: CreateTransactionFormProps) {
+export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTransactionFormProps) => {
     const [selectedWalletType, setSelectedWalletType] = useState<string>('')
 
     const form = useForm<FormData>({

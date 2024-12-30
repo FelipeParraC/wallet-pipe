@@ -1,5 +1,5 @@
-import { Transaction } from './transaction.interface'
-import { Wallet } from './wallet.interface'
+import type { Transaction } from './transaction.interface'
+import type { Wallet } from './wallet.interface'
 
 export interface User {
     id: string

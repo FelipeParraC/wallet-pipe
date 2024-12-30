@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { TransactionDatePicker } from '../transactions/TransactionDatePicker'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { format, isSameDay, parseISO } from 'date-fns'
-import { BaseTransaction, isTransferTransaction, isTransportTransaction, Transaction, Wallet } from '@/interfaces'
-import { CurrencyDisplay } from '../CurrencyDisplay'
-import { TransactionActions } from '../transactions/TransactionActions'
+import type { BaseTransaction, Transaction, Wallet } from '@/interfaces'
+import { isTransportTransaction, isTransferTransaction } from '@/interfaces'
 import { es } from 'date-fns/locale'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui'
+import { TransactionDatePicker } from '../transactions/TransactionDatePicker'
+import { TransactionActions } from '../transactions/TransactionActions'
+import { CurrencyDisplay } from '../CurrencyDisplay'
 
 interface TransactionsListProps {
     transactions: Transaction[]

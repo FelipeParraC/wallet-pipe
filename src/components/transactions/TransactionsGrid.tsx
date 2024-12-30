@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from "react"
-import { TransactionDatePicker } from "./TransactionDatePicker"
-import { Transaction } from "@/interfaces"
-import { format, parseISO } from "date-fns"
-import { TransactionList } from "./TransactionList"
-import { TransactionDetailsModal } from "./TransactionDetailsModal"
+import { useState } from 'react'
+import { TransactionDatePicker } from './TransactionDatePicker'
+import type { Transaction } from '@/interfaces'
+import { format, parseISO } from 'date-fns'
+import { TransactionList } from './TransactionList'
+import { TransactionDetailsModal } from './TransactionDetailsModal'
 
 interface TransactionsGridProps {
     transactions: Transaction[]

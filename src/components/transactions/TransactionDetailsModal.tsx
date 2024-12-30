@@ -1,9 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { getAmountColor } from "@/utils/currency"
-import { CurrencyDisplay } from '@/components/CurrencyDisplay'
-import { Transaction } from "@/interfaces"
+import type { Transaction } from "@/interfaces"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui'
+import { CurrencyDisplay } from '../CurrencyDisplay'
+import { getAmountColor } from '@/utils'
 
 interface TransactionDetailsModalProps {
     isOpen: boolean
@@ -11,7 +11,7 @@ interface TransactionDetailsModalProps {
     transaction: Transaction | null
 }
 
-export function TransactionDetailsModal({ isOpen, onClose, transaction }: TransactionDetailsModalProps) {
+export const TransactionDetailsModal = ({ isOpen, onClose, transaction }: TransactionDetailsModalProps) => {
     if (!transaction) return null
 
     return (

@@ -1,7 +1,7 @@
 import { getWallets } from '@/actions'
 import { NewWallet, WalletCard, WalletsTotalBalance } from '@/components'
 
-export default async function Billeteras() {
+export default async function BilleterasPage() {
 
     const wallets = await getWallets()
 

@@ -1,12 +1,14 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { format, parseISO } from "date-fns"
-import { isTransportTransaction, Transaction } from "@/interfaces"
+import type { Transaction } from "@/interfaces"
+import { isTransportTransaction } from "@/interfaces"
 import { es } from "date-fns/locale"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui"
 
 interface TripsPerDayChartProps {
     transactions: Transaction[]
 }
 
+//TODO: Revisar el uso de la librería recharts
 
 export const TripsPerDayChart = ({ transactions }: TripsPerDayChartProps) => {
 

@@ -7,7 +7,7 @@ interface SafeCurrencyDisplayProps {
     className?: string
 }
 
-export function SafeCurrencyDisplay({ amount, className = '' }: SafeCurrencyDisplayProps) {
+export const SafeCurrencyDisplay = ({ amount, className = '' }: SafeCurrencyDisplayProps) => {
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {

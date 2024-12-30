@@ -1,7 +1,7 @@
 'use client'
 
+import { currencyFormatWithoutDecimals, currencyFormatWithSmallDecimals } from '@/utils'
 import { useEffect, useState } from 'react'
-import { currencyFormatWithSmallDecimals, currencyFormatWithoutDecimals } from '@/utils/currency'
 
 interface CurrencyDisplayProps {
     amount: number

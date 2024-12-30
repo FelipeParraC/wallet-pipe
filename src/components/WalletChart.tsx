@@ -1,9 +1,10 @@
-"use client"
+'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import { createChart, ColorType, IChartApi } from 'lightweight-charts'
 import { format } from 'date-fns'
-import { isTransferTransaction, Transaction } from '@/interfaces'
+import { isTransferTransaction } from '@/interfaces'
+import type { Transaction } from '@/interfaces'
 
 interface WalletChartProps {
     transactions: Transaction[]
@@ -11,7 +12,7 @@ interface WalletChartProps {
     walletId: string
 }
 
-export function WalletChart({ transactions, color, walletId }: WalletChartProps) {
+export const WalletChart = ({ transactions, color, walletId }: WalletChartProps) => {
     const chartContainerRef = useRef<HTMLDivElement>(null)
     const [chart, setChart] = useState<IChartApi | null>(null)
 
@@ -128,7 +129,7 @@ export function WalletChart({ transactions, color, walletId }: WalletChartProps)
     }, [chart])
 
     return (
-        <div className="flex justify-center items-center w-full h-full">
+        <div className='flex justify-center items-center w-full h-full'>
             <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />
         </div>
     )

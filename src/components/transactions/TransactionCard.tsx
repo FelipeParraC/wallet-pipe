@@ -1,10 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TransactionActions } from "@/components/transactions/TransactionActions"
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { CurrencyDisplay } from '@/components/CurrencyDisplay'
-import { getAmountColor } from "@/utils/currency"
-import { Transaction } from "@/interfaces"
+import type { Transaction } from "@/interfaces"
+import { Card, CardContent, CardHeader, CardTitle } from '../ui'
+import { CurrencyDisplay } from '../CurrencyDisplay'
+import { TransactionActions } from './TransactionActions'
+import { getAmountColor } from '@/utils'
+
 
 interface TransactionCardProps {
     transaction: Transaction
@@ -13,7 +14,7 @@ interface TransactionCardProps {
     onClick: () => void
 }
 
-export function TransactionCard({ transaction, onEdit, onDelete, onClick }: TransactionCardProps) {
+export const TransactionCard = ({ transaction, onEdit, onDelete, onClick }: TransactionCardProps) => {
     return (
         <Card
             className="hover:shadow-lg transition-shadow cursor-pointer"

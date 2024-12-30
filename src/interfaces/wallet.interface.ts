@@ -1,4 +1,4 @@
-import { Transaction } from './transaction.interface'
+import type { Transaction } from './transaction.interface'
 
 export type WalletType = 'Efectivo' | 'Cuenta Bancaria' | 'Ahorros' | 'Transporte'
 

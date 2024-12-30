@@ -1,17 +1,17 @@
-"use client"
+'use client'
 
-import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi } from 'lightweight-charts';
-import { format, parseISO } from 'date-fns';
-import { Transaction } from '@/interfaces';
+import { useEffect, useRef, useState } from 'react'
+import { createChart, ColorType, IChartApi } from 'lightweight-charts'
+import { format, parseISO } from 'date-fns'
+import type { Transaction } from '@/interfaces'
 
 interface DailyTransactionsChartProps {
-    transactions: Transaction[];
+    transactions: Transaction[]
 }
 
-export function DailyTransactionsChart({ transactions }: DailyTransactionsChartProps) {
-    const chartContainerRef = useRef<HTMLDivElement>(null);
-    const [chart, setChart] = useState<IChartApi | null>(null);
+export const DailyTransactionsChart = ({ transactions }: DailyTransactionsChartProps) => {
+    const chartContainerRef = useRef<HTMLDivElement>(null)
+    const [chart, setChart] = useState<IChartApi | null>(null)
 
     useEffect(() => {
         if (chartContainerRef.current) {
@@ -26,36 +26,36 @@ export function DailyTransactionsChart({ transactions }: DailyTransactionsChartP
                     vertLines: { visible: false },
                     horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
                 },
-            });
+            })
 
-            setChart(newChart);
+            setChart(newChart)
 
             const expenseSeries = newChart.addHistogramSeries({
                 color: '#ef4444',
                 priceFormat: { type: 'volume' },
-            });
+            })
 
             const dailyData = transactions.reduce((acc, transaction) => {
-                const date = format(parseISO(transaction.date), 'yyyy-MM-dd');
+                const date = format(parseISO(transaction.date), 'yyyy-MM-dd')
                 if (transaction.amount < 0) {
                     if (!acc[date]) {
-                        acc[date] = 0;
+                        acc[date] = 0
                     }
-                    acc[date] += Math.abs(transaction.amount);
+                    acc[date] += Math.abs(transaction.amount)
                 }
-                return acc;
-            }, {} as Record<string, number>);
+                return acc
+            }, {} as Record<string, number>)
 
             const expenseData = Object.entries(dailyData)
                 .map(([date, expense]) => ({
                     time: date,
                     value: expense,
                 }))
-                .sort((a, b) => a.time.localeCompare(b.time));
+                .sort((a, b) => a.time.localeCompare(b.time))
 
-            expenseSeries.setData(expenseData);
+            expenseSeries.setData(expenseData)
 
-            newChart.timeScale().fitContent();
+            newChart.timeScale().fitContent()
 
             newChart.applyOptions({
                 leftPriceScale: {
@@ -76,24 +76,24 @@ export function DailyTransactionsChart({ transactions }: DailyTransactionsChartP
                     vertLines: { visible: false },
                     horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
                 },
-            });
+            })
 
             const handleResize = () => {
                 newChart.applyOptions({
                     width: chartContainerRef.current!.clientWidth,
                     height: Math.max(300, window.innerHeight * 0.4),
-                });
-            };
+                })
+            }
 
-            window.addEventListener('resize', handleResize);
-            handleResize();
+            window.addEventListener('resize', handleResize)
+            handleResize()
 
             return () => {
-                window.removeEventListener('resize', handleResize);
-                newChart.remove();
-            };
+                window.removeEventListener('resize', handleResize)
+                newChart.remove()
+            }
         }
-    }, [transactions]);
+    }, [transactions])
 
     useEffect(() => {
         const handleResize = () => {
@@ -101,19 +101,19 @@ export function DailyTransactionsChart({ transactions }: DailyTransactionsChartP
                 chart.applyOptions({
                     width: chartContainerRef.current.clientWidth,
                     height: Math.max(300, window.innerHeight * 0.4),
-                });
-                chart.timeScale().fitContent();
+                })
+                chart.timeScale().fitContent()
             }
-        };
+        }
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [chart]);
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [chart])
 
     return (
-        <div className="flex justify-center items-center w-full h-full">
+        <div className='flex justify-center items-center w-full h-full'>
             <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />
         </div>
-    );
+    )
 }
 

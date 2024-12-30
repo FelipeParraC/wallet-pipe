@@ -4,10 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import type { UpdateWalletInput, Wallet } from '@/interfaces'
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Form, FormField, FormItem, FormLabel, FormControl, Input, FormDescription, FormMessage, Checkbox, Button } from '@/components/ui'
 
 const formSchema = z.object({
     name: z.string().min(1, 'El nombre es requerido'),

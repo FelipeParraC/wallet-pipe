@@ -1,6 +1,6 @@
 import { currencyFormatWithSmallDecimals } from '@/utils'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Wallet } from '@/interfaces'
+import type { Wallet } from '@/interfaces'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 
 interface TotalBalanceProps {
     wallets: Wallet[]

@@ -1,8 +1,8 @@
 'use client'
 
 import { Pencil } from "lucide-react"
-import { Button } from "../ui/button"
 import { useRouter } from "next/navigation"
+import { Button } from "../ui"
 
 interface EditButtonProps {
     walletId: string

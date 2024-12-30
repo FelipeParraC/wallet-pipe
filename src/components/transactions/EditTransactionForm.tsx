@@ -5,16 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { format, parseISO } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
-
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { wallets, categories } from '@/seed/data'
-import { Transaction, isTransportTransaction, isTransferTransaction, UpdateTransactionInput } from '@/interfaces'
+import { Form, FormField, FormItem, FormLabel, FormControl, Input, FormMessage, FormDescription, Textarea, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Popover, PopoverTrigger, PopoverContent, Calendar } from '@/components/ui'
+import type { Transaction, UpdateTransactionInput, Wallet } from '@/interfaces'
+import { isTransportTransaction, isTransferTransaction } from '@/interfaces'
 
 const editTransactionSchema = z.object({
     title: z.string().min(1, 'El título es requerido'),
@@ -32,9 +25,11 @@ type EditTransactionFormData = z.infer<typeof editTransactionSchema>
 
 interface EditTransactionFormProps {
     transaction: Transaction
+    wallets: Wallet[]
+    categories: string[]
 }
 
-export const EditTransactionForm = ({ transaction }: EditTransactionFormProps) => {
+export const EditTransactionForm = ({ transaction, categories, wallets }: EditTransactionFormProps) => {
     const form = useForm<EditTransactionFormData>({
         resolver: zodResolver(editTransactionSchema),
         defaultValues: {

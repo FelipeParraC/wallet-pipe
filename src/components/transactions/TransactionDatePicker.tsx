@@ -1,22 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar } from "@/components/ui/calendar"
-import { Button } from "@/components/ui/button"
 import { CalendarIcon } from 'lucide-react'
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover"
+import { Button, Calendar, Popover, PopoverContent, PopoverTrigger } from '../ui'
 
 interface TransactionDatePickerProps {
     onDateSelect: (date: Date | undefined) => void
 }
 
-export function TransactionDatePicker({ onDateSelect }: TransactionDatePickerProps) {
+export const TransactionDatePicker = ({ onDateSelect }: TransactionDatePickerProps) => {
     const [date, setDate] = useState<Date>()
 
     const handleSelect = (newDate: Date | undefined) => {

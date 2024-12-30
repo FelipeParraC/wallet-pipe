@@ -3,25 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LayoutDashboard, Wallet, Receipt, PieChart, Settings, LogOut, Menu } from 'lucide-react'
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from '@/components/ui/sheet'
+import { Avatar, AvatarFallback, AvatarImage, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui'
 import { currentUser } from '@/seed/data'
 
 const navItems = [
@@ -32,7 +15,7 @@ const navItems = [
     { name: 'Configuración', href: '/configuracion', icon: Settings },
 ]
 
-export default function Navbar() {
+export const Navbar = () => {
     const pathname = usePathname()
     const [isOpen, setIsOpen] = useState(false)
 

@@ -1,26 +1,20 @@
-'use client'
-
-import { TransactionCard } from "@/components/transactions/TransactionCard"
-import { Transaction } from "@/interfaces"
-import { useRouter } from "next/navigation"
+import type { Transaction } from "@/interfaces"
+import { TransactionCard } from "./TransactionCard"
 
 interface TransactionListProps {
     transactions: Transaction[]
     onSelect: (transaction: Transaction) => void
 }
 
-export function TransactionList({ transactions, onSelect }: TransactionListProps) {
-
-    const router = useRouter()
-
+export const TransactionList = ({ transactions, onSelect }: TransactionListProps) => {
 
     const onEdit = (transaction: Transaction, e: React.MouseEvent) => {
-        e.stopPropagation()
-        router.push(`/transacciones/editar/${transaction.id}`)
+        console.log({ transaction, e })
+        //TODO: Ya veremosc qué se hace
     }
 
     const onDelete = (id: string, e: React.MouseEvent) => {
-        console.log({id, e})
+        console.log({ id, e })
         //TODO: Ya veremosc qué se hace
     }
     return (

@@ -1,7 +1,7 @@
 import { getAmountColor, getIcon } from "@/utils"
 import { CurrencyDisplay } from "../CurrencyDisplay"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Wallet } from "@/interfaces"
+import type { Wallet } from "@/interfaces"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui"
 
 interface WalletInfoProps {
     wallet: Wallet
