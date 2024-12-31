@@ -38,7 +38,7 @@ export const mapToPrismaTransactionType = (type: TransactionType): PrismaTransac
 export const mapToCreatePrismaTransaction = (data: CreateTransactionInput, userId: string) => {
     return {
         amount: data.amount,
-        date: data.date,
+        date: BigInt( data.date ),
         description: data.description,
         title: data.title,
         type: mapToPrismaTransactionType( data.type ),
