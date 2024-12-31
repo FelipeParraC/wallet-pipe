@@ -77,7 +77,7 @@ export const mapToTransaction = (data: PrismaTransaction): Transaction => {
         userId: data.userId,
         amount: data.amount,
         categoryId: data.categoryId,
-        date: format(data.date, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
+        date: format(new Date( data.date ), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
         description: data.description,
         isVisible: data.isVisible,
         title: data.title,

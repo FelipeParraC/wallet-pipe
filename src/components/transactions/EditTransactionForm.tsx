@@ -47,7 +47,7 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
     })
 
     const onSubmit = async (values: EditTransactionFormData) => {
-        const date = format(new Date(values.date), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
+        const date = Date.parse(format(new Date(values.date), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"))
 
         const updateData: UpdateTransactionInput = {
             title: values.title,

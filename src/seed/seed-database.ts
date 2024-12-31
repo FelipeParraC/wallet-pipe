@@ -57,7 +57,7 @@ async function main() {
     const transactionsData = transactions.map((t) => ({
         id: t.id,
         amount: t.amount,
-        date: t.date,
+        date: Date.parse( t.date ),
         description: t.description,
         title: t.title,
         type: mapToPrismaTransactionType( t.type ),

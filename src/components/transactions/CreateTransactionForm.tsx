@@ -96,7 +96,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
     }, [selectedWalletType, watchType, form])
 
     const handleSubmit = async (values: FormData) => {
-        const date = format(new Date(values.date), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
+        const date = Date.parse(format(new Date(values.date), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"))
         if (values.type === 'TRANSPORTE') {
             const fareValue = wallets.find(w => w.id === values.wallet)?.fareValue || 0
             const submissionData: CreateTransactionInput = {

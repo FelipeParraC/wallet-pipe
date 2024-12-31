@@ -12,7 +12,7 @@ export const getTransactionById = async ( id: string ) => {
 
         if ( !transaction ) return null
 
-        return mapToTransaction( transaction )
+        return mapToTransaction( { ...transaction, date: Number( transaction.date ) } )
 
     } catch ( error ) {
         console.log( error )

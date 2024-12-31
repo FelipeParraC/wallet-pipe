@@ -9,7 +9,7 @@ export interface PrismaTransaction {
     walletId: string
     title: string
     description: string
-    date: Date
+    date: number
     categoryId: string
     amount: number
     isVisible: boolean

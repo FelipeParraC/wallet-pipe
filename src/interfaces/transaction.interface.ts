@@ -44,7 +44,7 @@ export interface CreateTransactionInput {
     type: TransactionType
     title: string
     description: string
-    date: string
+    date: number
     categoryId: string
     amount: number
     fareValue?: number
@@ -56,7 +56,7 @@ export interface CreateTransactionInput {
 export interface UpdateTransactionInput {
     title: string
     description: string
-    date: string
+    date: number
     categoryId: string
     newAmount: number
     numberOfTrips?: number

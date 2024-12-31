@@ -21,7 +21,7 @@ export const getTransactionsByWalletId = async ( id: string ) => {
 
         if ( !transactions ) return null
 
-        return transactions.map( t => mapToTransaction( t ))
+        return transactions.map( t => mapToTransaction({ ...t, date: Number( t.date ) }))
 
     } catch ( error ) {
         console.log( error )

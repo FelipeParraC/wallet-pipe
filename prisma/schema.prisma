@@ -43,7 +43,7 @@ model Transaction {
   wallet        Wallet    @relation(fields: [walletId], references: [id])
   title         String
   description   String
-  date          DateTime
+  date          BigInt
   categoryId    String
   category      Category   @relation(fields: [categoryId], references: [id])
   amount        Float
