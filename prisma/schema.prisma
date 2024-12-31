@@ -7,70 +7,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Category {
+  id          String        @id @default(cuid())
+  name        String
+  color       String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Transaction Transaction[]
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  userId        String
+  walletId      String
+  type          TransactionType
+  title         String
+  description   String
+  categoryId    String
+  amount        Float
+  fareValue     Float?
+  numberOfTrips Int?
+  fromWalletId  String?
+  toWalletId    String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  isVisible     Boolean         @default(true)
+  date          BigInt
+  Category      Category        @relation(fields: [categoryId], references: [id])
+  User          User            @relation(fields: [userId], references: [id])
+  Wallet        Wallet          @relation(fields: [walletId], references: [id])
+}
+
 model User {
-  id          String    @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
   nickname    String
-  email       String    @unique
+  email       String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   password    String
-  wallets     Wallet[]
-  transactions Transaction[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  Transaction Transaction[]
+  Wallet      Wallet[]
 }
 
 model Wallet {
   id             String        @id @default(cuid())
   userId         String
-  user           User          @relation(fields: [userId], references: [id])
   name           String
   balance        Float
   type           WalletType
-  fareValue      Float?
   color          String
   includeInTotal Boolean
-  transactions   Transaction[]
+  fareValue      Float?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-}
-
-model Transaction {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  type          TransactionType
-  walletId      String
-  wallet        Wallet    @relation(fields: [walletId], references: [id])
-  title         String
-  description   String
-  date          BigInt
-  categoryId    String
-  category      Category   @relation(fields: [categoryId], references: [id])
-  amount        Float
-  isVisible     Boolean   @default(true)
-  fareValue     Float?
-  numberOfTrips Int?
-  fromWalletId  String?
-  toWalletId    String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
-
-model Category {
-  id           String        @id @default(cuid())
-  name         String
-  color        String
-  transactions Transaction[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-}
-
-enum WalletType {
-  EFECTIVO
-  CUENTA_BANCARIA
-  AHORROS
-  TRANSPORTE
+  Transaction    Transaction[]
+  User           User          @relation(fields: [userId], references: [id])
 }
 
 enum TransactionType {
@@ -78,4 +70,11 @@ enum TransactionType {
   GASTO
   TRANSPORTE
   TRANSFERENCIA
+}
+
+enum WalletType {
+  EFECTIVO
+  CUENTA_BANCARIA
+  AHORROS
+  TRANSPORTE
 }

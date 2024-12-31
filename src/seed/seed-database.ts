@@ -17,7 +17,8 @@ async function main() {
     const categoriesData = categories.map((c) => ({
         id: c.id,
         color: c.color,
-        name: c.name
+        name: c.name,
+        updatedAt: new Date()
     }))
 
     await prisma.category.createMany({
@@ -30,7 +31,8 @@ async function main() {
         email: user.email,
         name: user.name,
         nickname: user.nickname,
-        password: '123456'
+        password: '123456',
+        updatedAt: new Date()
     }
 
     await prisma.user.create({
@@ -46,7 +48,8 @@ async function main() {
         name: w.name,
         type: mapToPrismaWalletType( w.type ),
         userId: w.userId,
-        fareValue: w.fareValue
+        fareValue: w.fareValue,
+        updatedAt: new Date()
     }))
 
     await prisma.wallet.createMany({
@@ -69,6 +72,7 @@ async function main() {
         toWalletId: t.toWalletId,
         userId: t.userId,
         walletId: t.walletId,
+        updatedAt: new Date()
     }))
 
     await prisma.transaction.createMany({
