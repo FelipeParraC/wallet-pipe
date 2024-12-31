@@ -26,11 +26,11 @@ export const DashboardHome = ({ transactions, categories, wallets }: DashboardHo
     const walletsToInclude = new Set(wallets.filter(w => w.includeInTotal).map(w => w.id))
 
     const totalExpenses = transactions
-        .filter(t => walletsToInclude.has(t.walletId) && t.amount < 0 && t.isVisible)
+        .filter(t => walletsToInclude.has(t.walletId) && t.amount < 0 && t.isVisible && t.type !== 'TRANSFERENCIA')
         .reduce((sum, t) => sum + Math.abs(t.amount), 0)
 
     const totalIncome = transactions
-        .filter(t => walletsToInclude.has(t.walletId) && t.amount > 0 && t.isVisible)
+        .filter(t => walletsToInclude.has(t.walletId) && t.amount > 0 && t.isVisible && t.type !== 'TRANSFERENCIA')
         .reduce((sum, t) => sum + t.amount, 0)
 
     return (

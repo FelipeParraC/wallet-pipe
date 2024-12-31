@@ -54,7 +54,7 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
             description: values.description,
             date: date,
             categoryId: categories ? categories.find( c => c.name === values.categoryId )?.id || '10' : '10',
-            newAmount: transaction.type === 'INGRESO' ? parseFloat(values.amount) : -parseFloat(values.amount),
+            newAmount: transaction.type === 'INGRESO' ? Math.abs(parseFloat(values.amount)) : -Math.abs(parseFloat(values.amount)),
             numberOfTrips: parseInt(values.numberOfTrips || '0'),
             walletId: transaction.walletId,
             type: transaction.type,
@@ -76,11 +76,11 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
         } else {
             const updateTransferData: UpdateTransactionInput = {
                 ...updateData,
-                newAmount: -updateData.newAmount,
+                amount: -Math.abs( transaction.amount ),
+                newAmount: -Math.abs(parseFloat(values.amount)),
                 fromWalletId: transaction.fromWalletId,
                 toWalletId: transaction.toWalletId,
             }
-            console.log({ updateTransferData })
             await setTransactionById( updateTransferData, transaction.id )
         }
 

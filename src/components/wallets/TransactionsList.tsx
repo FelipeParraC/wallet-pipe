@@ -93,7 +93,7 @@ export const TransactionsList = ({ transactions, categories, walletId, wallets }
                                                 </span>
                                             </p>
                                             <CurrencyDisplay
-                                                amount={ transaction.amount }
+                                                amount={ Math.abs(transaction.amount) }
                                                 showDecimals={ true }
                                                 className={`font-bold ${transaction.fromWalletId === walletId ? 'text-yellow-400' : 'text-blue-400'} mb-2`}
                                             />

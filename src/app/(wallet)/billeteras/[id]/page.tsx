@@ -16,6 +16,8 @@ export default async function BilleteraPage({ params }: Props) {
     }
 
     const transactions = await getTransactionsByWalletId( walletId )
+    const balanceEvolutionChartTransactions = transactions?.map( t => t.toWalletId === walletId ? { ...t, amount: Math.abs(t.amount) } : t ) || null
+    const dailyExpensesChartTransactions = transactions?.filter( t => t.type !== 'TRANSFERENCIA' ) || null
     const categories = await getCategories()
 
     return (
@@ -31,9 +33,9 @@ export default async function BilleteraPage({ params }: Props) {
 
             {wallet.type !== 'Transporte' ? (
                 <>
-                    <BalanceEvolutionChart transactions={ transactions } color={ wallet.color } walletId={ wallet.id } />
+                    <BalanceEvolutionChart transactions={ balanceEvolutionChartTransactions } color={ wallet.color } walletId={ wallet.id } />
 
-                    <DailyExpensesChart transactions={ transactions } />
+                    <DailyExpensesChart transactions={ dailyExpensesChartTransactions } />
                 </>
             ) : (
                 <>

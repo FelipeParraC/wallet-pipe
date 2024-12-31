@@ -117,7 +117,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                 title: values.title,
                 description: values.description,
                 date: date,
-                amount: -parseFloat(values.amount),
+                amount: -Math.abs(parseFloat(values.amount)),
                 categoryId: '11',
                 fromWalletId: values.fromWallet,
                 toWalletId: values.toWallet,
