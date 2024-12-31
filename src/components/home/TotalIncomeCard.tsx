@@ -15,7 +15,8 @@ export const TotalIncomeCard = ({ totalIncome }: TotalIncomeCardProps) => {
     const [expenses, setExpenses] = useState(0)
 
     useEffect(() => {
-        totalIncome ? setExpenses(totalIncome) : 0
+        const ingresosTotales = totalIncome ? totalIncome : 0
+        setExpenses(ingresosTotales)
     }, [totalIncome])
 
     return (

@@ -15,7 +15,8 @@ export const TotalAvailableCard = ({ totalBalance }: TotalAvailableCardProps) =>
     const [balance, setBalance] = useState(0)
 
     useEffect(() => {
-        totalBalance ? setBalance(totalBalance) : 0
+        const balanceTotal = totalBalance ? totalBalance : 0
+        setBalance(balanceTotal)
     }, [totalBalance])
 
     return (

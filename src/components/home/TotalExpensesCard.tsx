@@ -15,7 +15,8 @@ export const TotalExpensesCard = ({ totalExpenses }: TotalExpensesCardProps) => 
     const [expenses, setExpenses] = useState(0)
 
     useEffect(() => {
-        totalExpenses ? setExpenses(totalExpenses) : 0
+        const gastosTotales = totalExpenses ? totalExpenses : 0
+        setExpenses(gastosTotales)
     }, [totalExpenses])
 
     return (

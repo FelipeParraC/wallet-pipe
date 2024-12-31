@@ -16,7 +16,8 @@ export const WalletItem = ({ wallet }: WalletItemProps) => {
     const [walletBalance, setWalletBalance] = useState(0)
 
     useEffect(() => {
-        wallet ? setWalletBalance( wallet.balance ) : 0
+        const saldoBilletera = wallet ? wallet.balance : 0
+        setWalletBalance( saldoBilletera )
     }, [ wallet ])
 
     return (
