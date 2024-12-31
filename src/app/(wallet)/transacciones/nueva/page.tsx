@@ -2,7 +2,6 @@ import { getCategories, getWallets } from '@/actions'
 import { CreateTransactionForm } from '@/components'
 
 interface Props {
-    params: any
     searchParams: {
         walletId?: string
     }
@@ -12,6 +11,11 @@ export default async function NuevaTransaccionPage({ searchParams }: Props) {
 
     const walletId = searchParams.walletId
     const wallets = await getWallets()
+
+    if ( !wallets ) {
+        return <></>
+    }
+
     const wallet = wallets.find((wallet) => wallet.id === walletId)
     const categories = await getCategories()
 

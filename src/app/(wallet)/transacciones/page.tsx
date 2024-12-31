@@ -1,11 +1,11 @@
 
-import type { Transaction } from '@/interfaces'
 import { NewTransactionFloatingButton, TransactionsGrid } from '@/components'
-import { getTransactions } from '@/actions'
+import { getCategories, getTransactions } from '@/actions'
 
 export default async function TransaccionesPage() {
 
-    const transactions = await getTransactions() as Transaction[]
+    const transactions = await getTransactions()
+    const categories = await getCategories()
 
     return (
         <div className='space-y-6'>
@@ -13,7 +13,7 @@ export default async function TransaccionesPage() {
                 <h1 className='text-2xl font-bold md:text-3xl'>Todas las Transacciones</h1>
             </div>
 
-            <TransactionsGrid transactions={ transactions } />
+            <TransactionsGrid transactions={ transactions } categories={ categories } />
 
             <NewTransactionFloatingButton walletId='' />
         </div>

@@ -1,5 +1,3 @@
-import type { Transaction } from './transaction.interface'
-
 export type WalletType = 'Efectivo' | 'Cuenta Bancaria' | 'Ahorros' | 'Transporte'
 
 export interface Wallet {
@@ -11,10 +9,6 @@ export interface Wallet {
     color: string
     includeInTotal: boolean
     fareValue?: number
-    isActive: boolean
-    transactions: Transaction[]
-    createdAt: string
-    updatedAt: string
 }
 
 export interface CreateWalletInput {

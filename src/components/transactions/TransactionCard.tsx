@@ -1,20 +1,34 @@
+'use client'
+
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import type { Transaction } from "@/interfaces"
+import type { Category, Transaction } from "@/interfaces"
 import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 import { CurrencyDisplay } from '../CurrencyDisplay'
 import { TransactionActions } from './TransactionActions'
 import { getAmountColor } from '@/utils'
+import { useRouter } from 'next/navigation'
 
 
 interface TransactionCardProps {
     transaction: Transaction
-    onEdit: (transaction: Transaction, e: React.MouseEvent) => void
-    onDelete: (id: string, e: React.MouseEvent) => void
+    categories: Category[]
     onClick: () => void
 }
 
-export const TransactionCard = ({ transaction, onEdit, onDelete, onClick }: TransactionCardProps) => {
+export const TransactionCard = ({ transaction, categories, onClick }: TransactionCardProps) => {
+
+    const router = useRouter()
+
+    const onEdit = () => {
+        router.push(`/transacciones/editar/${ transaction.id }`)
+    }
+
+    const onDelete = ( id: string ) => {
+        console.log({ id })
+        //TODO: Ya veremos qué se hace
+    }
+
     return (
         <Card
             className="hover:shadow-lg transition-shadow cursor-pointer"
@@ -31,28 +45,22 @@ export const TransactionCard = ({ transaction, onEdit, onDelete, onClick }: Tran
                     <CurrencyDisplay
                         amount={Math.abs(transaction.amount)}
                         showDecimals={true}
-                        className={`text-lg font-bold ${transaction.category === 'Transferencia' ? 'text-blue-400' : getAmountColor(transaction.amount)}`}
+                        className={`text-lg font-bold ${transaction.type === 'TRANSFERENCIA' ? 'text-blue-400' : getAmountColor(transaction.amount)}`}
                     />
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="card-content">
-                    <p className="text-sm text-muted-foreground mb-1">{transaction.category}</p>
-                    <p className="text-sm text-muted-foreground mb-1">{transaction.description}</p>
+                    <p className="text-sm text-muted-foreground mb-1">{ categories.find( c => c.id === transaction.categoryId )?.name }</p>
+                    <p className="text-sm text-muted-foreground mb-1">{ transaction.description }</p>
                     <p className="text-sm text-muted-foreground mb-2">
                         {format(parseISO(transaction.date), "d 'de' MMMM, yyyy", { locale: es })}
                     </p>
                 </div>
                 <div className="flex justify-end mt-2">
                     <TransactionActions
-                        onEdit={(e) => {
-                            e.stopPropagation()
-                            onEdit(transaction, e)
-                        }}
-                        onDelete={(e) => {
-                            e.stopPropagation()
-                            onDelete(transaction.id, e)
-                        }}
+                        onEdit={ onEdit }
+                        onDelete={() => { onDelete( transaction.id ) }}
                     />
                 </div>
             </CardContent>

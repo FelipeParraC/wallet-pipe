@@ -1,29 +1,31 @@
 export type TransactionType = 'INGRESO' | 'GASTO' | 'TRANSPORTE' | 'TRANSFERENCIA'
 
-export interface BaseTransaction {
+export interface Transaction {
     id: string
     userId: string
     type: TransactionType
-    wallet: string
+    walletId: string
     title: string
     description: string
     date: string
-    category: string
+    categoryId: string
     amount: number
     isVisible: boolean
+    fareValue?: number
+    numberOfTrips?: number
+    fromWalletId?: string
+    toWalletId?: string
 }
 
-export interface TransportTransaction extends BaseTransaction {
+export interface TransportTransaction extends Transaction {
     fareValue: number
     numberOfTrips: number
 }
 
-export interface TransferTransaction extends BaseTransaction {
+export interface TransferTransaction extends Transaction {
     fromWallet: string
     toWallet: string
 }
-
-export type Transaction = BaseTransaction | TransportTransaction | TransferTransaction
 
 export function isTransportTransaction(transaction: Transaction): transaction is TransportTransaction {
     return 'fareValue' in transaction && 'numberOfTrips' in transaction
@@ -33,7 +35,7 @@ export function isTransferTransaction(transaction: Transaction): transaction is 
     return 'fromWallet' in transaction && 'toWallet' in transaction
 }
 
-export function isStandardTransaction(transaction: Transaction): transaction is BaseTransaction {
+export function isStandardTransaction(transaction: Transaction): transaction is Transaction {
     return !isTransportTransaction(transaction) && !isTransferTransaction(transaction)
 }
 
@@ -42,7 +44,7 @@ export interface CreateTransactionInput {
     type: TransactionType
     title: string
     description: string
-    date: Date
+    date: string
     categoryId: string
     amount: number
     fareValue?: number
@@ -52,13 +54,16 @@ export interface CreateTransactionInput {
 }
 
 export interface UpdateTransactionInput {
-    title?: string
-    description?: string
-    date?: Date
-    categoryId?: string
-    amount: number
-    newAumount?: number
+    title: string
+    description: string
+    date: string
+    categoryId: string
+    newAmount: number
     numberOfTrips?: number
+    fareValue?: number
+    walletId: string
+    type: TransactionType
+    amount: number
     fromWalletId?: string
     toWalletId?: string
 }

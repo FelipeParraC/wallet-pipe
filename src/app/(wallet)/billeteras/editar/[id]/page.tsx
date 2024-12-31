@@ -1,5 +1,5 @@
-import { getWalletById } from '@/actions';
-import { EditWalletForm } from '@/components';
+import { getWalletById } from '@/actions'
+import { EditWalletForm } from '@/components'
 
 interface Props {
     params: { id: string }

@@ -26,11 +26,9 @@ model Wallet {
   name           String
   balance        Float
   type           WalletType
-  icon           String
+  fareValue      Float?
   color          String
   includeInTotal Boolean
-  fareValue      Float?
-  isActive       Boolean       @default(true)
   transactions   Transaction[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -40,20 +38,20 @@ model Transaction {
   id            String    @id @default(cuid())
   userId        String
   user          User      @relation(fields: [userId], references: [id])
+  type          TransactionType
   walletId      String
   wallet        Wallet    @relation(fields: [walletId], references: [id])
-  type          TransactionType
   title         String
   description   String
   date          DateTime
   categoryId    String
   category      Category   @relation(fields: [categoryId], references: [id])
   amount        Float
+  isVisible     Boolean   @default(true)
   fareValue     Float?
   numberOfTrips Int?
   fromWalletId  String?
   toWalletId    String?
-  isVisible     Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

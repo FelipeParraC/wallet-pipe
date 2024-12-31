@@ -1,6 +1,6 @@
-import Link from "next/link"
-import { PieChart, Receipt, Settings, Wallet } from "lucide-react"
-import { Button, Card, CardContent, CardHeader, CardTitle } from "../ui"
+import Link from 'next/link'
+import { PieChart, Receipt, Settings, Wallet } from 'lucide-react'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '../ui'
 
 const quickLinks = [
     { name: 'Transacciones', href: '/transacciones', icon: Receipt },

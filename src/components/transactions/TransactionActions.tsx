@@ -3,14 +3,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 
 interface TransactionActionsProps {
-    onEdit: (e: React.MouseEvent) => void
-    onDelete: (e: React.MouseEvent) => void
+    onEdit: () => void
+    onDelete: () => void
 }
 
 export const TransactionActions = ({ onEdit, onDelete }: TransactionActionsProps) => {
     return (
         <div className="flex space-x-2">
-            <Button variant="outline" size="icon" onClick={onEdit}>
+            <Button variant="outline" size="icon" onClick={ onEdit }>
                 <Pencil className="h-4 w-4" />
             </Button>
             <AlertDialog>
@@ -28,7 +28,7 @@ export const TransactionActions = ({ onEdit, onDelete }: TransactionActionsProps
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
                         <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={onDelete} className="w-full sm:w-auto">Eliminar</AlertDialogAction>
+                        <AlertDialogAction onClick={ onDelete } className="w-full sm:w-auto">Eliminar</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

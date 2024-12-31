@@ -3,13 +3,13 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import type { CreateWalletInput, WalletType } from '@/interfaces'
+import type { WalletType } from '@/interfaces'
 import { Coins, CreditCard, WalletIcon, Bus } from 'lucide-react'
+import { Button, Checkbox, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui'
+import { createWallet } from '@/actions'
 
 //TODO: Cambiar currentUser por el usuario actual
 import { currentUser } from '@/seed/data'
-import { createWallet } from '@/actions'
-import { Button, Checkbox, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui'
 
 const suggestedColors = [
     '#3b82f6',
@@ -46,17 +46,6 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-const onSubmit = (walletData: Partial<CreateWalletInput>) => {
-    try {
-        const createdWallet = createWallet(walletData as CreateWalletInput)
-        console.log('Billetera creada:', createdWallet)
-        alert('¡Billetera creada con éxito!')
-    } catch (error) {
-        console.log(error)
-        alert('Ocurrió un error al crear la billetera. Por favor, inténtalo de nuevo.')
-    }
-}
-
 export const CreateWalletForm = () => {
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
@@ -68,7 +57,7 @@ export const CreateWalletForm = () => {
 
     const watchType = form.watch('type')
 
-    function handleSubmit(values: z.infer<typeof formSchema>) {
+    const handleSubmit = async (values: z.infer<typeof formSchema>) => {
         const selectedType = walletTypes.find((t) => t.value === values.type)
     
         if (!selectedType) {
@@ -81,7 +70,7 @@ export const CreateWalletForm = () => {
                 ? parseFloat(values.fareValue)
                 : undefined
     
-        onSubmit({
+        const walletData = {
             userId: currentUser.id,
             name: values.name,
             balance: parseFloat(values.balance),
@@ -89,7 +78,10 @@ export const CreateWalletForm = () => {
             color: values.color,
             includeInTotal: values.includeInTotal,
             fareValue,
-        })
+        }
+
+        const resp = await createWallet( walletData )
+        console.log({ resp })
     }
     
     

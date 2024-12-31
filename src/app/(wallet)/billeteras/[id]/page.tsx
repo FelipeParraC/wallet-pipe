@@ -1,4 +1,4 @@
-import { getTransactionsByWalletId, getWalletById, getWallets } from '@/actions'
+import { getCategories, getTransactionsByWalletId, getWalletById, getWallets } from '@/actions'
 import { BackButton, BalanceEvolutionChart, DailyExpensesChart, EditWalletButton, NewTransactionFloatingButton, TransactionsList, TripsAvailable, WalletInfo } from '@/components'
 
 interface Props {
@@ -16,6 +16,7 @@ export default async function BilleteraPage({ params }: Props) {
     }
 
     const transactions = await getTransactionsByWalletId( walletId )
+    const categories = await getCategories()
 
     return (
         <div className='space-y-6'>
@@ -40,7 +41,7 @@ export default async function BilleteraPage({ params }: Props) {
                 </>
             )}
 
-            <TransactionsList transactions={ transactions } walletId={ wallet.id } wallets={ walllets } />
+            <TransactionsList transactions={ transactions } walletId={ wallet.id } wallets={ walllets } categories={ categories } />
             
             <NewTransactionFloatingButton walletId={ walletId } />
         </div>

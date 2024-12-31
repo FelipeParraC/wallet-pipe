@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import type { UpdateWalletInput, Wallet } from '@/interfaces'
 import { Form, FormField, FormItem, FormLabel, FormControl, Input, FormDescription, FormMessage, Checkbox, Button } from '@/components/ui'
+import { setWalletById } from '@/actions'
 
 const formSchema = z.object({
     name: z.string().min(1, 'El nombre es requerido'),
@@ -33,19 +34,17 @@ export const EditWalletForm = ({ wallet }: EditWalletFormProps) => {
         },
     })
 
-    const watchType = wallet.type // Mantener el tipo original, ya que no se permite cambiar el tipo
+    const watchType = wallet.type
 
-    const handleUpdate = (values: FormData) => {
+    const handleUpdate = async (values: FormData) => {
         const updatedData: UpdateWalletInput = {
             name: values.name,
             color: values.color,
             includeInTotal: values.includeInTotal,
             fareValue: values.fareValue ? parseFloat(values.fareValue) : undefined,
         }
-
-        console.log('Actualizando billetera con datos:', updatedData)
-        alert('Billetera actualizada con éxito')
-        // Aquí puedes llamar una acción para actualizar la billetera en tu backend
+        const resp = await setWalletById( updatedData, wallet.id )
+        console.log({ resp })
     }
 
     return (

@@ -5,6 +5,10 @@ export default async function BilleterasPage() {
 
     const wallets = await getWallets()
 
+    if ( !wallets ) {
+        return <></>
+    }
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold md:text-3xl">Mis Billeteras</h1>

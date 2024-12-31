@@ -6,30 +6,33 @@ import * as z from 'zod'
 import { format, parseISO } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
 import { Form, FormField, FormItem, FormLabel, FormControl, Input, FormMessage, FormDescription, Textarea, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Popover, PopoverTrigger, PopoverContent, Calendar } from '@/components/ui'
-import type { Transaction, UpdateTransactionInput, Wallet } from '@/interfaces'
+import type { Category, Transaction, UpdateTransactionInput } from '@/interfaces'
 import { isTransportTransaction, isTransferTransaction } from '@/interfaces'
+import { setTransactionById } from '@/actions'
+import { useRouter } from 'next/navigation'
 
 const editTransactionSchema = z.object({
     title: z.string().min(1, 'El título es requerido'),
     description: z.string().max(100, 'La descripción no debe exceder 100 caracteres'),
     date: z.date({ required_error: 'La fecha es requerida' }),
     time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido'),
-    amount: z.number().min(0, 'El monto debe ser mayor o igual a 0'),
+    amount: z.string().min(0, 'El monto debe ser mayor o igual a 0'),
     categoryId: z.string().optional(),
-    numberOfTrips: z.number().optional(),
-    fromWalletId: z.string().optional(),
-    toWalletId: z.string().optional(),
+    numberOfTrips: z.string().optional(),
 })
 
 type EditTransactionFormData = z.infer<typeof editTransactionSchema>
 
 interface EditTransactionFormProps {
     transaction: Transaction
-    wallets: Wallet[]
-    categories: string[]
+    categories: Category[] | null
+    walletId: string
 }
 
-export const EditTransactionForm = ({ transaction, categories, wallets }: EditTransactionFormProps) => {
+export const EditTransactionForm = ({ transaction, categories, walletId }: EditTransactionFormProps) => {
+
+    const router = useRouter()
+
     const form = useForm<EditTransactionFormData>({
         resolver: zodResolver(editTransactionSchema),
         defaultValues: {
@@ -37,32 +40,51 @@ export const EditTransactionForm = ({ transaction, categories, wallets }: EditTr
             description: transaction.description,
             date: parseISO(transaction.date),
             time: format(parseISO(transaction.date), 'HH:mm'),
-            amount: Math.abs(transaction.amount),
-            categoryId: transaction.category,
-            numberOfTrips: isTransportTransaction(transaction) ? transaction.numberOfTrips : undefined,
-            fromWalletId: isTransferTransaction(transaction) ? transaction.fromWallet : undefined,
-            toWalletId: isTransferTransaction(transaction) ? transaction.toWallet : undefined,
+            amount: Math.abs(transaction.amount).toString(),
+            categoryId: categories ? categories.find( c => c.id === transaction.categoryId )?.name || 'Otros' : 'Otros',
+            numberOfTrips: isTransportTransaction(transaction) ? transaction.numberOfTrips.toString() : undefined,
         },
     })
 
-    const onSubmit = (values: EditTransactionFormData) => {
-        const combinedDateTime = new Date(values.date)
-        const [hours, minutes] = values.time.split(':')
-        combinedDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10))
+    const onSubmit = async (values: EditTransactionFormData) => {
+        const date = format(new Date(values.date), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
 
         const updateData: UpdateTransactionInput = {
             title: values.title,
             description: values.description,
-            date: combinedDateTime,
-            amount: values.amount,
-            categoryId: values.categoryId,
-            numberOfTrips: values.numberOfTrips,
-            fromWalletId: values.fromWalletId,
-            toWalletId: values.toWalletId,
+            date: date,
+            categoryId: categories ? categories.find( c => c.name === values.categoryId )?.id || '10' : '10',
+            newAmount: transaction.type === 'INGRESO' ? parseFloat(values.amount) : -parseFloat(values.amount),
+            numberOfTrips: parseInt(values.numberOfTrips || '0'),
+            walletId: transaction.walletId,
+            type: transaction.type,
+            amount: transaction.amount,
         }
 
-        console.log('Updating transaction with data:', updateData)
-        //TODO: Call API or handle update logic here
+        if ( transaction.type !== 'TRANSFERENCIA' ) {
+            if ( transaction.fareValue && values.numberOfTrips ) {
+                const updateTransportData: UpdateTransactionInput = {
+                    ...updateData,
+                    fareValue: transaction.fareValue,
+                    newAmount: -transaction.fareValue * parseInt(values.numberOfTrips)
+                }
+                console.log({ updateTransportData })
+                await setTransactionById( updateTransportData, transaction.id )
+            } else {
+                await setTransactionById( updateData, transaction.id )
+            }
+        } else {
+            const updateTransferData: UpdateTransactionInput = {
+                ...updateData,
+                newAmount: -updateData.newAmount,
+                fromWalletId: transaction.fromWalletId,
+                toWalletId: transaction.toWalletId,
+            }
+            console.log({ updateTransferData })
+            await setTransactionById( updateTransferData, transaction.id )
+        }
+
+        router.push( walletId ? `/billeteras/${ transaction.walletId }` : '/transacciones' )
     }
 
     return (
@@ -135,69 +157,17 @@ export const EditTransactionForm = ({ transaction, categories, wallets }: EditTr
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {categories.map((category) => (
-                                            <SelectItem key={category} value={category}>
-                                                {category}
+                                        {categories ? categories.map((category) => (
+                                            <SelectItem key={ category.id } value={ category.name }>
+                                                { category.name }
                                             </SelectItem>
-                                        ))}
+                                        )) : <></>}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
-                )}
-                {isTransferTransaction(transaction) && (
-                    <>
-                        <FormField
-                            control={form.control}
-                            name="fromWalletId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Billetera de Origen</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger className="h-14">
-                                                <SelectValue placeholder="Selecciona una billetera" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {wallets.map((wallet) => (
-                                                <SelectItem key={wallet.id} value={wallet.id}>
-                                                    {wallet.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="toWalletId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Billetera de Destino</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger className="h-14">
-                                                <SelectValue placeholder="Selecciona una billetera" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {wallets.filter(w => w.id !== form.watch('fromWalletId')).map((wallet) => (
-                                                <SelectItem key={wallet.id} value={wallet.id}>
-                                                    {wallet.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </>
                 )}
                 <FormField
                     control={form.control}

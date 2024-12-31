@@ -1,11 +1,7 @@
-import type { Transaction } from './transaction.interface'
-
 export interface Category {
     id: string
     name: string
     color: string
-    createdAt: Date
-    updatedAt: Date
 }
 
 export interface CreateCategoryInput {

@@ -13,6 +13,7 @@ Este proyecto se hace para llevar registro de las finanzas personales.
 1. Instalar las dependencias ```npm install```
 1. Levantar la base de datos ```docker compose up -d```
 1. Correr las migraciones de Prisma ```npx prisma migrate dev```
+1. Ejecutar seed ```npm run seed```
 1. Correr el proyecto ```npm run dev```
 
 

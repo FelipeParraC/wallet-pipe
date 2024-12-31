@@ -1,13 +1,9 @@
-import type { Transaction } from './transaction.interface'
-import type { Wallet } from './wallet.interface'
 
 export interface User {
     id: string
     name: string
     nickname: string
     email: string
-    wallets: Wallet[]
-    transactions: Transaction[]
     createdAt: string
     updatedAt: string
 }
@@ -22,6 +18,5 @@ export interface CreateUserInput {
 export interface UpdateUserInput {
     name?: string
     nickname?: string
-    email?: string
     password?: string
 }

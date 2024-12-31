@@ -7,7 +7,7 @@ import { isTransferTransaction } from '@/interfaces'
 import type { Transaction } from '@/interfaces'
 
 interface WalletChartProps {
-    transactions: Transaction[]
+    transactions: Transaction[] | null
     color: string
     walletId: string
 }
@@ -49,66 +49,69 @@ export const WalletChart = ({ transactions, color, walletId }: WalletChartProps)
                 lineType: 2,
             })
 
-            const data = transactions
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                .reduce((acc, transaction) => {
-                    const lastBalance = acc.length > 0 ? acc[acc.length - 1].value : 0
-                    const transactionAmount = isTransferTransaction(transaction) && transaction.fromWallet === walletId
-                        ? -transaction.amount
-                        : transaction.amount
-                    const newBalance = lastBalance + transactionAmount
-                    const existingEntry = acc.find(entry => entry.time === format(new Date(transaction.date), 'yyyy-MM-dd'))
+            if ( transactions ) {
 
-                    if (existingEntry) {
-                        existingEntry.value = newBalance
-                    } else {
-                        acc.push({ time: format(new Date(transaction.date), 'yyyy-MM-dd'), value: newBalance })
-                    }
+                const data = transactions
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .reduce((acc, transaction) => {
+                        const lastBalance = acc.length > 0 ? acc[acc.length - 1].value : 0
+                        const transactionAmount = isTransferTransaction(transaction) && transaction.fromWallet === walletId
+                            ? -transaction.amount
+                            : transaction.amount
+                        const newBalance = lastBalance + transactionAmount
+                        const existingEntry = acc.find(entry => entry.time === format(new Date(transaction.date), 'yyyy-MM-dd'))
 
-                    return acc
-                }, [] as { time: string; value: number }[])
+                        if (existingEntry) {
+                            existingEntry.value = newBalance
+                        } else {
+                            acc.push({ time: format(new Date(transaction.date), 'yyyy-MM-dd'), value: newBalance })
+                        }
 
-            // Asegurarse de que los datos estén ordenados por tiempo
-            data.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+                        return acc
+                    }, [] as { time: string; value: number }[])
 
-            areaSeries.setData(data)
+                // Asegurarse de que los datos estén ordenados por tiempo
+                data.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
 
-            newChart.timeScale().fitContent()
+                areaSeries.setData(data)
 
-            newChart.applyOptions({
-                leftPriceScale: {
-                    visible: true,
-                    borderVisible: false,
-                },
-                rightPriceScale: {
-                    visible: true,
-                    borderVisible: false,
-                },
-                timeScale: {
-                    borderVisible: false,
-                    fixLeftEdge: true,
-                    fixRightEdge: true,
-                    visible: true,
-                },
-                grid: {
-                    vertLines: { visible: false },
-                    horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                },
-            })
+                newChart.timeScale().fitContent()
 
-            const handleResize = () => {
                 newChart.applyOptions({
-                    width: chartContainerRef.current!.clientWidth,
-                    height: Math.max(300, window.innerHeight * 0.4),
+                    leftPriceScale: {
+                        visible: true,
+                        borderVisible: false,
+                    },
+                    rightPriceScale: {
+                        visible: true,
+                        borderVisible: false,
+                    },
+                    timeScale: {
+                        borderVisible: false,
+                        fixLeftEdge: true,
+                        fixRightEdge: true,
+                        visible: true,
+                    },
+                    grid: {
+                        vertLines: { visible: false },
+                        horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                    },
                 })
-            }
 
-            window.addEventListener('resize', handleResize)
-            handleResize()
+                const handleResize = () => {
+                    newChart.applyOptions({
+                        width: chartContainerRef.current!.clientWidth,
+                        height: Math.max(300, window.innerHeight * 0.4),
+                    })
+                }
 
-            return () => {
-                window.removeEventListener('resize', handleResize)
-                newChart.remove()
+                window.addEventListener('resize', handleResize)
+                handleResize()
+
+                return () => {
+                    window.removeEventListener('resize', handleResize)
+                    newChart.remove()
+                }
             }
         }
     }, [transactions, color, walletId])

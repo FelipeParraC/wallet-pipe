@@ -2,20 +2,25 @@
 
 import { useState } from 'react'
 import { TransactionDatePicker } from './TransactionDatePicker'
-import type { Transaction } from '@/interfaces'
+import type { Category, Transaction } from '@/interfaces'
 import { format, parseISO } from 'date-fns'
 import { TransactionList } from './TransactionList'
 import { TransactionDetailsModal } from './TransactionDetailsModal'
 
 interface TransactionsGridProps {
-    transactions: Transaction[]
+    transactions: Transaction[] | null
+    categories: Category[] | null
 }
 
 
-export const TransactionsGrid = ({ transactions }: TransactionsGridProps) => {
+export const TransactionsGrid = ({ transactions, categories }: TransactionsGridProps) => {
 
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+
+    if ( !transactions || !categories ) {
+        return <></>
+    }
 
     const filteredTransactions = selectedDate
         ? transactions.filter(t => format(parseISO(t.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
@@ -32,6 +37,7 @@ export const TransactionsGrid = ({ transactions }: TransactionsGridProps) => {
             ) : (
                 <TransactionList
                     transactions={ filteredTransactions }
+                    categories={ categories }
                     onSelect={ setSelectedTransaction }
                 />
             )}
@@ -40,6 +46,7 @@ export const TransactionsGrid = ({ transactions }: TransactionsGridProps) => {
                 isOpen={ !!selectedTransaction }
                 onClose={() => setSelectedTransaction(null)}
                 transaction={ selectedTransaction }
+                categories={ categories }
             />
         </>
     )

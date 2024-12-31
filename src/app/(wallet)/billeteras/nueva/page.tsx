@@ -1,6 +1,7 @@
+
 import { CreateWalletForm } from '@/components'
 
-export default function NuevaBilleteraPage() {
+export default async function NuevaBilleteraPage() {
 
     return (
         <div className='max-w-md mx-auto text-center'>

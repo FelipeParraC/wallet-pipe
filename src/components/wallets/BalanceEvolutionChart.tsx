@@ -5,7 +5,7 @@ import { WalletChart } from '../WalletChart'
 interface BalanceEvolutionChartProps {
     walletId: string
     color: string
-    transactions: Transaction[]
+    transactions: Transaction[] | null
 }
 
 

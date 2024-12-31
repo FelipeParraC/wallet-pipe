@@ -1,16 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
-import type { Transaction, Wallet } from '@/interfaces'
+import type { Category, Transaction, Wallet } from '@/interfaces'
 import { QuickAccessCard, RecentTransactionItem, TotalAvailableCard, TotalExpensesCard, TotalIncomeCard, WalletItem } from '@/components'
 
 //TODO: Remove seed data
 import { currentUser } from '@/seed'
 
 interface DashboardHomeProps {
-    transactions: Transaction[]
-    wallets: Wallet[]
+    transactions: Transaction[] | null
+    categories: Category[] | null
+    wallets: Wallet[] | null
 }
 
-export const DashboardHome = ({ transactions, wallets }: DashboardHomeProps) => {
+export const DashboardHome = ({ transactions, categories, wallets }: DashboardHomeProps) => {
+
+    if ( !transactions || !categories || !wallets ) {
+        return <></>
+    }
 
     const recentTransactions = transactions.slice(0, 3)
 
@@ -21,11 +26,11 @@ export const DashboardHome = ({ transactions, wallets }: DashboardHomeProps) => 
     const walletsToInclude = new Set(wallets.filter(w => w.includeInTotal).map(w => w.id))
 
     const totalExpenses = transactions
-        .filter(t => walletsToInclude.has(t.wallet) && t.amount < 0 && t.isVisible)
+        .filter(t => walletsToInclude.has(t.walletId) && t.amount < 0 && t.isVisible)
         .reduce((sum, t) => sum + Math.abs(t.amount), 0)
 
     const totalIncome = transactions
-        .filter(t => walletsToInclude.has(t.wallet) && t.amount > 0 && t.isVisible)
+        .filter(t => walletsToInclude.has(t.walletId) && t.amount > 0 && t.isVisible)
         .reduce((sum, t) => sum + t.amount, 0)
 
     return (
@@ -66,7 +71,7 @@ export const DashboardHome = ({ transactions, wallets }: DashboardHomeProps) => 
                                 <p className='text-center text-muted-foreground'>No hay transacciones recientes</p>
                             )}
                             {recentTransactions.map((transaction, index) => transaction.isVisible && (
-                                <RecentTransactionItem key={ index } transaction={ transaction } />
+                                <RecentTransactionItem key={ index } transaction={ transaction } categories={ categories } />
                             ))}
                         </div>
                     </CardContent>

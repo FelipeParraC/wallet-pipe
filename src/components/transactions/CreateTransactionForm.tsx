@@ -6,8 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { format } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
-import type { CreateTransactionInput, Wallet } from '@/interfaces'
+import type { Category, CreateTransactionInput, Wallet } from '@/interfaces'
 import { Button, Calendar, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '../ui'
+import { createTransaction } from '@/actions'
+import { useRouter } from 'next/navigation'
 
 const standardFormSchema = z.object({
     type: z.enum(['INGRESO', 'GASTO']),
@@ -57,11 +59,14 @@ type FormData = z.infer<typeof formSchema>
 
 interface CreateTransactionFormProps {
     wallets: Wallet[]
-    categories: string[]
+    categories: Category[] | null
     wallet?: Wallet
 }
 
 export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTransactionFormProps) => {
+
+    const router = useRouter()
+
     const [selectedWalletType, setSelectedWalletType] = useState<string>('')
 
     const form = useForm<FormData>({
@@ -80,7 +85,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
     useEffect(() => {
         const selectedWallet = wallets.find(w => w.id === watchWallet)
         setSelectedWalletType(selectedWallet?.type || '')
-    }, [watchWallet])
+    }, [watchWallet, wallets])
 
     useEffect(() => {
         if (selectedWalletType === 'Transporte' && watchType !== 'TRANSFERENCIA') {
@@ -90,54 +95,49 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
         }
     }, [selectedWalletType, watchType, form])
 
-    const onSubmit = (data: CreateTransactionInput) => {
-        console.log({ data })
-    }
-
-    const handleSubmit = (values: FormData) => {
-        const combinedDateTime = new Date(values.date)
-        const [hours, minutes] = values.time.split(':')
-        combinedDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10))
-
+    const handleSubmit = async (values: FormData) => {
+        const date = format(new Date(values.date), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
         if (values.type === 'TRANSPORTE') {
-            const fareValue = wallet?.fareValue || 0
+            const fareValue = wallets.find(w => w.id === values.wallet)?.fareValue || 0
             const submissionData: CreateTransactionInput = {
                 type: values.type,
                 title: values.title,
                 description: values.description,
-                date: combinedDateTime,
+                date: date,
                 fareValue: fareValue,
                 numberOfTrips: parseInt(values.numberOfTrips),
-                categoryId: 'Transporte',
+                categoryId: '02',
                 walletId: values.wallet,
                 amount: -(fareValue * parseInt(values.numberOfTrips))
             }
-            onSubmit(submissionData)
+            await createTransaction( submissionData )
         } else if (values.type === 'TRANSFERENCIA') {
             const submissionData: CreateTransactionInput = {
                 type: values.type,
                 title: values.title,
                 description: values.description,
-                date: combinedDateTime,
+                date: date,
                 amount: -parseFloat(values.amount),
-                categoryId: 'Transferencia',
+                categoryId: '11',
                 fromWalletId: values.fromWallet,
                 toWalletId: values.toWallet,
                 walletId: values.fromWallet
             }
-            onSubmit(submissionData)
-        } else {
+            await createTransaction(submissionData)
+        } else if ( categories ) {
             const submissionData: CreateTransactionInput = {
                 type: values.type,
                 title: values.title,
                 description: values.description,
-                date: combinedDateTime,
+                date: date,
                 amount: parseFloat(values.amount) * (values.type === 'GASTO' ? -1 : 1),
-                categoryId: values.category,
+                categoryId: categories.find( c => c.name === values.category )?.id || '10',
                 walletId: values.wallet
             }
-            onSubmit(submissionData)
+            await createTransaction(submissionData)
         }
+
+        router.push( wallet ? `/billeteras/${ wallet.id }` : '/transacciones' )
     }
 
     return (
@@ -218,7 +218,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                 <FormControl>
                                     <Input
                                         type='number'
-                                        placeholder='1'
+                                        placeholder='0'
                                         {...field}
                                         className='text-3xl h-16 text-center font-bold'
                                     />
@@ -313,11 +313,11 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {categories.map((category) => (
-                                            <SelectItem key={category} value={category}>
-                                                {category}
+                                        {categories ? categories.map((category) => (
+                                            <SelectItem key={ category.id } value={ category.name }>
+                                                { category.name }
                                             </SelectItem>
-                                        ))}
+                                        )) : <></>}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
