@@ -1,3 +1,5 @@
+'use client'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import type { Category, Transaction, Wallet } from '@/interfaces'
 import { QuickAccessCard, RecentTransactionItem, TotalAvailableCard, TotalExpensesCard, TotalIncomeCard, WalletItem } from '@/components'

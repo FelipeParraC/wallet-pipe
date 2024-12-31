@@ -1,6 +1,9 @@
+'use client'
+
 import { TrendingDown } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 import { CurrencyDisplay } from '../CurrencyDisplay'
+import { useEffect, useState } from 'react'
 
 interface TotalExpensesCardProps {
     totalExpenses: number
@@ -8,6 +11,13 @@ interface TotalExpensesCardProps {
 
 
 export const TotalExpensesCard = ({ totalExpenses }: TotalExpensesCardProps) => {
+
+    const [expenses, setExpenses] = useState(0)
+
+    useEffect(() => {
+        totalExpenses ? setExpenses(totalExpenses) : 0
+    }, [totalExpenses])
+
     return (
         <Card className='bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg'>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
@@ -18,7 +28,7 @@ export const TotalExpensesCard = ({ totalExpenses }: TotalExpensesCardProps) => 
             </CardHeader>
             <CardContent>
                 <CurrencyDisplay
-                    amount={ totalExpenses }
+                    amount={ expenses }
                     showDecimals={ true }
                     className='text-lg font-bold md:text-2xl'
                 />
