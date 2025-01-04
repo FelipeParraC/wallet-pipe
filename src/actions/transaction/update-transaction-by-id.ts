@@ -4,7 +4,7 @@ import { UpdateTransactionInput } from '@/interfaces'
 import prisma from '@/lib/prisma'
 import { mapToUpdatePrismaTransaction } from '@/utils'
 
-export const setTransactionById = async (data: UpdateTransactionInput, id: string) => {
+export const updateTransactionById = async (data: UpdateTransactionInput, id: string) => {
 
     //TODO: Cambiarlo a NextAuth
     const userId = '1'

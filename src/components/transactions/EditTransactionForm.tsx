@@ -8,7 +8,7 @@ import { CalendarIcon, Clock } from 'lucide-react'
 import { Form, FormField, FormItem, FormLabel, FormControl, Input, FormMessage, FormDescription, Textarea, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Popover, PopoverTrigger, PopoverContent, Calendar } from '@/components/ui'
 import type { Category, Transaction, UpdateTransactionInput } from '@/interfaces'
 import { isTransportTransaction, isTransferTransaction } from '@/interfaces'
-import { setTransactionById } from '@/actions'
+import { updateTransactionById } from '@/actions'
 import { useRouter } from 'next/navigation'
 
 const editTransactionSchema = z.object({
@@ -69,9 +69,9 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
                     newAmount: -transaction.fareValue * parseInt(values.numberOfTrips)
                 }
                 console.log({ updateTransportData })
-                await setTransactionById( updateTransportData, transaction.id )
+                await updateTransactionById( updateTransportData, transaction.id )
             } else {
-                await setTransactionById( updateData, transaction.id )
+                await updateTransactionById( updateData, transaction.id )
             }
         } else {
             const updateTransferData: UpdateTransactionInput = {
@@ -81,7 +81,7 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
                 fromWalletId: transaction.fromWalletId,
                 toWalletId: transaction.toWalletId,
             }
-            await setTransactionById( updateTransferData, transaction.id )
+            await updateTransactionById( updateTransferData, transaction.id )
         }
 
         router.push( walletId ? `/billeteras/${ transaction.walletId }` : '/transacciones' )
