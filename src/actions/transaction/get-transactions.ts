@@ -10,16 +10,18 @@ export const getTransactions = async () => {
 
     try {
         
-        const transactions = await prisma.transaction.findMany({
+        const prismaTransactions = await prisma.transaction.findMany({
             where: { userId: userId },
             orderBy: {
                 date: 'desc'
             }
-        })
+        }) 
 
-        if ( !transactions ) return null
+        if ( !prismaTransactions ) return null
 
-        return transactions.map( t => mapToTransaction({ ...t, date: Number( t.date ) }))
+        const transactions = prismaTransactions.map( t => mapToTransaction({ ...t, date: Number( t.date ) }))
+        
+        return transactions
 
     } catch ( error ) {
         console.log( error )

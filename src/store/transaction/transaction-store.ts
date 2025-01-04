@@ -4,7 +4,6 @@ import { create } from 'zustand'
 
 
 interface TransactionState {
-
     transactions: Transaction[]
 
     setTransactions: (transactions: Transaction[]) => void
@@ -16,7 +15,7 @@ interface TransactionState {
 export const useTransactionStore = create<TransactionState>((set) => ({
 
     transactions: [],
-    
+
     setTransactions: (transactions) => set({ transactions }),
     addTransaction: (transaction) =>
         set((state) => ({ transactions: [...state.transactions, transaction] })),

@@ -5,6 +5,7 @@ import { DashboardHome, NewTransactionFloatingButton } from '@/components'
 export default async function HomePage() {
 
     const transactions = await getTransactions()
+    
     const categories = await getCategories()
     const wallets = await getWallets()
 
