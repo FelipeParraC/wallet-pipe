@@ -1,3 +1,6 @@
+export const revalidate = 0
+
+
 import { getWallets } from '@/actions'
 import { NewWallet, WalletCard, WalletsTotalBalance } from '@/components'
 

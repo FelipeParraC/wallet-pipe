@@ -1,3 +1,4 @@
+export const revalidate = 0
 
 import { NewTransactionFloatingButton, TransactionsGrid } from '@/components'
 import { getCategories, getTransactions } from '@/actions'
