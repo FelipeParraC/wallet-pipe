@@ -4,6 +4,7 @@ export * from './category/get-categories'
 
 
 export * from './transaction/create-transaction'
+export * from './transaction/delete-transaction-by-id'
 export * from './transaction/get-transaction-by-id'
 export * from './transaction/get-transactions-by-wallet-id'
 export * from './transaction/get-transactions'

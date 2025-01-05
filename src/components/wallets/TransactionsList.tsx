@@ -9,6 +9,7 @@ import { TransactionDatePicker } from '../transactions/TransactionDatePicker'
 import { TransactionActions } from '../transactions/TransactionActions'
 import { CurrencyDisplay } from '../CurrencyDisplay'
 import { useRouter } from 'next/navigation'
+import { deleteTransactionById } from '@/actions'
 
 interface TransactionsListProps {
     transactions: Transaction[] | null
@@ -34,11 +35,12 @@ export const TransactionsList = ({ transactions, categories, walletId, wallets }
 
     const handleEdit = (transaction: Transaction) => {
         router.push(`/transacciones/editar/${ transaction.id }?walletId=${ walletId }`)
+        router.refresh()
     }
 
-    const handleDelete = (id: string) => {
-        console.log({ id })
-        // TODO: Revisar esto
+    const handleDelete = async (id: string) => {
+        await deleteTransactionById( id )
+        router.refresh()
     }
 
     return (

@@ -1,3 +1,6 @@
+export const revalidate = 0
+
+
 import { getCategories, getTransactionById } from '@/actions'
 import { EditTransactionForm } from '@/components'
 import type { Transaction } from '@/interfaces'

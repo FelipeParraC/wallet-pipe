@@ -8,6 +8,7 @@ import { CurrencyDisplay } from '../CurrencyDisplay'
 import { TransactionActions } from './TransactionActions'
 import { getAmountColor } from '@/utils'
 import { useRouter } from 'next/navigation'
+import { deleteTransactionById } from '@/actions'
 
 
 interface TransactionCardProps {
@@ -22,11 +23,12 @@ export const TransactionCard = ({ transaction, categories, onClick }: Transactio
 
     const onEdit = () => {
         router.push(`/transacciones/editar/${ transaction.id }`)
+        router.refresh()
     }
 
-    const onDelete = ( id: string ) => {
-        console.log({ id })
-        //TODO: Ya veremos qué se hace
+    const onDelete = async ( id: string ) => {
+        await deleteTransactionById( id )
+        router.refresh()
     }
 
     return (

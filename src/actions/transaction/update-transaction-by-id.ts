@@ -43,8 +43,6 @@ export const updateTransactionById = async (data: UpdateTransactionInput, id: st
                 const fromWalletModified = { ...fromWalletDB, balance: fromWalletDB.balance + data.amount - data.newAmount }
                 const toWalletModified = { ...toWalletDB, balance: toWalletDB.balance + data.newAmount - data.amount }
 
-                console.log({ fromWalletModified, toWalletModified })
-
                 if ( fromWalletModified.balance < 0 ) {
                     throw new Error('La billetera de origen no tiene dinero suficiente')
                 }
