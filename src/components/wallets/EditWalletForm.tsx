@@ -5,7 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import type { UpdateWalletInput, Wallet } from '@/interfaces'
 import { Form, FormField, FormItem, FormLabel, FormControl, Input, FormDescription, FormMessage, Checkbox, Button } from '@/components/ui'
-import { setWalletById } from '@/actions'
+import { updateWalletById } from '@/actions'
+import { useRouter } from 'next/navigation'
+
+const suggestedColors = [
+    '#3b82f6',
+    '#22c55e',
+    '#ef4444',
+    '#f97316',
+    '#a855f7',
+    '#4b5563',
+]
 
 const formSchema = z.object({
     name: z.string().min(1, 'El nombre es requerido'),
@@ -24,6 +34,9 @@ interface EditWalletFormProps {
 }
 
 export const EditWalletForm = ({ wallet }: EditWalletFormProps) => {
+
+    const router = useRouter()
+
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -43,8 +56,9 @@ export const EditWalletForm = ({ wallet }: EditWalletFormProps) => {
             includeInTotal: values.includeInTotal,
             fareValue: values.fareValue ? parseFloat(values.fareValue) : undefined,
         }
-        const resp = await setWalletById( updatedData, wallet.id )
-        console.log({ resp })
+        await updateWalletById(updatedData, wallet.id)
+
+        router.push(`/billeteras/${wallet.id}`)
     }
 
     return (
@@ -96,6 +110,17 @@ export const EditWalletForm = ({ wallet }: EditWalletFormProps) => {
                             <FormDescription>
                                 Selecciona un color para identificar tu billetera
                             </FormDescription>
+                            <div className='flex flex-wrap gap-2 mt-2'>
+                                {suggestedColors.map((color) => (
+                                    <button
+                                        key={color}
+                                        type='button'
+                                        className='w-8 h-8 rounded-full border border-gray-300'
+                                        style={{ backgroundColor: color }}
+                                        onClick={() => form.setValue('color', color)}
+                                    />
+                                ))}
+                            </div>
                             <FormMessage />
                         </FormItem>
                     )}

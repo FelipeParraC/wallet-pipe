@@ -9,6 +9,7 @@ export interface Wallet {
     color: string
     includeInTotal: boolean
     fareValue?: number
+    isActive: boolean
 }
 
 export interface CreateWalletInput {

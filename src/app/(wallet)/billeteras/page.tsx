@@ -19,7 +19,7 @@ export default async function BilleterasPage() {
             <WalletsTotalBalance wallets={ wallets } />
 
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {wallets.map(( wallet ) => (
+                {wallets.map(( wallet ) => wallet.isActive && (
                     <WalletCard wallet={ wallet } key={ wallet.id } />
                 ))}
 

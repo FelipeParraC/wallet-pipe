@@ -30,6 +30,7 @@ export interface PrismaWallet {
     fareValue: number | null
     color: string
     includeInTotal: boolean
+    isActive: boolean
     createdAt: Date
     updatedAt: Date
 }

@@ -10,6 +10,7 @@ import { createWallet } from '@/actions'
 
 //TODO: Cambiar currentUser por el usuario actual
 import { currentUser } from '@/seed/data'
+import { useRouter } from 'next/navigation'
 
 const suggestedColors = [
     '#3b82f6',
@@ -47,6 +48,9 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 export const CreateWalletForm = () => {
+
+    const router = useRouter()
+
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -80,8 +84,9 @@ export const CreateWalletForm = () => {
             fareValue,
         }
 
-        const resp = await createWallet( walletData )
-        console.log({ resp })
+        await createWallet( walletData )
+        router.push('/billeteras')
+        router.refresh()
     }
     
     

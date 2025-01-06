@@ -29,6 +29,7 @@ export * from './transactions/TransactionsGrid'
 
 export * from './wallets/BalanceEvolutionChart'
 export * from './wallets/DailyExpensesChart'
+export * from './wallets/DeleteWalletButton'
 export * from './wallets/EditWalletButton'
 export * from './wallets/EditWalletForm'
 export * from './wallets/NewWallet'

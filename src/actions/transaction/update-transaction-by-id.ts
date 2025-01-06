@@ -18,6 +18,12 @@ export const updateTransactionById = async (data: UpdateTransactionInput, id: st
 
     await prisma.$transaction( async(tx) => {
 
+        const transactionToUpdate = await tx.transaction.findFirst({ where: { id } })
+
+        if ( !transactionToUpdate ) {
+            throw new Error(`No se encontró la transacción con ID ${ id }`)
+        }
+
         // 1. Actualizar el saldo de la billetera
 
         if ( Math.abs(data.amount) !== Math.abs(data.newAmount) ) {

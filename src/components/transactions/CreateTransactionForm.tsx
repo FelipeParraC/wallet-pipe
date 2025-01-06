@@ -138,6 +138,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
         }
 
         router.push( wallet ? `/billeteras/${ wallet.id }` : '/transacciones' )
+        router.refresh()
     }
 
     return (

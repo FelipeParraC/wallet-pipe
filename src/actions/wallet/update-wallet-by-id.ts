@@ -1,9 +1,10 @@
 'use server'
 
-import type { UpdateWalletInput } from '@/interfaces'
+import { UpdateWalletInput } from '@/interfaces'
+import prisma from '@/lib/prisma'
+import { mapToUpdatePrismaWallet } from '@/utils'
 
-
-export const setWalletById = async (data: UpdateWalletInput, id: string) => {
+export const updateWalletById = async (data: UpdateWalletInput, id: string) => {
 
     //TODO: Cambiarlo a NextAuth
     const userId = '1'
@@ -15,6 +16,23 @@ export const setWalletById = async (data: UpdateWalletInput, id: string) => {
         }
     }
 
-    console.log({ data, id })
+    await prisma.$transaction( async(tx) => {
 
+        const walletToUpdate = await tx.wallet.findFirst({ where: { id } })
+
+        if ( !walletToUpdate ) {
+            throw new Error(`No se encontró la billetera con ID ${ id }`)
+        }
+
+        const wallet = mapToUpdatePrismaWallet( data )
+
+        await tx.wallet.update({
+            where: { id: id },
+            data: wallet,
+        })
+
+        return {
+            wallet
+        }
+    })
 }

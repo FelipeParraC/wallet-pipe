@@ -10,7 +10,12 @@ export const getWallets = async () => {
 
     try {
         
-        const wallets = await prisma.wallet.findMany({ where: { userId: userId } })
+        const wallets = await prisma.wallet.findMany({
+            where: { userId },
+            orderBy: {
+                createdAt: 'asc'
+            }
+        })
 
         if ( !wallets ) return null
 

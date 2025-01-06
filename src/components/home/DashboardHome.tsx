@@ -17,7 +17,7 @@ export const DashboardHome = ({ transactions, categories, wallets }: DashboardHo
         return <></>
     }
 
-    const recentTransactions = transactions.slice(0, 3)
+    const recentTransactions = transactions.filter( t => t.isVisible ).slice(0, 3)
 
     const totalBalance = wallets
         .filter(wallet => wallet.includeInTotal)
@@ -54,7 +54,7 @@ export const DashboardHome = ({ transactions, categories, wallets }: DashboardHo
                     <CardTitle>Mis Billeteras</CardTitle>
                 </CardHeader>
                 <CardContent className='grid gap-4 grid-cols-2 sm:grid-cols-4'>
-                    {wallets.map((wallet) => (
+                    {wallets.map((wallet) => wallet.isActive && (
                         <WalletItem key={ wallet.id } wallet={ wallet } />
                     ))}
                 </CardContent>
@@ -70,7 +70,7 @@ export const DashboardHome = ({ transactions, categories, wallets }: DashboardHo
                             {recentTransactions.filter((transaction) => transaction.isVisible).length === 0 && (
                                 <p className='text-center text-muted-foreground'>No hay transacciones recientes</p>
                             )}
-                            {recentTransactions.map((transaction, index) => transaction.isVisible && (
+                            {recentTransactions.map((transaction, index) => (
                                 <RecentTransactionItem key={ index } transaction={ transaction } categories={ categories } />
                             ))}
                         </div>

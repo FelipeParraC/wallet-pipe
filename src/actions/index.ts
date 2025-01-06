@@ -11,6 +11,7 @@ export * from './transaction/get-transactions'
 export * from './transaction/update-transaction-by-id'
 
 export * from './wallet/create-wallet'
+export * from './wallet/delete-wallet-by-id'
 export * from './wallet/get-wallet-by-id'
 export * from './wallet/get-wallets'
 export * from './wallet/update-wallet-by-id'

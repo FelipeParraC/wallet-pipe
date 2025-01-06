@@ -34,7 +34,12 @@ export const deleteTransactionById = async (id: string) => {
             const walletModified = { ...walletDB, balance: walletDB.balance - transactionToDelete.amount }
 
             await tx.wallet.update({ where: { id: walletModified.id }, data: walletModified })
+
+            // 3. Eliminar la transacción
+            await tx.transaction.delete({ where: { id } })
+
         } else if ( transactionToDelete.fromWalletId && transactionToDelete.toWalletId ) {
+
             const fromWalletDB = await tx.wallet.findFirst({ where: { id: transactionToDelete.fromWalletId } })
             const toWalletDB = await tx.wallet.findFirst({ where: { id: transactionToDelete.toWalletId } })
 
@@ -51,11 +56,21 @@ export const deleteTransactionById = async (id: string) => {
 
             await tx.wallet.update({ where: { id: fromWalletModified.id }, data: fromWalletModified })
             await tx.wallet.update({ where: { id: toWalletModified.id }, data: toWalletModified })
+
+            // 3. Eliminar la transacción
+            await tx.transaction.delete({ where: { id } })
+
+            // 4. Comprobar si se puede eliminar la billetera no activa
+            const fromWalletTransferTransaction = await tx.transaction.findFirst({ where: { OR: [ { fromWalletId: fromWalletModified.id }, { toWalletId: fromWalletModified.id } ], NOT: { id } } })
+            if ( !fromWalletTransferTransaction && !fromWalletModified.isActive ) {
+                await tx.wallet.delete({ where: { id: fromWalletModified.id } })
+            }
+
+            const toWalletTransferTransaction = await tx.transaction.findFirst({ where: { OR: [ { fromWalletId: toWalletModified.id }, { toWalletId: toWalletModified.id } ], NOT: { id } } })
+            if ( !toWalletTransferTransaction && !toWalletModified.isActive ) {
+                await tx.wallet.delete({ where: { id: toWalletModified.id } })
+            }
         }
-
-
-        // 3. Eliminar la transacción
-        await tx.transaction.delete({ where: { id } })
         
     })
 }

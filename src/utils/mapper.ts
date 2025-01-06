@@ -1,4 +1,4 @@
-import { Category, CreateTransactionInput, PrismaCategory, PrismaTransaction, PrismaWallet, PrismaWalletType, Transaction, TransactionType, UpdateTransactionInput, Wallet, WalletType } from '@/interfaces'
+import { Category, CreateTransactionInput, CreateWalletInput, PrismaCategory, PrismaTransaction, PrismaWallet, PrismaWalletType, Transaction, TransactionType, UpdateTransactionInput, UpdateWalletInput, Wallet, WalletType } from '@/interfaces'
 import { WalletType as PWalletType, TransactionType as PrismaTransactionType } from '@prisma/client'
 import { format } from 'date-fns'
 
@@ -113,6 +113,7 @@ export const mapToWallet = (data: PrismaWallet): Wallet => {
         type: mapToWalletType( data.type ),
         color: data.color,
         includeInTotal: data.includeInTotal,
+        isActive: data.isActive
     }
 
     if ( data.fareValue ) {
@@ -131,4 +132,40 @@ export const mapToCategory = (data: PrismaCategory): Category => {
         name: data.name,
         color: data.color
     }
+}
+
+export const mapToUpdatePrismaWallet = (data: UpdateWalletInput) => {
+
+    const updateData = {
+        name: data.name,
+        color: data.color,
+        includeInTotal: data.includeInTotal
+    }
+    
+    if ( !data.fareValue ) return updateData
+    
+    return {
+        ...updateData,
+        fareValue: data.fareValue
+    }
+}
+
+export const mapToCreatePrismaWallet = (data: CreateWalletInput, userId: string) => {
+
+    const walletData = {
+        userId: userId,
+        name: data.name,
+        balance: data.balance,
+        type: mapToPrismaWalletType( data.type ),
+        color: data.color,
+        includeInTotal: data.includeInTotal
+    }
+
+    if ( !data.fareValue ) return walletData
+
+    return {
+        ...walletData,
+        fareValue: data.fareValue
+    }
+
 }
