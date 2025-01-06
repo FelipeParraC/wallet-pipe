@@ -2,7 +2,6 @@
 
 import { auth } from '@/auth.config'
 import prisma from '@/lib/prisma'
-import { categories } from '@/seed'
 import { mapToCategory } from '@/utils'
 
 

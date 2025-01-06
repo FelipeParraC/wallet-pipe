@@ -181,8 +181,6 @@ export const initialTransactions: Transaction[] = [
     },
 ]
 
-const baseDate = format(new Date('2024-12-22T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
-
 export const wallets: Wallet[] = [
     {
         id: '1',
