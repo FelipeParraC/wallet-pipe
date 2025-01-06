@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
-import { Alert, AlertDescription, AlertTitle, Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
+import { Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
 import Link from 'next/link'
+import { useFormState, useFormStatus } from 'react-dom'
+import { authenticate } from '@/actions'
+import { useEffect } from 'react'
 
 const formSchema = z.object({
     email: z.string().email({
@@ -17,9 +18,16 @@ const formSchema = z.object({
     }),
 })
 
-export function LoginForm() {
-    const router = useRouter()
-    const [error, setError] = useState<string | null>(null)
+export const LoginForm = () => {
+
+    const [state, dispatch] = useFormState(authenticate, undefined)
+
+    useEffect(() => {
+        if ( state === 'Success' ) {
+            window.location.replace('/')
+        }
+    }, [ state ])
+    
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -29,26 +37,14 @@ export function LoginForm() {
         },
     })
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        setError(null)
-        try {
-            // Aquí iría la lógica de autenticación
-            console.log(values)
-            // Si la autenticación es exitosa, redirigir al dashboard
-            router.push('/dashboard')
-        } catch (error) {
-            setError('Error al iniciar sesión. Por favor, verifica tus credenciales.')
-        }
-    }
-
     return (
         <Card className='w-full max-w-md mx-auto'>
             <CardHeader className='space-y-1'>
-                <CardTitle className='text-2xl text-center'>Iniciar Sesión</CardTitle>
+                <CardTitle className='text-2xl text-center'>Ingresar</CardTitle>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+                    <form action={ dispatch } className='space-y-4'>
                         <FormField
                             control={form.control}
                             name='email'
@@ -56,7 +52,7 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input placeholder='tu@email.com' {...field} />
+                                        <Input autoFocus placeholder='tu@email.com' {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -75,15 +71,12 @@ export function LoginForm() {
                                 </FormItem>
                             )}
                         />
-                        {error && (
+                        {state === 'Invalid credentials.' && (
                             <Alert variant='destructive'>
-                                <AlertTitle>Error</AlertTitle>
-                                <AlertDescription>{error}</AlertDescription>
+                                <AlertDescription>Las credenciales no son correctas</AlertDescription>
                             </Alert>
                         )}
-                        <Button type='submit' className='w-full'>
-                            Iniciar sesión
-                        </Button>
+                        <LoginButton />
                         <div className='text-center text-sm'>
                             ¿No tienes una cuenta?{' '}
                             <Link href='/auth/register' className='text-primary hover:underline'>
@@ -94,5 +87,19 @@ export function LoginForm() {
                 </Form>
             </CardContent>
         </Card>
+    )
+}
+
+const LoginButton = () => {
+    const { pending } = useFormStatus()
+
+    return (
+        <Button
+            type='submit'
+            className='w-full text-white transition-all'
+            disabled={ pending }
+        >
+            Ingresar
+        </Button>
     )
 }

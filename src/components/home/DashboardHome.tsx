@@ -35,10 +35,6 @@ export const DashboardHome = ({ transactions, categories, wallets }: DashboardHo
 
     return (
         <div className='space-y-6'>
-            <h1 className='text-2xl font-bold md:text-3xl text-center'>
-                {currentUser ? `Bienvenido, ${ currentUser.name }` : 'Bienvenido a Wallet Pipe'}
-            </h1>
-
             <div className='grid gap-4 grid-cols-2 md:grid-cols-4'>
                 
                 <TotalAvailableCard totalBalance={ totalBalance } />

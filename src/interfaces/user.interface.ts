@@ -4,8 +4,15 @@ export interface User {
     name: string
     nickname: string
     email: string
-    createdAt: string
-    updatedAt: string
+    emailVerified?: Date
+}
+
+export interface AuthUser {
+    id: string
+    name: string
+    nickname: string
+    email: string
+    emailVerified: Date
 }
 
 export interface CreateUserInput {

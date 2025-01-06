@@ -241,9 +241,7 @@ export const currentUser: User = {
     id: '1',
     name: 'Felipe',
     nickname: 'Pipe',
-    email: 'felipe@correo.com',
-    createdAt: baseDate,
-    updatedAt: baseDate
+    email: 'felipe@correo.com'
 }
 
 export const categories: Category[] = [

@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Wallet, Receipt, PieChart, Settings, LogOut, Menu } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui'
-import { currentUser } from '@/seed/data'
+import { logout } from '@/actions'
+import { useSession } from 'next-auth/react'
+import { User } from '@/interfaces'
 
 const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -16,12 +18,28 @@ const navItems = [
 ]
 
 export const Navbar = () => {
+
+    const [user, setUser] = useState<User | null>(null)
+
+    const { data: session } = useSession()
+
+    useEffect(() => {
+        const user = session?.user || null
+        setUser( user )
+    }, [session])
+        
     const pathname = usePathname()
     const [isOpen, setIsOpen] = useState(false)
 
     const closeMenu = () => setIsOpen(false)
 
-    const appName = currentUser ? `Wallet ${currentUser.nickname}` : 'Wallet Pipe'
+    const onClickLogout = async () => {
+        closeMenu()
+        await logout()
+        window.location.replace('/auth/login')
+    }
+
+    const appName = user ? `Wallet ${ user.nickname }` : 'Wallet'
 
     return (
         <nav className='bg-transparent text-gray-800 dark:text-white'>
@@ -55,16 +73,16 @@ export const Navbar = () => {
                                 <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
                                     <Avatar className='h-8 w-8'>
                                         <AvatarImage src='' alt='@usuario' />
-                                        <AvatarFallback>{currentUser?.name[0] || 'U'}</AvatarFallback>
+                                        <AvatarFallback>{user?.name[0] || 'U'}</AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className='w-56' align='end' forceMount>
                                 <DropdownMenuLabel className='font-normal'>
                                     <div className='flex flex-col space-y-1'>
-                                        <p className='text-sm font-medium leading-none'>{currentUser?.name || 'Usuario'}</p>
+                                        <p className='text-sm font-medium leading-none'>{user?.name || 'Usuario'}</p>
                                         <p className='text-xs leading-none text-muted-foreground'>
-                                            {currentUser?.email || 'usuario@example.com'}
+                                            {user?.email || 'usuario@example.com'}
                                         </p>
                                     </div>
                                 </DropdownMenuLabel>
@@ -73,7 +91,7 @@ export const Navbar = () => {
                                     <Settings className='mr-2 h-4 w-4' />
                                     <span>Configuración</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={ onClickLogout }>
                                     <LogOut className='mr-2 h-4 w-4' />
                                     <span>Cerrar sesión</span>
                                 </DropdownMenuItem>
@@ -114,9 +132,9 @@ export const Navbar = () => {
                                             <Button variant='ghost' className='w-full justify-start text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200'>
                                                 <Avatar className='h-8 w-8 mr-2'>
                                                     <AvatarImage src='' alt='@usuario' />
-                                                    <AvatarFallback>{currentUser?.name[0] || 'U'}</AvatarFallback>
+                                                    <AvatarFallback>{user?.name[0] || 'U'}</AvatarFallback>
                                                 </Avatar>
-                                                <span>{currentUser?.name || 'Usuario'}</span>
+                                                <span>{user?.name || 'Usuario'}</span>
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent>
@@ -124,7 +142,7 @@ export const Navbar = () => {
                                                 <Settings className='mr-2 h-4 w-4' />
                                                 <span>Configuración</span>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={closeMenu}>
+                                            <DropdownMenuItem onClick={ onClickLogout }>
                                                 <LogOut className='mr-2 h-4 w-4' />
                                                 <span>Cerrar sesión</span>
                                             </DropdownMenuItem>

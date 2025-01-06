@@ -1,20 +1,22 @@
 'use server'
 
+import { auth } from '@/auth.config'
 import type { CreateWalletInput } from '@/interfaces'
 import prisma from '@/lib/prisma'
 import { mapToCreatePrismaWallet, mapToPrismaTransactionType } from '@/utils'
 
 export const createWallet = async (data: CreateWalletInput) => {
 
-    //TODO: Cambiarlo a NextAuth
-    const userId = '1'
+    const session = await auth()
 
-    if ( !userId ) {
+    if ( !session ) {
         return {
             ok: false,
             message: 'No hay sesión de usuario'
         }
     }
+
+    const userId = session.user.id
 
     await prisma.$transaction( async(tx) => {
 

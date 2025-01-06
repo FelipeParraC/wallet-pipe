@@ -1,13 +1,13 @@
 'use server'
 
+import { auth } from '@/auth.config'
 import prisma from '@/lib/prisma'
 
 export const deleteTransactionById = async (id: string) => {
 
-    //TODO: Cambiarlo a NextAuth
-    const userId = '1'
-
-    if ( !userId ) {
+    const session = await auth()
+        
+    if ( !session ) {
         return {
             ok: false,
             message: 'No hay sesión de usuario'
@@ -21,6 +21,10 @@ export const deleteTransactionById = async (id: string) => {
 
         if ( !transactionToDelete ) {
             throw new Error(`No se encontró la transacción con el ID ${ id }`)
+        }
+
+        if ( transactionToDelete.userId !== session.user.id ) {
+            throw new Error('El usuario no es propietario de la transacción')
         }
 
         // 2. Actualizar el saldo de la billetera

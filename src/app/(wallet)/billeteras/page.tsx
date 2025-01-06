@@ -6,7 +6,8 @@ import { NewWallet, WalletCard, WalletsTotalBalance } from '@/components'
 
 export default async function BilleterasPage() {
 
-    const wallets = await getWallets()
+    const respWallets = await getWallets()
+    const wallets = respWallets.ok ? respWallets.wallets : []
 
     if ( !wallets ) {
         return <></>

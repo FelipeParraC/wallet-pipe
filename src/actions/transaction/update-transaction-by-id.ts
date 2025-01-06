@@ -1,15 +1,15 @@
 'use server'
 
+import { auth } from '@/auth.config'
 import { UpdateTransactionInput } from '@/interfaces'
 import prisma from '@/lib/prisma'
 import { mapToUpdatePrismaTransaction } from '@/utils'
 
 export const updateTransactionById = async (data: UpdateTransactionInput, id: string) => {
 
-    //TODO: Cambiarlo a NextAuth
-    const userId = '1'
-
-    if ( !userId ) {
+    const session = await auth()
+                
+    if ( !session ) {
         return {
             ok: false,
             message: 'No hay sesión de usuario'
@@ -22,6 +22,10 @@ export const updateTransactionById = async (data: UpdateTransactionInput, id: st
 
         if ( !transactionToUpdate ) {
             throw new Error(`No se encontró la transacción con ID ${ id }`)
+        }
+
+        if ( transactionToUpdate.userId !== session.user.id ) {
+            throw new Error('El usuario no es propietario de la transacción')
         }
 
         // 1. Actualizar el saldo de la billetera

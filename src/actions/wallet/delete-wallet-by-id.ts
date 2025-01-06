@@ -1,13 +1,13 @@
 'use server'
 
+import { auth } from '@/auth.config'
 import prisma from '@/lib/prisma'
 
 export const deleteWalletById = async (id: string) => {
 
-    //TODO: Cambiarlo a NextAuth
-    const userId = '1'
-
-    if (!userId) {
+    const session = await auth()
+    
+    if ( !session ) {
         return {
             ok: false,
             message: 'No hay sesión de usuario'
@@ -21,6 +21,10 @@ export const deleteWalletById = async (id: string) => {
 
         if (!walletToDelete) {
             throw new Error(`No se encontró la billetera con el ID ${id}`)
+        }
+
+        if ( walletToDelete.userId !== session.user.id ) {
+            throw new Error('El usuario no es propietario de la billetera')
         }
 
         // 2. Comprobar si había transferencias

@@ -3,6 +3,7 @@ export const revalidate = 0
 
 import { getWalletById } from '@/actions'
 import { DeleteWalletButton, EditWalletForm } from '@/components'
+import { redirect } from 'next/navigation'
 
 interface Props {
     params: { id: string }
@@ -12,10 +13,20 @@ interface Props {
 export default async function EditarBilleteraPage({ params }: Props) {
 
     const walletId = params.id
-    const wallet = await getWalletById(walletId)
+    const respWallet = await getWalletById( walletId )
+    
+    if ( !respWallet.ok ) {
+        redirect('/billeteras')
+    }
 
+    const wallet = respWallet.wallet
+    
     if (!wallet) {
         return <div>Cargando...</div>
+    }
+
+    if ( !wallet.isActive ) {
+        redirect('/billeteras')
     }
 
     return (

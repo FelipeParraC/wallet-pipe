@@ -4,6 +4,7 @@ export * from './CurrencyDisplay'
 export * from './DailyTransactionsChart'
 export * from './Navbar'
 export * from './NewTransactionFloatingButton'
+export * from './Provider'
 export * from './SafeCurrencyDisplay'
 export * from './WalletChart'
 

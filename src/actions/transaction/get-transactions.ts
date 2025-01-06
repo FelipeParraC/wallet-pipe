@@ -1,30 +1,42 @@
 'use server'
 
+import { auth } from '@/auth.config'
 import prisma from '@/lib/prisma'
 import { mapToTransaction } from '@/utils'
 
 export const getTransactions = async () => {
 
-    //TODO: Cambiarlo a NextAuth
-    const userId = '1'
+    const session = await auth()
+
+    if (!session) {
+        return {
+            ok: false,
+            message: 'No hay sesión de usuario',
+            transactions: null
+        }
+    }
 
     try {
-        
+
         const prismaTransactions = await prisma.transaction.findMany({
-            where: { userId: userId },
+            where: { userId: session.user.id },
             orderBy: {
                 date: 'desc'
             }
-        }) 
+        })
 
-        if ( !prismaTransactions ) return null
+        if (!prismaTransactions) return { ok: false, message: 'No se encontraron transacciones', transactions: null }
 
-        const transactions = prismaTransactions.map( t => mapToTransaction({ ...t, date: Number( t.date ) }))
-        
-        return transactions
+        const transactions = prismaTransactions.map(t => mapToTransaction({ ...t, date: Number(t.date) }))
 
-    } catch ( error ) {
-        console.log( error )
+        return {
+            ok: true,
+            message: '',
+            transactions
+        }
+
+    } catch (error) {
+        console.log(error)
         throw new Error('Error al obtener las transacciones por id de usuario')
     }
 

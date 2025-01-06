@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
-import { Alert, AlertDescription, AlertTitle, Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
+import { Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
+import { login, register } from '@/actions'
 
 const formSchema = z.object({
     name: z.string().min(2, {
@@ -28,7 +28,6 @@ const formSchema = z.object({
 })
 
 export function RegisterForm() {
-    const router = useRouter()
     const [error, setError] = useState<string | null>(null)
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -44,14 +43,18 @@ export function RegisterForm() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setError(null)
-        try {
-            // Aquí iría la lógica de registro
-            console.log(values)
-            // Si el registro es exitoso, redirigir al dashboard
-            router.push('/dashboard')
-        } catch (error) {
-            setError('Error al registrar. Por favor, inténtalo de nuevo.')
+
+        const { name, nickname, email, password } = values
+        const resp = await register({ name, nickname, email, password })
+
+        // Si el registro falla
+        if ( !resp.ok ) {
+            setError( resp.message )
+            return
         }
+
+        await login( email.toLowerCase(), password )
+        window.location.replace('/')
     }
 
     return (
@@ -69,7 +72,7 @@ export function RegisterForm() {
                                 <FormItem>
                                     <FormLabel>Nombre</FormLabel>
                                     <FormControl>
-                                        <Input placeholder='Tu nombre' {...field} />
+                                        <Input autoFocus placeholder='Tu nombre' {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -129,7 +132,6 @@ export function RegisterForm() {
                         />
                         {error && (
                             <Alert variant='destructive'>
-                                <AlertTitle>Error</AlertTitle>
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}

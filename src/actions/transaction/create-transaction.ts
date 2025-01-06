@@ -1,15 +1,15 @@
 'use server'
 
+import { auth } from '@/auth.config'
 import { CreateTransactionInput } from '@/interfaces'
 import prisma from '@/lib/prisma'
 import { mapToCreatePrismaTransaction } from '@/utils'
 
 export const createTransaction = async ( data: CreateTransactionInput ) => {
 
-    //TODO: Cambiarlo a NextAuth
-    const userId = '1'
-
-    if ( !userId ) {
+    const session = await auth()
+                
+    if ( !session ) {
         return {
             ok: false,
             message: 'No hay sesión de usuario'
@@ -51,7 +51,7 @@ export const createTransaction = async ( data: CreateTransactionInput ) => {
 
         // 2. Crear la transacción
 
-        const transaction = mapToCreatePrismaTransaction( data, userId )
+        const transaction = mapToCreatePrismaTransaction( data, session.user.id )
         await tx.transaction.create({
             data: transaction
         })

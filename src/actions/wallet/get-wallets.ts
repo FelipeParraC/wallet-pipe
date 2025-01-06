@@ -1,29 +1,43 @@
 'use server'
 
+import { auth } from '@/auth.config'
 import prisma from '@/lib/prisma'
 import { mapToWallet } from '@/utils'
 
 export const getWallets = async () => {
 
-    //TODO: Cambiarlo a NextAuth
-    const userId = '1'
+    const session = await auth()
+            
+    if ( !session ) {
+        return {
+            ok: false,
+            message: 'No hay sesión de usuario',
+            wallets: null
+        }
+    }
 
     try {
         
-        const wallets = await prisma.wallet.findMany({
-            where: { userId },
+        const prismaWallets = await prisma.wallet.findMany({
+            where: { userId: session.user.id },
             orderBy: {
                 createdAt: 'asc'
             }
         })
 
-        if ( !wallets ) return null
+        if ( !prismaWallets ) return { ok: false, message: 'No se encontraron billeteras', wallets: null }
 
-        return wallets.map( w => mapToWallet( w ))
+        const wallets = prismaWallets.map( w => mapToWallet( w ))
+
+        return {
+            ok: true,
+            message: '',
+            wallets
+        }
 
     } catch ( error ) {
         console.log( error )
-        throw new Error('Error al obtener las transacciones por id de usuario')
+        throw new Error('Error al obtener las billeteras por id de usuario')
     }
 
 }

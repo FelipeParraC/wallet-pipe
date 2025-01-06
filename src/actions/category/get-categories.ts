@@ -1,18 +1,36 @@
 'use server'
 
-import prisma from "@/lib/prisma"
-import { mapToCategory } from "@/utils"
+import { auth } from '@/auth.config'
+import prisma from '@/lib/prisma'
+import { categories } from '@/seed'
+import { mapToCategory } from '@/utils'
 
 
 export const getCategories = async () => {
 
+    const session = await auth()
+                    
+    if ( !session ) {
+        return {
+            ok: false,
+            message: 'No hay sesión de usuario',
+            categories: null
+        }
+    }
+
     try {
         
-        const categories = await prisma.category.findMany()
+        const prismaCategories = await prisma.category.findMany()
 
-        if ( !categories ) return null
+        if ( !prismaCategories ) return { ok: false, message: 'No se encontraron categorías', categories: null }
 
-        return categories.map( c => mapToCategory( c ))
+        const categories = prismaCategories.map( c => mapToCategory( c ))
+
+        return {
+            ok: true,
+            message: '',
+            categories
+        }
 
     } catch ( error ) {
         console.log( error )

@@ -12,8 +12,13 @@ interface Props {
 export default async function BilleteraPage({ params }: Props) {
 
     const walletId = params.id
-    const wallet = await getWalletById(walletId)
-    const walllets = await getWallets()
+    const respWallet = await getWalletById( walletId )
+
+    if ( !respWallet.ok ) {
+        redirect('/billeteras')
+    }
+
+    const wallet = respWallet.wallet
     
     if (!wallet) {
         return <div>Cargando...</div>
@@ -23,10 +28,17 @@ export default async function BilleteraPage({ params }: Props) {
         redirect('/billeteras')
     }
 
-    const transactions = await getTransactionsByWalletId( walletId )
+    const respTransactions = await getTransactionsByWalletId( walletId )
+    const transactions = respTransactions.ok ? respTransactions.transactions : []
+
+    const respWallets = await getWallets()
+    const wallets = respWallets.ok ? respWallets.wallets : []
+
+    const respCategories = await getCategories()
+    const categories = respCategories.ok ? respCategories.categories : []
+
     const balanceEvolutionChartTransactions = transactions?.map( t => t.toWalletId === walletId ? { ...t, amount: Math.abs(t.amount) } : t ) || null
     const dailyExpensesChartTransactions = transactions?.filter( t => t.type !== 'TRANSFERENCIA' ) || null
-    const categories = await getCategories()
 
     return (
         <div className='space-y-6'>
@@ -51,7 +63,7 @@ export default async function BilleteraPage({ params }: Props) {
                 </>
             )}
 
-            <TransactionsList transactions={ transactions } walletId={ wallet.id } wallets={ walllets } categories={ categories } />
+            <TransactionsList transactions={ transactions } walletId={ wallet.id } wallets={ wallets } categories={ categories } />
             
             <NewTransactionFloatingButton walletId={ walletId } />
         </div>

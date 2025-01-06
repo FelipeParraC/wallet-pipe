@@ -1,15 +1,15 @@
 'use server'
 
+import { auth } from '@/auth.config'
 import { UpdateWalletInput } from '@/interfaces'
 import prisma from '@/lib/prisma'
 import { mapToUpdatePrismaWallet } from '@/utils'
 
 export const updateWalletById = async (data: UpdateWalletInput, id: string) => {
 
-    //TODO: Cambiarlo a NextAuth
-    const userId = '1'
-
-    if ( !userId ) {
+    const session = await auth()
+            
+    if ( !session ) {
         return {
             ok: false,
             message: 'No hay sesión de usuario'
@@ -22,6 +22,10 @@ export const updateWalletById = async (data: UpdateWalletInput, id: string) => {
 
         if ( !walletToUpdate ) {
             throw new Error(`No se encontró la billetera con ID ${ id }`)
+        }
+
+        if ( walletToUpdate.userId !== session.user.id ) {
+            throw new Error('El usuario no es propietario de la billetera')
         }
 
         const wallet = mapToUpdatePrismaWallet( data )

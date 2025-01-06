@@ -1,10 +1,19 @@
+import { auth } from '@/auth.config'
 import { Navbar } from '@/components'
+import { redirect } from 'next/navigation'
 
-export default function WalletLayout({
+export default async function WalletLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+
+    const session = await auth()
+
+    if ( !session?.user ) {
+        redirect('/auth/login')
+    }
+
     return (
         <>
             <Navbar />

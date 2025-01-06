@@ -5,8 +5,11 @@ import { getCategories, getTransactions } from '@/actions'
 
 export default async function TransaccionesPage() {
 
-    const transactions = await getTransactions()
-    const categories = await getCategories()
+    const respTransactions = await getTransactions()
+    const transactions = respTransactions.ok ? respTransactions.transactions : []
+
+    const respCategories = await getCategories()
+    const categories = respCategories.ok ? respCategories.categories : []
 
     return (
         <div className='space-y-6'>

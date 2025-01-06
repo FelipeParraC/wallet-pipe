@@ -1,6 +1,8 @@
-import { Category, CreateTransactionInput, CreateWalletInput, PrismaCategory, PrismaTransaction, PrismaWallet, PrismaWalletType, Transaction, TransactionType, UpdateTransactionInput, UpdateWalletInput, Wallet, WalletType } from '@/interfaces'
+import { Category, CreateTransactionInput, CreateUserInput, CreateWalletInput, PrismaCategory, PrismaTransaction, PrismaWallet, PrismaWalletType, Transaction, TransactionType, UpdateTransactionInput, UpdateWalletInput, Wallet, WalletType } from '@/interfaces'
 import { WalletType as PWalletType, TransactionType as PrismaTransactionType } from '@prisma/client'
 import { format } from 'date-fns'
+import { capitalizar } from './capitalizar'
+import bcryptjs from 'bcryptjs';
 
 export const mapToPrismaWalletType = (type: WalletType): PWalletType => {
     const mapping: Record<WalletType, PWalletType> = {
@@ -166,6 +168,17 @@ export const mapToCreatePrismaWallet = (data: CreateWalletInput, userId: string)
     return {
         ...walletData,
         fareValue: data.fareValue
+    }
+
+}
+
+export const mapToCreatePrismaUser = (data: CreateUserInput) => {
+
+    return {
+        name: capitalizar( data.name ),
+        nickname: capitalizar( data.nickname ),
+        email: data.email.toLocaleLowerCase(),
+        password: bcryptjs.hashSync( data.password )
     }
 
 }

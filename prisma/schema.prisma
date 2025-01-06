@@ -39,15 +39,16 @@ model Transaction {
 }
 
 model User {
-  id          String        @id @default(cuid())
-  name        String
-  nickname    String
-  email       String        @unique
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  password    String
-  Transaction Transaction[]
-  Wallet      Wallet[]
+  id            String        @id @default(cuid())
+  name          String
+  nickname      String
+  email         String        @unique
+  emailVerified DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  password      String
+  Transaction   Transaction[]
+  Wallet        Wallet[]
 }
 
 model Wallet {
