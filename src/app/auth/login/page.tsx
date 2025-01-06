@@ -1,8 +1,10 @@
-export default function LoginPage() {
+import { LoginForm } from '@/components'
 
+export default function LoginPage() {
     return (
-        <div>
-            <h1>Login Page</h1>
+        <div className="min-h-screen flex items-center justify-center p-4">
+            <LoginForm />
         </div>
     )
 }
+

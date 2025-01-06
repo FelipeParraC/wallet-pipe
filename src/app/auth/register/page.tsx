@@ -1,8 +1,10 @@
+import { RegisterForm } from "@/components";
 
 export default function RegisterPage() {
     return (
-        <div>
-            <h1>Register Page</h1>
+        <div className="min-h-screen flex items-center justify-center p-4 mt-28">
+            <RegisterForm />
         </div>
     )
 }
+

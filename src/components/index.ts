@@ -8,6 +8,10 @@ export * from './SafeCurrencyDisplay'
 export * from './WalletChart'
 
 
+export * from './auth/LoginForm'
+export * from './auth/RegisterForm'
+
+
 export * from './home/DashboardHome'
 export * from './home/QuickAccessCard'
 export * from './home/RecentTransactionItem'
