@@ -191,7 +191,8 @@ export const wallets: Wallet[] = [
         balance: 60000,    // 140000
         type: 'Efectivo',
         color: '#22c55e',
-        includeInTotal: true
+        includeInTotal: true,
+        isActive: true
     },
     {
         id: '2',
@@ -200,7 +201,8 @@ export const wallets: Wallet[] = [
         balance: 91967.90,    // 1423757.72
         type: 'Cuenta Bancaria',
         color: '#4b5563',
-        includeInTotal: true
+        includeInTotal: true,
+        isActive: true
     },
     {
         id: '3',
@@ -209,7 +211,8 @@ export const wallets: Wallet[] = [
         balance: 132515.70,     // 132515.70
         type: 'Ahorros',
         color: '#a855f7',
-        includeInTotal: true
+        includeInTotal: true,
+        isActive: true
     },
     {
         id: '4',
@@ -218,7 +221,8 @@ export const wallets: Wallet[] = [
         balance: 0.22,  // 0.22
         type: 'Ahorros',
         color: '#ef4444',
-        includeInTotal: true
+        includeInTotal: true,
+        isActive: true
     },
     {
         id: '5',
@@ -228,6 +232,7 @@ export const wallets: Wallet[] = [
         type: 'Transporte',
         color: '#3b82f6',
         includeInTotal: false,
+        isActive: true,
         fareValue: 2950
     }
 ]
