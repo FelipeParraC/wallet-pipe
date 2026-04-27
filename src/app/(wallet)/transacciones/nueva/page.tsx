@@ -39,11 +39,14 @@ export default async function NuevaTransaccionPage({ searchParams }: Props) {
     }
 
     return (
-        <div className='space-y-6 max-w-2xl mx-auto text-center'>
-            <h1 className='text-3xl font-bold mb-8'>Nuevo Movimiento</h1>
-            <p className='text-sm text-muted-foreground -mt-4 mb-2'>
-                Registra movimientos reales con fecha y hora exactas. Para pagar una tarjeta, usa el tipo <span className='font-medium'>Pago de tarjeta</span>.
-            </p>
+        <div className='mx-auto max-w-3xl space-y-6'>
+            <section className='glass-panel rounded-[2rem] p-5 text-left sm:p-6'>
+                <p className='text-xs uppercase tracking-[0.32em] text-slate-500'>Movimientos</p>
+                <h1 className='mt-2 text-2xl font-semibold text-white md:text-3xl'>Nuevo movimiento</h1>
+                <p className='mt-2 text-sm text-slate-400'>
+                    Elige el tipo y solo verás los campos que aplican.
+                </p>
+            </section>
             <CreateTransactionForm wallets={ wallets } categories={ categories } wallet={ wallet || undefined } />
         </div>
     )

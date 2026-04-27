@@ -31,6 +31,7 @@ export { getSettingsOverview } from './settings/get-settings-overview'
 export { createTag } from './tag/create-tag'
 
 export { createTransaction } from './transaction/create-transaction'
+export { createMovementFromForm } from './transaction/create-movement-from-form'
 export { deleteTransactionById } from './transaction/delete-transaction-by-id'
 export { getTransactionById } from './transaction/get-transaction-by-id'
 export { getTransactionsByWalletId } from './transaction/get-transactions-by-wallet-id'
