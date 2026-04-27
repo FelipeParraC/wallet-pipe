@@ -9,6 +9,23 @@ export { updateCycleSettings } from './cycle/update-cycle-settings'
 export { getCurrentCycleSummary } from './dashboard/get-current-cycle-summary'
 export { createDebt } from './debt/create-debt'
 export { createInstallmentPlan } from './installment/create-installment-plan'
+export {
+  deleteOrCloseDebt,
+  deleteOrDeactivateInstallmentPlan,
+  deleteOrDeactivateScheduledPlan,
+  ensureCurrentCycleOccurrences,
+  getPlanningCycleOverview,
+  payDebt,
+  payInstallmentOccurrence,
+  payScheduledOccurrence,
+  reopenInstallmentOccurrence,
+  reopenScheduledOccurrence,
+  skipInstallmentOccurrence,
+  skipScheduledOccurrence,
+  updateDebt,
+  updateInstallmentPlan,
+  updateScheduledPlan,
+} from './planning/planning-actions'
 export { createScheduledPlan } from './scheduled/create-scheduled-plan'
 export { getSettingsOverview } from './settings/get-settings-overview'
 export { createTag } from './tag/create-tag'
