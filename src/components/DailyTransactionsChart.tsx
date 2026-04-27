@@ -1,121 +1,62 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { createChart, ColorType, IChartApi } from 'lightweight-charts'
 import { format, parseISO } from 'date-fns'
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { Transaction } from '@/interfaces'
+import { currencyFormatWithoutDecimals, formatCurrency } from '@/utils'
 
 interface DailyTransactionsChartProps {
     transactions: Transaction[] | null
 }
 
 export const DailyTransactionsChart = ({ transactions }: DailyTransactionsChartProps) => {
-    const chartContainerRef = useRef<HTMLDivElement>(null)
-    const [chart, setChart] = useState<IChartApi | null>(null)
+    const dailyData = (transactions ?? [])
+        .filter((transaction) => transaction.isVisible && transaction.amount < 0 && transaction.type !== 'TRANSFERENCIA')
+        .reduce<Record<string, { date: string; label: string; expense: number }>>((acc, transaction) => {
+            const parsedDate = parseISO(transaction.occurredAt || transaction.date)
+            const date = format(parsedDate, 'yyyy-MM-dd')
 
-    useEffect(() => {
-        if (chartContainerRef.current) {
-            const newChart = createChart(chartContainerRef.current, {
-                layout: {
-                    background: { type: ColorType.Solid, color: 'transparent' },
-                    textColor: 'rgba(255, 255, 255, 0.9)',
-                },
-                width: chartContainerRef.current.clientWidth,
-                height: 300,
-                grid: {
-                    vertLines: { visible: false },
-                    horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                },
-            })
-
-            setChart(newChart)
-
-            const expenseSeries = newChart.addHistogramSeries({
-                color: '#ef4444',
-                priceFormat: { type: 'volume' },
-            })
-
-            if ( transactions ) {
-                const dailyData = transactions.reduce((acc, transaction) => {
-                    const date = format(parseISO(transaction.date), 'yyyy-MM-dd')
-                    if (transaction.amount < 0) {
-                        if (!acc[date]) {
-                            acc[date] = 0
-                        }
-                        acc[date] += Math.abs(transaction.amount)
-                    }
-                    return acc
-                }, {} as Record<string, number>)
-
-                const expenseData = Object.entries(dailyData)
-                    .map(([date, expense]) => ({
-                        time: date,
-                        value: expense,
-                    }))
-                    .sort((a, b) => a.time.localeCompare(b.time))
-
-                expenseSeries.setData(expenseData)
-
-                newChart.timeScale().fitContent()
-
-                newChart.applyOptions({
-                    leftPriceScale: {
-                        visible: true,
-                        borderVisible: false,
-                    },
-                    rightPriceScale: {
-                        visible: true,
-                        borderVisible: false,
-                    },
-                    timeScale: {
-                        borderVisible: false,
-                        fixLeftEdge: true,
-                        fixRightEdge: true,
-                        visible: true,
-                    },
-                    grid: {
-                        vertLines: { visible: false },
-                        horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                    },
-                })
-
-                const handleResize = () => {
-                    newChart.applyOptions({
-                        width: chartContainerRef.current!.clientWidth,
-                        height: Math.max(300, window.innerHeight * 0.4),
-                    })
-                }
-
-                window.addEventListener('resize', handleResize)
-                handleResize()
-
-                return () => {
-                    window.removeEventListener('resize', handleResize)
-                    newChart.remove()
+            if (!acc[date]) {
+                acc[date] = {
+                    date,
+                    label: format(parsedDate, 'dd MMM'),
+                    expense: 0,
                 }
             }
-        }
-    }, [transactions])
 
-    useEffect(() => {
-        const handleResize = () => {
-            if (chart && chartContainerRef.current) {
-                chart.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                    height: Math.max(300, window.innerHeight * 0.4),
-                })
-                chart.timeScale().fitContent()
-            }
-        }
+            acc[date].expense += Math.abs(transaction.amount)
+            return acc
+        }, {})
 
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-    }, [chart])
+    const data = Object.values(dailyData).sort((a, b) => a.date.localeCompare(b.date))
+
+    if (data.length === 0) {
+        return (
+            <div className='flex h-full items-center justify-center rounded-[1.5rem] border border-dashed border-white/10 bg-white/[0.03] text-sm text-slate-400'>
+                Sin gastos para graficar.
+            </div>
+        )
+    }
 
     return (
-        <div className='flex justify-center items-center w-full h-full'>
-            <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />
-        </div>
+        <ResponsiveContainer width='100%' height='100%'>
+            <BarChart data={data} margin={{ left: 0, right: 6, top: 12, bottom: 0 }}>
+                <CartesianGrid stroke='rgba(255,255,255,0.08)' vertical={false} />
+                <XAxis dataKey='label' tickLine={false} axisLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(value) => currencyFormatWithoutDecimals(Number(value))} width={78} />
+                <Tooltip
+                    cursor={{ fill: 'rgba(255,255,255,0.06)' }}
+                    contentStyle={{
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '18px',
+                        background: 'rgba(2,6,23,0.88)',
+                        color: '#f8fafc',
+                        backdropFilter: 'blur(16px)',
+                    }}
+                    formatter={(value) => [formatCurrency(Number(value)), 'Gasto']}
+                />
+                <Bar dataKey='expense' fill='#fb7185' radius={[12, 12, 4, 4]} />
+            </BarChart>
+        </ResponsiveContainer>
     )
 }
-

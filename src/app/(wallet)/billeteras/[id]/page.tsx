@@ -53,7 +53,7 @@ export default async function BilleteraPage({ params }: Props) {
 
             {wallet.type !== 'Transporte' ? (
                 <>
-                    <BalanceEvolutionChart transactions={ balanceEvolutionChartTransactions } color={ wallet.color } walletId={ wallet.id } />
+                    <BalanceEvolutionChart transactions={ balanceEvolutionChartTransactions } color={ wallet.color } walletId={ wallet.id } currentBalance={ wallet.balance } />
 
                     <DailyExpensesChart transactions={ dailyExpensesChartTransactions } />
                 </>

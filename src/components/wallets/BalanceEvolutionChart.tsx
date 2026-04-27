@@ -5,18 +5,19 @@ import { WalletChart } from '../WalletChart'
 interface BalanceEvolutionChartProps {
     walletId: string
     color: string
+    currentBalance: number
     transactions: Transaction[] | null
 }
 
 
-export const BalanceEvolutionChart = ({ color, transactions, walletId }: BalanceEvolutionChartProps) => {
+export const BalanceEvolutionChart = ({ color, currentBalance, transactions, walletId }: BalanceEvolutionChartProps) => {
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Evolución del Saldo</CardTitle>
             </CardHeader>
             <CardContent className='h-[40vh] min-h-[300px]'>
-                <WalletChart transactions={ transactions } color={ color } walletId={ walletId } />
+                <WalletChart transactions={ transactions } color={ color } walletId={ walletId } currentBalance={ currentBalance } />
             </CardContent>
         </Card>
     )
