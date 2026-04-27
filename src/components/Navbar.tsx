@@ -29,12 +29,16 @@ export const Navbar = () => {
     const user = session?.user
     const hideMobileNewAction = pathname === '/transacciones/nueva' || pathname.startsWith('/transacciones/editar')
 
+    if (!user) {
+        return null
+    }
+
     const onClickLogout = async () => {
         await logout()
         window.location.replace('/auth/login')
     }
 
-    const appName = user ? `Wallet ${user.nickname}` : 'Wallet Pipe'
+    const appName = `Wallet ${user.nickname}`
 
     return (
         <>
@@ -81,21 +85,21 @@ export const Navbar = () => {
                                 <Button variant='outline' className='h-14 rounded-[1.75rem] px-3.5'>
                                     <Avatar className='h-8 w-8'>
                                         <AvatarFallback className='bg-sky-500/20 text-sky-100'>
-                                            {user?.name?.[0] || 'U'}
+                                            {user.name?.[0] || user.email?.[0] || 'W'}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className='hidden text-left sm:block'>
-                                        <p className='text-xs text-slate-400'>{user?.email}</p>
-                                        <p className='text-sm font-semibold text-white'>{user?.name || 'Usuario'}</p>
+                                        <p className='text-xs text-slate-400'>{user.email}</p>
+                                        <p className='text-sm font-semibold text-white'>{user.name}</p>
                                     </div>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align='end' className='w-64'>
                                 <DropdownMenuLabel className='font-normal'>
                                     <div className='flex flex-col space-y-1'>
-                                        <p className='text-sm font-medium leading-none'>{user?.name || 'Usuario'}</p>
+                                        <p className='text-sm font-medium leading-none'>{user.name}</p>
                                         <p className='text-xs leading-none text-muted-foreground'>
-                                            {user?.email || 'usuario@example.com'}
+                                            {user.email}
                                         </p>
                                     </div>
                                 </DropdownMenuLabel>
