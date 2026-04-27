@@ -67,6 +67,36 @@ const defaultCycleSettings = (userId: string) => ({
   overrides: [],
 })
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const isTransientPrismaConnectionError = (error: unknown) => (
+  typeof error === 'object'
+  && error !== null
+  && 'code' in error
+  && (error as { code?: string }).code === 'P1001'
+)
+
+const withPrismaConnectionRetry = async <T>(operation: () => Promise<T>) => {
+  const delays = [250, 750, 1500]
+  let lastError: unknown
+
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error
+
+      if (!isTransientPrismaConnectionError(error) || attempt === delays.length) {
+        throw error
+      }
+
+      await sleep(delays[attempt])
+    }
+  }
+
+  throw lastError
+}
+
 const addFrequency = (date: Date, frequency: string, interval: number) => {
   const next = new Date(date)
   if (frequency === 'DIARIA') next.setDate(next.getDate() + interval)
@@ -180,16 +210,14 @@ const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: string) => {
   const startsAt = new Date(currentCycle.startsAt)
   const endsAt = new Date(currentCycle.endsAt)
 
-  const [scheduledPlans, installmentPlans] = await Promise.all([
-    db.scheduledPlan.findMany({
-      where: { userId, isActive: true, startsAt: { lte: endsAt }, OR: [{ endsAt: null }, { endsAt: { gte: startsAt } }] },
-      include: { occurrences: { where: { dueAt: { gte: startsAt, lte: endsAt } } } },
-    }),
-    db.installmentPlan.findMany({
-      where: { userId, isActive: true, firstDueAt: { lte: endsAt }, remainingInstallments: { gt: 0 } },
-      include: { occurrences: true },
-    }),
-  ])
+  const scheduledPlans = await db.scheduledPlan.findMany({
+    where: { userId, isActive: true, startsAt: { lte: endsAt }, OR: [{ endsAt: null }, { endsAt: { gte: startsAt } }] },
+    include: { occurrences: { where: { dueAt: { gte: startsAt, lte: endsAt } } } },
+  })
+  const installmentPlans = await db.installmentPlan.findMany({
+    where: { userId, isActive: true, firstDueAt: { lte: endsAt }, remainingInstallments: { gt: 0 } },
+    include: { occurrences: true },
+  })
 
   for (const plan of scheduledPlans) {
     const existingTimes = new Set(plan.occurrences.map((occurrence) => occurrence.dueAt.getTime()))
@@ -288,7 +316,7 @@ const mapInstallmentOccurrence = (occurrence: Prisma.InstallmentOccurrenceGetPay
 export const ensureCurrentCycleOccurrences = async () => {
   try {
     const user = await requireSessionUser()
-    const result = await ensureCurrentCycleOccurrencesForUser(prisma, user.id)
+    const result = await withPrismaConnectionRetry(() => ensureCurrentCycleOccurrencesForUser(prisma, user.id))
     revalidatePath('/planeacion')
     revalidatePath('/reportes')
     revalidatePath('/')
@@ -302,9 +330,9 @@ export const ensureCurrentCycleOccurrences = async () => {
 export const getPlanningCycleOverview = async () => {
   try {
     const user = await requireSessionUser()
-    const { currentCycle, startsAt, endsAt } = await ensureCurrentCycleOccurrencesForUser(prisma, user.id)
+    const { currentCycle, startsAt, endsAt } = await withPrismaConnectionRetry(() => ensureCurrentCycleOccurrencesForUser(prisma, user.id))
 
-    const [
+    const {
       wallets,
       categories,
       scheduledOccurrences,
@@ -313,30 +341,41 @@ export const getPlanningCycleOverview = async () => {
       installmentPlans,
       debts,
       transactions,
-    ] = await Promise.all([
-      prisma.wallet.findMany({ where: { userId: user.id, isActive: true }, orderBy: { name: 'asc' } }),
-      prisma.category.findMany({
+    } = await withPrismaConnectionRetry(async () => {
+      const wallets = await prisma.wallet.findMany({ where: { userId: user.id, isActive: true }, orderBy: { name: 'asc' } })
+      const categories = await prisma.category.findMany({
         where: { OR: [{ userId: user.id }, { isSystem: true }] },
         orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
-      }),
-      prisma.scheduledOccurrence.findMany({
+      })
+      const scheduledOccurrences = await prisma.scheduledOccurrence.findMany({
         where: { userId: user.id, dueAt: { gte: startsAt, lte: endsAt } },
         include: { plan: { include: { category: true } }, linkedTransaction: true },
         orderBy: { dueAt: 'asc' },
-      }),
-      prisma.installmentOccurrence.findMany({
+      })
+      const installmentOccurrences = await prisma.installmentOccurrence.findMany({
         where: { userId: user.id, dueAt: { gte: startsAt, lte: endsAt } },
         include: { installmentPlan: { include: { category: true, paymentWallet: true, chargeWallet: true } }, linkedTransaction: true },
         orderBy: { dueAt: 'asc' },
-      }),
-      prisma.scheduledPlan.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
-      prisma.installmentPlan.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
-      prisma.debt.findMany({ where: { userId: user.id }, include: { person: true, transactions: true }, orderBy: { createdAt: 'desc' } }),
-      prisma.transaction.findMany({
+      })
+      const scheduledPlans = await prisma.scheduledPlan.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } })
+      const installmentPlans = await prisma.installmentPlan.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } })
+      const debts = await prisma.debt.findMany({ where: { userId: user.id }, include: { person: true, transactions: true }, orderBy: { createdAt: 'desc' } })
+      const transactions = await prisma.transaction.findMany({
         where: { userId: user.id, occurredAt: { gte: startsAt, lte: endsAt } },
         orderBy: { occurredAt: 'desc' },
-      }),
-    ])
+      })
+
+      return {
+        wallets,
+        categories,
+        scheduledOccurrences,
+        installmentOccurrences,
+        scheduledPlans,
+        installmentPlans,
+        debts,
+        transactions,
+      }
+    })
 
     const mappedScheduledOccurrences = scheduledOccurrences.map(mapScheduledOccurrence)
     const mappedInstallmentOccurrences = installmentOccurrences.map(mapInstallmentOccurrence)
