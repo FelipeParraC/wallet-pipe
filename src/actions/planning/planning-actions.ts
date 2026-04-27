@@ -187,7 +187,7 @@ const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: string) => {
     }),
     db.installmentPlan.findMany({
       where: { userId, isActive: true, firstDueAt: { lte: endsAt }, remainingInstallments: { gt: 0 } },
-      include: { occurrences: { where: { dueAt: { gte: startsAt, lte: endsAt } } } },
+      include: { occurrences: true },
     }),
   ])
 

@@ -13,7 +13,8 @@
     "db:generate": "prisma generate --no-engine",
     "db:reset": "prisma db push --force-reset && npm run db:generate && npm run seed",
     "prisma:deploy": "prisma migrate deploy && prisma generate",
-    "seed": "ts-node src/seed/seed-database.ts"
+    "seed": "ts-node src/seed/seed-database.ts",
+    "seed:existing-user": "ts-node src/seed/seed-existing-user-cycle.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
