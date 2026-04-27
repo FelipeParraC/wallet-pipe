@@ -1,7 +1,10 @@
 export interface Category {
     id: string
+    userId?: string | null
     name: string
     color: string
+    parentId?: string | null
+    isSystem?: boolean
 }
 
 export interface CreateCategoryInput {

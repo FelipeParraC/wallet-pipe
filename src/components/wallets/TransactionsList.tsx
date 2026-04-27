@@ -30,7 +30,7 @@ export const TransactionsList = ({ transactions, categories, walletId, wallets }
     }
     
     const filteredTransactions = selectedDate
-        ? transactions.filter(t => isSameDay(parseISO(t.date), selectedDate))
+        ? transactions.filter(t => isSameDay(parseISO(t.occurredAt || t.date), selectedDate))
         : transactions
 
     const handleEdit = (transaction: Transaction) => {
@@ -39,33 +39,35 @@ export const TransactionsList = ({ transactions, categories, walletId, wallets }
     }
 
     const handleDelete = async (id: string) => {
-        await deleteTransactionById( id )
-        router.refresh()
+        const response = await deleteTransactionById( id )
+        if (response.ok) {
+            router.refresh()
+        }
     }
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Transacciones</CardTitle>
+                <CardTitle>Movimientos</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className='mb-4 w-full max-w-sm'>
                     <TransactionDatePicker onDateSelect={ setSelectedDate } />
                 </div>
                 {transactions.filter((transaction) => transaction.isVisible).length === 0 && (
-                    <p className='text-center text-muted-foreground'>No hay transacciones aún</p>
+                    <p className='text-center text-muted-foreground'>No hay movimientos aún</p>
                 )}
                 {filteredTransactions.length === 0 ? (
-                    <p className='text-center text-muted-foreground'>No hay transacciones en este día</p>
+                    <p className='text-center text-muted-foreground'>No hay movimientos en este día</p>
                 ) : (
                     <div className='space-y-4'>
                         {filteredTransactions.map((transaction) => transaction.isVisible && (
                             <div key={transaction.id} className='flex justify-between items-start border-b pb-4'>
                                 <div>
                                     <p className='font-medium'>{ transaction.title }</p>
-                                    <p className='text-sm text-muted-foreground'>{ categories.find( c => c.id === transaction.categoryId )?.name }</p>
+                                    <p className='text-sm text-muted-foreground'>{ categories.find( c => c.id === transaction.categoryId )?.name ?? 'Sin categoría' }</p>
                                     <p className='text-xs text-muted-foreground'>
-                                        {format(parseISO( transaction.date ), "d 'de' MMMM, yyyy", { locale: es })}
+                                        {format(parseISO( transaction.occurredAt || transaction.date ), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })}
                                     </p>
                                 </div>
                                 <div className='text-right flex flex-col items-end'>
@@ -80,10 +82,16 @@ export const TransactionsList = ({ transactions, categories, walletId, wallets }
                                                 className='font-bold text-red-500 mb-2'
                                             />
                                         </>
-                                    ) : transaction.fromWalletId && transaction.fromWalletId ? (
+                                    ) : transaction.fromWalletId && transaction.toWalletId ? (
                                         <>
                                             <p className='font-bold text-white'>
-                                                {transaction.fromWalletId === walletId ? 'Transferencia a ' : 'Transferencia desde '}
+                                                {transaction.type === 'PAGO_TARJETA'
+                                                    ? transaction.fromWalletId === walletId
+                                                        ? 'Pago hacia '
+                                                        : 'Pago recibido desde '
+                                                    : transaction.fromWalletId === walletId
+                                                        ? 'Transferencia a '
+                                                        : 'Transferencia desde '}
                                                 <span style={{ color: transaction.toWalletId === walletId
                                                     ? wallets.find(w => w.id === transaction.fromWalletId)?.color
                                                     : wallets.find(w => w.id === transaction.toWalletId)?.color

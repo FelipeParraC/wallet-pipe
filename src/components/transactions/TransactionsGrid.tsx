@@ -23,17 +23,19 @@ export const TransactionsGrid = ({ transactions, categories }: TransactionsGridP
     }
 
     const filteredTransactions = selectedDate
-        ? transactions.filter(t => format(parseISO(t.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
+        ? transactions.filter(t => format(parseISO(t.occurredAt || t.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
         : transactions
 
     return (
         <>
-            <div className='w-full max-w-sm'>
+            <div className='glass-panel w-full max-w-sm rounded-[1.75rem] p-3'>
                 <TransactionDatePicker onDateSelect={ setSelectedDate } />
             </div>
 
             {filteredTransactions.length === 0 ? (
-                <p className='text-center text-muted-foreground'>No hay transacciones para la fecha seleccionada.</p>
+                <div className='glass-panel rounded-[1.75rem] p-8 text-center'>
+                    <p className='text-sm text-slate-400'>No hay movimientos para la fecha seleccionada.</p>
+                </div>
             ) : (
                 <TransactionList
                     transactions={ filteredTransactions }

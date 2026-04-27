@@ -1,265 +1,282 @@
-import type { Category, Transaction, User, Wallet } from '@/interfaces'
-import { format } from 'date-fns'
-
-
-export const initialTransactions: Transaction[] = [
-    // {
-    //     id: 101,
-    //     userId: '1',
-    //     type: 'GASTO',
-    //     walletId: '1',
-    //     title: 'Ejemplo Estándar',
-    //     description: 'Ejemplo de transacción estándar',
-    //     date: format(new Date('2024-12-26T21:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: -10000,
-    //     categoryId: '01',
-    //     isVisible: true
-    // },
-    // {
-    //     id: 102,
-    //     userId: '1',
-    //     type: 'TRANSFERENCIA',
-    //     walletId: '1',
-    //     title: 'Ejemplo Transferencia',
-    //     description: 'Ejemplo de transferencia de Efectivo a Falabella',
-    //     date: format(new Date('2024-12-22T21:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: 10000,
-    //     categoryId: '11',
-    //     fromWallet: '1',
-    //     toWallet: '2',
-    //     isVisible: true
-    // },
-    // {
-    //     id: 103,
-    //     userId: '1',
-    //     type: 'TRANSPORTE',
-    //     walletId: '5',
-    //     title: 'Ejemplo Transporte',
-    //     description: 'Ejemplo transacción de transporte',
-    //     date: format(new Date('2024-12-23T21:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: -2950,
-    //     fareValue: 2950,
-    //     numberOfTrips: 1,
-    //     categoryId: '02',
-    //     isVisible: true
-    // },
-    // {
-    //     id: '1006',
-    //     userId: '1',
-    //     type: 'GASTO',
-    //     walletId: '2',
-    //     title: 'Gemas Duolingo',
-    //     description: '100 gemas de Duolingo',
-    //     date: format(new Date('2024-12-29T03:20:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: -2900,
-    //     categoryId: '08',
-    //     isVisible: true
-    // },
-    // {
-    //     id: '1005',
-    //     userId: '1',
-    //     type: 'GASTO',
-    //     walletId: '2',
-    //     title: 'Compra v0',
-    //     description: 'Mensualidad de v0',
-    //     date: format(new Date('2024-12-26T22:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: -89371.18,
-    //     categoryId: '07',
-    //     isVisible: true
-    // },
-    // {
-    //     id: '1004',
-    //     userId: '1',
-    //     type: 'GASTO',
-    //     walletId: '2',
-    //     title: 'Hamburguesa Magic',
-    //     description: 'Combo de hamburguesa con tocineta en Magic',
-    //     date: format(new Date('2024-12-26T17:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: -23500,
-    //     categoryId: '01',
-    //     isVisible: true
-    // },
-    // {
-    //     id: '1003',
-    //     userId: '1',
-    //     type: 'TRANSFERENCIA',
-    //     walletId: '2',
-    //     title: 'Gym Riaño',
-    //     description: 'Pagué con Falabella y me dio en Efectivo',
-    //     date: format(new Date('2024-12-26T15:30:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: 80000,
-    //     categoryId: '11',
-    //     fromWalletId: '2',
-    //     toWalletId: '1',
-    //     isVisible: true
-    // },
-    // {
-    //     id: '1002',
-    //     userId: '1',
-    //     type: 'INGRESO',
-    //     walletId: '2',
-    //     title: 'Primer Sueldo',
-    //     description: 'Mi primer sueldo',
-    //     date: format(new Date('2024-12-24T14:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: 1527561,
-    //     categoryId: '05',
-    //     isVisible: true
-    // },
-    // {
-    //     id: '1001',
-    //     userId: '1',
-    //     type: 'TRANSPORTE',
-    //     walletId: '5',
-    //     title: 'Ida Trabajo',
-    //     description: 'Pasaje de ida hacia el Trabajo',
-    //     date: format(new Date('2024-12-24T07:28:50'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-    //     amount: -2950,
-    //     fareValue: 2950,
-    //     numberOfTrips: 1,
-    //     categoryId: '02',
-    //     isVisible: true
-    // },
-    {
-        id: '1',
-        userId: '1',
-        type: 'INGRESO',
-        walletId: '1',
-        title: '',
-        description: '',
-        date: format(new Date('2024-12-23T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-        amount: 60000,
-        categoryId: '10',
-        isVisible: false
-    },
-    {
-        id: '2',
-        userId: '1',
-        type: 'INGRESO',
-        walletId: '2',
-        title: '',
-        description: '',
-        date: format(new Date('2024-12-23T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-        amount: 91967.90,
-        categoryId: '10',
-        isVisible: false
-    },
-    {
-        id: '3',
-        userId: '1',
-        type: 'INGRESO',
-        walletId: '3',
-        title: '',
-        description: '',
-        date: format(new Date('2024-12-23T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-        amount: 132515.70,
-        categoryId: '10',
-        isVisible: false
-    },
-    {
-        id: '4',
-        userId: '1',
-        type: 'INGRESO',
-        walletId: '4',
-        title: '',
-        description: '',
-        date: format(new Date('2024-12-23T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-        amount: 0.22,
-        categoryId: '10',
-        isVisible: false
-    },
-    {
-        id: '5',
-        userId: '1',
-        type: 'INGRESO',
-        walletId: '5',
-        title: '',
-        description: '',
-        date: format(new Date('2024-12-23T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
-        amount: 37400.00,
-        categoryId: '10',
-        isVisible: false
-    },
-]
-
-export const wallets: Wallet[] = [
-    {
-        id: '1',
-        userId: '1',
-        name: 'Efectivo',
-        balance: 60000,    // 140000
-        type: 'Efectivo',
-        color: '#22c55e',
-        includeInTotal: true,
-        isActive: true
-    },
-    {
-        id: '2',
-        userId: '1',
-        name: 'Falabella',
-        balance: 91967.90,    // 1423757.72
-        type: 'Cuenta Bancaria',
-        color: '#4b5563',
-        includeInTotal: true,
-        isActive: true
-    },
-    {
-        id: '3',
-        userId: '1',
-        name: 'Nequi',
-        balance: 132515.70,     // 132515.70
-        type: 'Ahorros',
-        color: '#a855f7',
-        includeInTotal: true,
-        isActive: true
-    },
-    {
-        id: '4',
-        userId: '1',
-        name: 'DaviPlata',
-        balance: 0.22,  // 0.22
-        type: 'Ahorros',
-        color: '#ef4444',
-        includeInTotal: true,
-        isActive: true
-    },
-    {
-        id: '5',
-        userId: '1',
-        name: 'SITP',
-        balance: 37400.00,      // 34450
-        type: 'Transporte',
-        color: '#3b82f6',
-        includeInTotal: false,
-        isActive: true,
-        fareValue: 2950
-    }
-]
-
-export const currentUser: User = {
-    id: '1',
-    name: 'Felipe',
-    nickname: 'Pipe',
-    email: 'felipe@correo.com'
+export const seedUser = {
+  id: 'user_seed_pipe',
+  name: 'Felipe',
+  nickname: 'Pipe',
+  email: 'felipe@correo.com',
+  password: '123456',
 }
 
-export const categories: Category[] = [
-    { id: '01', name: 'Alimentación', color: '#ADD8E6' },
-    { id: '02', name: 'Transporte', color: '#87CEFA' },
-    { id: '03', name: 'Vivienda', color: '#87CEEB' },
-    { id: '04', name: 'Entretenimiento', color: '#6495ED' },
-    { id: '05', name: 'Sueldo', color: '#B0C4DE' },
-    { id: '06', name: 'Salud', color: '#3D59AB' },
-    { id: '07', name: 'Tecnología', color: '#4169E1' },
-    { id: '08', name: 'Educación', color: '#7DF9FF' },
-    { id: '09', name: 'Ropa', color: '#2A52BE' },
-    { id: '10', name: 'Otros', color: '#191970' },
-    { id: '11', name: 'Transferencia', color: '#4682B4' },
-    { id: '12', name: 'Intereses', color: '#708090' },
+const cents = (value: number) => BigInt(Math.round(value * 100))
+
+export const seedCycleSettings = {
+  id: 'cycle_seed_pipe',
+  userId: seedUser.id,
+  defaultStartDay: 23,
+  timezone: 'America/Bogota',
+}
+
+export const seedCategories = [
+  { id: 'cat_alimentacion', userId: seedUser.id, name: 'Alimentación', color: '#22c55e', isSystem: false },
+  { id: 'cat_vivienda', userId: seedUser.id, name: 'Vivienda', color: '#f97316', isSystem: false },
+  { id: 'cat_transporte', userId: seedUser.id, name: 'Transporte', color: '#3b82f6', isSystem: false },
+  { id: 'cat_finanzas', userId: seedUser.id, name: 'Finanzas', color: '#6366f1', isSystem: false },
+  { id: 'cat_suscripciones', userId: seedUser.id, parentId: 'cat_finanzas', name: 'Suscripciones', color: '#8b5cf6', isSystem: false },
+  { id: 'cat_servicios', userId: seedUser.id, parentId: 'cat_vivienda', name: 'Servicios', color: '#ef4444', isSystem: false },
+  { id: 'cat_salario', userId: seedUser.id, name: 'Salario', color: '#14b8a6', isSystem: false },
+  { id: 'cat_otros', userId: seedUser.id, name: 'Otros', color: '#64748b', isSystem: true },
 ]
 
-export const initialData = {
-    transactions: initialTransactions,
-    wallets,
-    user: currentUser,
-    categories
-}
+export const seedTags = [
+  { id: 'tag_hogar', userId: seedUser.id, name: 'hogar', color: '#f59e0b' },
+  { id: 'tag_streaming', userId: seedUser.id, name: 'streaming', color: '#ec4899' },
+  { id: 'tag_nomina', userId: seedUser.id, name: 'nomina', color: '#10b981' },
+]
+
+export const seedWallets = [
+  {
+    id: 'wallet_cash',
+    userId: seedUser.id,
+    name: 'Efectivo',
+    balance: cents(250000),
+    type: 'EFECTIVO',
+    color: '#22c55e',
+    includeInTotal: true,
+    isActive: true,
+  },
+  {
+    id: 'wallet_bank',
+    userId: seedUser.id,
+    name: 'Bancolombia',
+    balance: cents(1800000),
+    type: 'CUENTA_BANCARIA',
+    color: '#0ea5e9',
+    includeInTotal: true,
+    isActive: true,
+  },
+  {
+    id: 'wallet_transport',
+    userId: seedUser.id,
+    name: 'SITP',
+    balance: cents(42000),
+    fareValue: cents(3200),
+    type: 'TRANSPORTE',
+    color: '#3b82f6',
+    includeInTotal: false,
+    isActive: true,
+  },
+  {
+    id: 'wallet_credit',
+    userId: seedUser.id,
+    name: 'Visa Falabella',
+    balance: cents(320000),
+    type: 'TARJETA_CREDITO',
+    color: '#8b5cf6',
+    includeInTotal: false,
+    isActive: true,
+    creditLimit: cents(2500000),
+    availableCredit: cents(2180000),
+    statementClosingDay: 18,
+    paymentDueDay: 5,
+  },
+]
+
+export const seedPeople = [
+  { id: 'person_juan', userId: seedUser.id, name: 'Juan Riaño', alias: 'Juan', notes: 'Amigo del trabajo' },
+]
+
+export const seedDebts = [
+  {
+    id: 'debt_juan',
+    userId: seedUser.id,
+    personId: 'person_juan',
+    title: 'Préstamo portátil',
+    direction: 'YO_DEBO',
+    principalAmount: cents(300000),
+    currentBalance: cents(180000),
+    status: 'ACTIVA',
+    startedAt: new Date('2026-03-10T10:00:00-05:00'),
+    notes: 'Pago en varias partes',
+  },
+]
+
+export const seedScheduledPlans = [
+  {
+    id: 'plan_netflix',
+    userId: seedUser.id,
+    title: 'Netflix',
+    description: 'Suscripción mensual fija',
+    kind: 'SUSCRIPCION',
+    amountMode: 'FIJO',
+    fixedAmount: cents(38900),
+    frequency: 'MENSUAL',
+    interval: 1,
+    dueDay: 24,
+    startsAt: new Date('2026-01-24T08:00:00-05:00'),
+    categoryId: 'cat_suscripciones',
+    sourceWalletId: 'wallet_bank',
+    affectsProjectedBudget: true,
+    isActive: true,
+  },
+  {
+    id: 'plan_energia',
+    userId: seedUser.id,
+    title: 'Energía',
+    description: 'Servicio mensual variable',
+    kind: 'SERVICIO',
+    amountMode: 'VARIABLE',
+    fixedAmount: null,
+    frequency: 'MENSUAL',
+    interval: 1,
+    dueDay: 27,
+    startsAt: new Date('2026-01-27T08:00:00-05:00'),
+    categoryId: 'cat_servicios',
+    sourceWalletId: 'wallet_bank',
+    affectsProjectedBudget: true,
+    isActive: true,
+  },
+]
+
+export const seedScheduledOccurrences = [
+  {
+    id: 'occ_netflix_202604',
+    planId: 'plan_netflix',
+    userId: seedUser.id,
+    dueAt: new Date('2026-04-24T08:00:00-05:00'),
+    expectedAmount: cents(38900),
+    status: 'PENDIENTE',
+  },
+  {
+    id: 'occ_energia_202604',
+    planId: 'plan_energia',
+    userId: seedUser.id,
+    dueAt: new Date('2026-04-27T08:00:00-05:00'),
+    expectedAmount: cents(142500),
+    status: 'PENDIENTE',
+  },
+]
+
+export const seedInstallmentPlans = [
+  {
+    id: 'installment_laptop',
+    userId: seedUser.id,
+    title: 'Portátil Asus',
+    description: 'Compra a 6 cuotas',
+    merchant: 'Ktronix',
+    categoryId: 'cat_finanzas',
+    chargeWalletId: 'wallet_credit',
+    paymentWalletId: 'wallet_bank',
+    totalAmount: cents(2400000),
+    installmentAmount: cents(400000),
+    totalInstallments: 6,
+    remainingInstallments: 4,
+    interestRate: 0,
+    occurredAt: new Date('2026-02-02T14:30:15-05:00'),
+    firstDueAt: new Date('2026-03-05T08:00:00-05:00'),
+    isActive: true,
+  },
+]
+
+export const seedInstallmentOccurrences = [
+  {
+    id: 'installment_laptop_3',
+    installmentPlanId: 'installment_laptop',
+    userId: seedUser.id,
+    installmentNumber: 3,
+    dueAt: new Date('2026-04-05T08:00:00-05:00'),
+    expectedAmount: cents(400000),
+    status: 'PENDIENTE',
+  },
+]
+
+export const seedTransactions = [
+  {
+    id: 'tx_salary_apr',
+    userId: seedUser.id,
+    walletId: 'wallet_bank',
+    type: 'INGRESO',
+    status: 'REGISTRADA',
+    title: 'Pago nómina',
+    description: 'Pago del ciclo actual',
+    categoryId: 'cat_salario',
+    amount: cents(2850000),
+    occurredAt: new Date('2026-04-23T08:15:32-05:00'),
+    recordedAt: new Date('2026-04-23T08:16:02-05:00'),
+    isVisible: true,
+  },
+  {
+    id: 'tx_market',
+    userId: seedUser.id,
+    walletId: 'wallet_bank',
+    type: 'GASTO',
+    status: 'REGISTRADA',
+    title: 'Mercado',
+    description: 'Compra del supermercado',
+    categoryId: 'cat_alimentacion',
+    amount: cents(-186400),
+    occurredAt: new Date('2026-04-24T19:42:18-05:00'),
+    recordedAt: new Date('2026-04-24T19:45:02-05:00'),
+    isVisible: true,
+  },
+  {
+    id: 'tx_sitp',
+    userId: seedUser.id,
+    walletId: 'wallet_transport',
+    type: 'TRANSPORTE',
+    status: 'REGISTRADA',
+    title: 'Ida trabajo',
+    description: 'Pasaje del SITP',
+    categoryId: 'cat_transporte',
+    amount: cents(-3200),
+    fareValue: cents(3200),
+    numberOfTrips: 1,
+    occurredAt: new Date('2026-04-25T06:58:10-05:00'),
+    recordedAt: new Date('2026-04-25T06:58:20-05:00'),
+    isVisible: true,
+  },
+  {
+    id: 'tx_cc_charge',
+    userId: seedUser.id,
+    walletId: 'wallet_credit',
+    type: 'TARJETA_CONSUMO',
+    status: 'REGISTRADA',
+    title: 'AirPods',
+    description: 'Compra con tarjeta de crédito',
+    categoryId: 'cat_otros',
+    amount: cents(-320000),
+    occurredAt: new Date('2026-04-20T12:35:44-05:00'),
+    recordedAt: new Date('2026-04-20T12:36:01-05:00'),
+    isVisible: true,
+  },
+  {
+    id: 'tx_cc_payment',
+    userId: seedUser.id,
+    walletId: 'wallet_bank',
+    type: 'PAGO_TARJETA',
+    status: 'REGISTRADA',
+    title: 'Pago tarjeta',
+    description: 'Abono del período',
+    categoryId: 'cat_finanzas',
+    amount: cents(-150000),
+    fromWalletId: 'wallet_bank',
+    toWalletId: 'wallet_credit',
+    occurredAt: new Date('2026-04-26T11:00:05-05:00'),
+    recordedAt: new Date('2026-04-26T11:01:00-05:00'),
+    isVisible: true,
+  },
+  {
+    id: 'tx_debt_payment',
+    userId: seedUser.id,
+    walletId: 'wallet_bank',
+    type: 'DEUDA_ABONO',
+    status: 'REGISTRADA',
+    title: 'Abono a Juan',
+    description: 'Pago parcial del préstamo',
+    categoryId: 'cat_finanzas',
+    amount: cents(-120000),
+    personId: 'person_juan',
+    debtId: 'debt_juan',
+    occurredAt: new Date('2026-04-28T18:22:11-05:00'),
+    recordedAt: new Date('2026-04-28T18:23:09-05:00'),
+    isVisible: true,
+  },
+]

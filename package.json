@@ -7,6 +7,11 @@
     "build": "npm run prisma:deploy && next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/run-domain-tests.cjs",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "db:generate": "prisma generate --no-engine",
+    "db:reset": "prisma db push --force-reset && npm run db:generate && npm run seed",
     "prisma:deploy": "npx prisma migrate deploy && prisma generate",
     "seed": "ts-node src/seed/seed-database.ts"
   },

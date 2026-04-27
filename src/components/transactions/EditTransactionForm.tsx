@@ -1,21 +1,23 @@
 'use client'
 
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { format, parseISO } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
-import { Form, FormField, FormItem, FormLabel, FormControl, Input, FormMessage, FormDescription, Textarea, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Popover, PopoverTrigger, PopoverContent, Calendar } from '@/components/ui'
+import { Alert, AlertDescription, Form, FormField, FormItem, FormLabel, FormControl, Input, FormMessage, FormDescription, Textarea, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Popover, PopoverTrigger, PopoverContent, Calendar } from '@/components/ui'
 import type { Category, Transaction, UpdateTransactionInput } from '@/interfaces'
 import { isTransportTransaction, isTransferTransaction } from '@/interfaces'
 import { updateTransactionById } from '@/actions'
 import { useRouter } from 'next/navigation'
+import { combineDateAndTime, roundMoney, toSignedAmount, toTransferAmount } from '@/lib/finance'
 
 const editTransactionSchema = z.object({
     title: z.string().min(1, 'El título es requerido'),
     description: z.string().max(100, 'La descripción no debe exceder 100 caracteres'),
     date: z.date({ required_error: 'La fecha es requerida' }),
-    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido'),
+    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Formato de hora inválido'),
     amount: z.string().min(0, 'El monto debe ser mayor o igual a 0'),
     categoryId: z.string().optional(),
     numberOfTrips: z.string().optional(),
@@ -32,14 +34,16 @@ interface EditTransactionFormProps {
 export const EditTransactionForm = ({ transaction, categories, walletId }: EditTransactionFormProps) => {
 
     const router = useRouter()
+    const [error, setError] = useState<string | null>(null)
+    const [isPending, setIsPending] = useState(false)
 
     const form = useForm<EditTransactionFormData>({
         resolver: zodResolver(editTransactionSchema),
         defaultValues: {
             title: transaction.title,
             description: transaction.description,
-            date: parseISO(transaction.date),
-            time: format(parseISO(transaction.date), 'HH:mm'),
+            date: parseISO(transaction.occurredAt || transaction.date),
+            time: format(parseISO(transaction.occurredAt || transaction.date), 'HH:mm:ss'),
             amount: Math.abs(transaction.amount).toString(),
             categoryId: categories ? categories.find( c => c.id === transaction.categoryId )?.name || 'Otros' : 'Otros',
             numberOfTrips: isTransportTransaction(transaction) ? transaction.numberOfTrips.toString() : undefined,
@@ -47,44 +51,57 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
     })
 
     const onSubmit = async (values: EditTransactionFormData) => {
-        const date = Date.parse(format(new Date(values.date), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"))
+        setError(null)
+        setIsPending(true)
+        const date = combineDateAndTime(values.date, values.time)
 
         const updateData: UpdateTransactionInput = {
             title: values.title,
             description: values.description,
             date: date,
-            categoryId: categories ? categories.find( c => c.name === values.categoryId )?.id || '10' : '10',
-            newAmount: transaction.type === 'INGRESO' ? Math.abs(parseFloat(values.amount)) : -Math.abs(parseFloat(values.amount)),
+            categoryId: categories ? categories.find( c => c.name === values.categoryId )?.id || categories.find(c => c.name === 'Otros')?.id : undefined,
+            newAmount: toSignedAmount(transaction.type, parseFloat(values.amount)),
             numberOfTrips: parseInt(values.numberOfTrips || '0'),
             walletId: transaction.walletId,
             type: transaction.type,
             amount: transaction.amount,
         }
 
-        if ( transaction.type !== 'TRANSFERENCIA' ) {
-            if ( transaction.fareValue && values.numberOfTrips ) {
-                const updateTransportData: UpdateTransactionInput = {
-                    ...updateData,
-                    fareValue: transaction.fareValue,
-                    newAmount: -transaction.fareValue * parseInt(values.numberOfTrips)
+        try {
+            let response
+
+        if ( transaction.type !== 'TRANSFERENCIA' && transaction.type !== 'PAGO_TARJETA' ) {
+                if ( transaction.fareValue && values.numberOfTrips ) {
+                    const updateTransportData: UpdateTransactionInput = {
+                        ...updateData,
+                        fareValue: transaction.fareValue,
+                        newAmount: toSignedAmount('TRANSPORTE', roundMoney(transaction.fareValue * parseInt(values.numberOfTrips, 10)))
+                    }
+                    response = await updateTransactionById( updateTransportData, transaction.id )
+                } else {
+                    response = await updateTransactionById( updateData, transaction.id )
                 }
-                console.log({ updateTransportData })
-                await updateTransactionById( updateTransportData, transaction.id )
-            } else {
-                await updateTransactionById( updateData, transaction.id )
-            }
         } else {
             const updateTransferData: UpdateTransactionInput = {
                 ...updateData,
-                amount: -Math.abs( transaction.amount ),
-                newAmount: -Math.abs(parseFloat(values.amount)),
+                amount: toTransferAmount(transaction.amount),
+                newAmount: toTransferAmount(parseFloat(values.amount)),
                 fromWalletId: transaction.fromWalletId,
                 toWalletId: transaction.toWalletId,
             }
-            await updateTransactionById( updateTransferData, transaction.id )
-        }
+            response = await updateTransactionById( updateTransferData, transaction.id )
+            }
 
-        router.push( walletId ? `/billeteras/${ transaction.walletId }` : '/transacciones' )
+            if (!response?.ok) {
+                setError(response?.message || 'No se pudo actualizar la transacción')
+                return
+            }
+
+            router.push( walletId ? `/billeteras/${ transaction.walletId }` : '/transacciones' )
+            router.refresh()
+        } finally {
+            setIsPending(false)
+        }
     }
 
     return (
@@ -238,6 +255,7 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
                                     <div className="relative">
                                         <Input
                                             type="time"
+                                            step='1'
                                             {...field}
                                             className="h-14 pl-10"
                                         />
@@ -249,8 +267,13 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
                         )}
                     />
                 </div>
+                {error && (
+                    <Alert variant='destructive'>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
                 <Button type="submit" className="w-full h-14 text-lg">
-                    Guardar Cambios
+                    {isPending ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>
             </form>
         </Form>

@@ -15,9 +15,9 @@ export const RecentTransactionItem = ({ transaction, categories }: RecentTransac
         <div className='flex items-center'>
             <div className='space-y-1'>
                 <p className='text-sm font-medium leading-none'>{ transaction.title }</p>
-                <p className='text-xs text-muted-foreground'>{ categories.find( c => c.id === transaction.categoryId )?.name }</p>
+                <p className='text-xs text-muted-foreground'>{ categories.find( c => c.id === transaction.categoryId )?.name ?? 'Sin categoría' }</p>
                 <p className='text-xs text-muted-foreground'>
-                    {format(new Date( transaction.date ), "d 'de' MMMM, yyyy", { locale: es })}
+                    {format(new Date( transaction.occurredAt || transaction.date ), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })}
                 </p>
             </div>
             <div className={`ml-auto font-medium ${ transaction.type !== 'TRANSFERENCIA' ? getAmountColor( transaction.amount ) : 'text-blue-400' }`}>

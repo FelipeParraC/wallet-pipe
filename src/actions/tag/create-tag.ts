@@ -1,0 +1,43 @@
+'use server'
+
+import type { CreateTagInput } from '@/interfaces'
+import prisma from '@/lib/prisma'
+import { actionSuccess } from '@/lib/action-response'
+import { asFailure, requireSessionUser } from '@/lib/server-validation'
+
+export const createTag = async (data: CreateTagInput) => {
+    try {
+        const user = await requireSessionUser()
+
+        if (!data.name.trim()) {
+            throw new Error('El nombre del tag es requerido')
+        }
+
+        const existing = await prisma.tag.findFirst({
+            where: {
+                userId: user.id,
+                name: data.name.trim().toLowerCase(),
+            }
+        })
+
+        if (existing) {
+            throw new Error('Ya existe un tag con ese nombre')
+        }
+
+        const tag = await prisma.tag.create({
+            data: {
+                userId: user.id,
+                name: data.name.trim().toLowerCase(),
+                color: data.color || null,
+            }
+        })
+
+        return {
+            ...actionSuccess({ tag }, 'Tag creado'),
+            tag,
+        }
+    } catch (error) {
+        console.error('createTag', error)
+        return asFailure(error)
+    }
+}

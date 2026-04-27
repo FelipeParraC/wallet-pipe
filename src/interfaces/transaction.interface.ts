@@ -1,20 +1,39 @@
-export type TransactionType = 'INGRESO' | 'GASTO' | 'TRANSPORTE' | 'TRANSFERENCIA'
+export type TransactionType =
+    | 'INGRESO'
+    | 'GASTO'
+    | 'TRANSPORTE'
+    | 'TRANSFERENCIA'
+    | 'TARJETA_CONSUMO'
+    | 'PAGO_TARJETA'
+    | 'DEUDA_PRESTAMO'
+    | 'DEUDA_ABONO'
+
+export type TransactionStatus = 'REGISTRADA' | 'PENDIENTE' | 'CANCELADA'
 
 export interface Transaction {
     id: string
     userId: string
     type: TransactionType
+    status?: TransactionStatus
     walletId: string
     title: string
     description: string
     date: string
-    categoryId: string
+    occurredAt: string
+    recordedAt: string
+    categoryId?: string | null
     amount: number
     isVisible: boolean
     fareValue?: number
     numberOfTrips?: number
     fromWalletId?: string
     toWalletId?: string
+    scheduledPlanId?: string
+    scheduledOccurrenceId?: string
+    installmentPlanId?: string
+    installmentOccurrenceId?: string
+    personId?: string
+    debtId?: string
 }
 
 export interface TransportTransaction extends Transaction {
@@ -23,16 +42,16 @@ export interface TransportTransaction extends Transaction {
 }
 
 export interface TransferTransaction extends Transaction {
-    fromWallet: string
-    toWallet: string
+    fromWalletId: string
+    toWalletId: string
 }
 
 export function isTransportTransaction(transaction: Transaction): transaction is TransportTransaction {
-    return 'fareValue' in transaction && 'numberOfTrips' in transaction
+    return transaction.type === 'TRANSPORTE' && typeof transaction.fareValue === 'number' && typeof transaction.numberOfTrips === 'number'
 }
 
 export function isTransferTransaction(transaction: Transaction): transaction is TransferTransaction {
-    return 'fromWallet' in transaction && 'toWallet' in transaction
+    return transaction.type === 'TRANSFERENCIA' && typeof transaction.fromWalletId === 'string' && typeof transaction.toWalletId === 'string'
 }
 
 export function isStandardTransaction(transaction: Transaction): transaction is Transaction {
@@ -45,19 +64,28 @@ export interface CreateTransactionInput {
     title: string
     description: string
     date: number
-    categoryId: string
+    recordedAt?: number
+    categoryId?: string
     amount: number
     fareValue?: number
     numberOfTrips?: number
     fromWalletId?: string
     toWalletId?: string
+    status?: TransactionStatus
+    scheduledPlanId?: string
+    scheduledOccurrenceId?: string
+    installmentPlanId?: string
+    installmentOccurrenceId?: string
+    personId?: string
+    debtId?: string
 }
 
 export interface UpdateTransactionInput {
     title: string
     description: string
     date: number
-    categoryId: string
+    recordedAt?: number
+    categoryId?: string
     newAmount: number
     numberOfTrips?: number
     fareValue?: number
@@ -66,4 +94,11 @@ export interface UpdateTransactionInput {
     amount: number
     fromWalletId?: string
     toWalletId?: string
+    status?: TransactionStatus
+    scheduledPlanId?: string
+    scheduledOccurrenceId?: string
+    installmentPlanId?: string
+    installmentOccurrenceId?: string
+    personId?: string
+    debtId?: string
 }

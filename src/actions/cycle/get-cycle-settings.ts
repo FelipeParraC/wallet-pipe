@@ -1,0 +1,39 @@
+'use server'
+
+import prisma from '@/lib/prisma'
+import { actionSuccess } from '@/lib/action-response'
+import { asFailure, requireSessionUser } from '@/lib/server-validation'
+
+const defaultCycleSettings = (userId: string) => ({
+    id: 'default',
+    userId,
+    defaultStartDay: 1,
+    timezone: 'America/Bogota',
+    overrides: [],
+})
+
+export const getCycleSettings = async () => {
+    try {
+        const user = await requireSessionUser()
+
+        const cycleSettings = await prisma.userCycleSettings.findUnique({
+            where: { userId: user.id },
+            include: { overrides: { orderBy: { effectiveFrom: 'desc' } } }
+        })
+
+        const data = cycleSettings
+            ? {
+                ...cycleSettings,
+                overrides: cycleSettings.overrides.map((override) => ({
+                    ...override,
+                    effectiveFrom: override.effectiveFrom.toISOString(),
+                }))
+            }
+            : defaultCycleSettings(user.id)
+
+        return actionSuccess({ cycleSettings: data })
+    } catch (error) {
+        console.error('getCycleSettings', error)
+        return asFailure(error)
+    }
+}

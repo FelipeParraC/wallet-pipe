@@ -6,6 +6,15 @@ export * from './auth/register'
 
 
 export * from './category/get-categories'
+export * from './category/create-category'
+export * from './cycle/get-cycle-settings'
+export * from './cycle/update-cycle-settings'
+export * from './dashboard/get-current-cycle-summary'
+export * from './debt/create-debt'
+export * from './installment/create-installment-plan'
+export * from './scheduled/create-scheduled-plan'
+export * from './settings/get-settings-overview'
+export * from './tag/create-tag'
 
 
 export * from './transaction/create-transaction'

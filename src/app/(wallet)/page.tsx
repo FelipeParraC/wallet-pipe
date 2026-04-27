@@ -1,6 +1,6 @@
 export const revalidate = 0
 
-import { getCategories, getTransactions, getWallets } from '@/actions'
+import { getCategories, getCurrentCycleSummary, getTransactions, getWallets } from '@/actions'
 import { auth } from '@/auth.config'
 import { DashboardHome, NewTransactionFloatingButton } from '@/components'
 
@@ -18,13 +18,21 @@ export default async function HomePage() {
     const respCategories = await getCategories()
     const categories = respCategories.ok ? respCategories.categories : []
 
-    return (
-        <div className='space-y-9'>
-            <h1 className='text-2xl font-bold md:text-3xl text-center'>
-                {session ? `Hola, ${ session.user.name }` : 'Bienvenido a Wallet Pipe'}
-            </h1>
+    const respCycleSummary = await getCurrentCycleSummary()
+    const cycleSummary = respCycleSummary.ok ? respCycleSummary.data : null
 
-            <DashboardHome transactions={ transactions } categories={ categories } wallets={ wallets } />
+    return (
+        <div className='space-y-7'>
+            <div className='flex items-center justify-between'>
+                <div>
+                    <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Panel principal</p>
+                    <h1 className='mt-1 text-2xl font-semibold tracking-tight text-white md:text-3xl'>
+                        {session ? `Hola, ${session.user.name}` : 'Bienvenido a Wallet Pipe'}
+                    </h1>
+                </div>
+            </div>
+
+            <DashboardHome transactions={ transactions } categories={ categories } wallets={ wallets } cycleSummary={ cycleSummary } />
 
             <NewTransactionFloatingButton walletId='' />
         </div>

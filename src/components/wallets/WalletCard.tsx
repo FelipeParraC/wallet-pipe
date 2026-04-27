@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Wallet } from '@/interfaces'
-import { currencyFormatWithSmallDecimals, getIcon } from '@/utils'
+import { getIcon } from '@/utils'
+import { CurrencyDisplay } from '../CurrencyDisplay'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 
 interface WalletCardProps {
@@ -11,24 +12,42 @@ interface WalletCardProps {
 export const WalletCard = ({ wallet }: WalletCardProps) => {
 
     const Icon = getIcon( wallet.type )
+    const isCreditCard = wallet.type === 'Tarjeta de Crédito'
 
     return (
         <Link href={`/billeteras/${wallet.id}`}>
-            <Card className='hover:shadow-lg transition-shadow h-full' style={{ backgroundColor: wallet.color }}>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                    <CardTitle className='text-lg md:text-xl font-medium text-white'>
+            <Card className='h-full overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(2,6,23,0.24)]'>
+                <CardHeader className='relative flex flex-row items-center justify-between space-y-0 pb-2'>
+                    <div
+                        className='absolute inset-x-5 top-0 h-16 rounded-b-[1.4rem] opacity-80 blur-2xl'
+                        style={{ backgroundColor: wallet.color }}
+                    />
+                    <CardTitle className='relative text-lg font-medium text-white md:text-xl'>
                         {wallet.name}
                     </CardTitle>
-                    <Icon className='h-8 w-8 text-white' />
+                    <span className='relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06]'>
+                        <Icon className='h-5 w-5 text-white' />
+                    </span>
                 </CardHeader>
-                <CardContent>
-                    <div className='text-2xl font-bold text-white currency-with-small-decimals' dangerouslySetInnerHTML={{ __html: currencyFormatWithSmallDecimals(wallet.balance) }} />
-                    <p className='text-xs text-white opacity-75 capitalize'>
-                        {wallet.type}
+                <CardContent className='relative'>
+                    <CurrencyDisplay amount={wallet.balance} showDecimals={true} className='text-2xl font-bold text-white md:text-3xl' />
+                    <p className='mt-2 text-xs uppercase tracking-[0.24em] text-slate-500'>
+                        {isCreditCard ? 'Deuda actual de la tarjeta' : wallet.type}
                     </p>
+                    {isCreditCard && (
+                        <>
+                            <div className='mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-xs text-slate-300'>
+                                Cupo disponible:{' '}
+                                <CurrencyDisplay amount={wallet.availableCredit ?? 0} showDecimals={true} className='inline-block text-xs text-white' />
+                                <p className='mt-2 text-slate-500'>
+                                    Corte {wallet.statementClosingDay} · Pago {wallet.paymentDueDay}
+                                </p>
+                            </div>
+                        </>
+                    )}
                     {!wallet.includeInTotal && (
-                        <p className='text-xs text-white opacity-75 mt-1'>
-                            No incluida en el balance total
+                        <p className='mt-3 text-xs text-slate-500'>
+                            {isCreditCard ? 'Se muestra aparte del balance general' : 'No incluida en el balance total'}
                         </p>
                     )}
                 </CardContent>

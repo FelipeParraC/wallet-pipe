@@ -1,4 +1,4 @@
-export type WalletType = 'Efectivo' | 'Cuenta Bancaria' | 'Ahorros' | 'Transporte'
+export type WalletType = 'Efectivo' | 'Cuenta Bancaria' | 'Ahorros' | 'Transporte' | 'Tarjeta de Crédito'
 
 export interface Wallet {
     id: string
@@ -10,16 +10,23 @@ export interface Wallet {
     includeInTotal: boolean
     fareValue?: number
     isActive: boolean
+    creditLimit?: number
+    availableCredit?: number
+    statementClosingDay?: number
+    paymentDueDay?: number
 }
 
 export interface CreateWalletInput {
-    userId: string
     name: string
     balance: number
     type: WalletType
     fareValue?: number
     color: string
     includeInTotal: boolean
+    creditLimit?: number
+    availableCredit?: number
+    statementClosingDay?: number
+    paymentDueDay?: number
 }
 
 export interface UpdateWalletInput {
@@ -27,4 +34,8 @@ export interface UpdateWalletInput {
     fareValue?: number
     color?: string
     includeInTotal?: boolean
+    creditLimit?: number
+    availableCredit?: number
+    statementClosingDay?: number
+    paymentDueDay?: number
 }

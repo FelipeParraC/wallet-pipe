@@ -1,23 +1,52 @@
-// Función auxiliar para formatear números
-const formatNumber = (value: number) => {
-    return new Intl.NumberFormat('es-CO', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(value)
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+})
+
+const integerFormatter = new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+})
+
+export const getCurrencyParts = (value: number) => {
+    const absoluteValue = Math.abs(value)
+    const wholePart = Math.trunc(absoluteValue)
+    const decimalPart = Math.round((absoluteValue - wholePart) * 100)
+
+    return {
+        isNegative: value < 0,
+        symbol: '$',
+        wholePart: integerFormatter.format(wholePart),
+        decimalPart: decimalPart.toString().padStart(2, '0'),
+        full: currencyFormatter.format(value),
+    }
 }
 
-// Función para mostrar siempre dos decimales con los decimales más pequeños
 export const currencyFormatWithSmallDecimals = (value: number) => {
-    const wholePart = Math.floor(value)
-    const decimalPart = Math.round((value - wholePart) * 100)
-    const formattedWholePart = formatNumber(wholePart)
-    const formattedDecimalPart = decimalPart.toString().padStart(2, '0')
+    const parts = getCurrencyParts(value)
+    const sign = parts.isNegative ? '-' : ''
 
-    return `$ ${formattedWholePart}<span class="text-xs align-bottom">,${formattedDecimalPart}</span>`
+    return `${sign}${parts.symbol} ${parts.wholePart}<span class="text-xs align-bottom">,${parts.decimalPart}</span>`
 }
 
 export const currencyFormatWithoutDecimals = (value: number) => {
-    return `$ ${formatNumber(value)}`
+    const parts = getCurrencyParts(value)
+    const sign = parts.isNegative ? '-' : ''
+    return `${sign}${parts.symbol} ${parts.wholePart}`
+}
+
+export const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
+    if (!options) return currencyFormatter.format(value)
+
+    return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+        ...options,
+    }).format(value)
 }
 
 export const getAmountColor = (amount: number) => {
@@ -25,4 +54,3 @@ export const getAmountColor = (amount: number) => {
     if (amount < 0) return 'text-red-500'
     return 'text-yellow-500'
 }
-

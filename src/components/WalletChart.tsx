@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, ColorType, IChartApi } from 'lightweight-charts'
 import { format } from 'date-fns'
-import { isTransferTransaction } from '@/interfaces'
 import type { Transaction } from '@/interfaces'
+import { getWalletTransferDelta } from '@/lib/finance'
 
 interface WalletChartProps {
     transactions: Transaction[] | null
@@ -55,9 +55,7 @@ export const WalletChart = ({ transactions, color, walletId }: WalletChartProps)
                     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                     .reduce((acc, transaction) => {
                         const lastBalance = acc.length > 0 ? acc[acc.length - 1].value : 0
-                        const transactionAmount = isTransferTransaction(transaction) && transaction.fromWallet === walletId
-                            ? -transaction.amount
-                            : transaction.amount
+                        const transactionAmount = getWalletTransferDelta(transaction, walletId)
                         const newBalance = lastBalance + transactionAmount
                         const existingEntry = acc.find(entry => entry.time === format(new Date(transaction.date), 'yyyy-MM-dd'))
 

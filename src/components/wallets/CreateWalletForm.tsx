@@ -1,16 +1,15 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import type { WalletType } from '@/interfaces'
-import { Coins, CreditCard, WalletIcon, Bus } from 'lucide-react'
-import { Button, Checkbox, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui'
+import { Coins, CreditCard, Landmark, WalletIcon, Bus } from 'lucide-react'
+import { Alert, AlertDescription, Button, Checkbox, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui'
 import { createWallet } from '@/actions'
-
-//TODO: Cambiar currentUser por el usuario actual
-import { currentUser } from '@/seed/data'
 import { useRouter } from 'next/navigation'
+import { roundMoney } from '@/lib/finance'
 
 const suggestedColors = [
     '#3b82f6',
@@ -23,9 +22,10 @@ const suggestedColors = [
 
 const walletTypes = [
     { value: 'Efectivo', label: 'Efectivo', icon: Coins },
-    { value: 'Cuenta Bancaria', label: 'Cuenta Bancaria', icon: CreditCard },
+    { value: 'Cuenta Bancaria', label: 'Cuenta Bancaria', icon: Landmark },
     { value: 'Ahorros', label: 'Ahorros', icon: WalletIcon },
     { value: 'Transporte', label: 'Transporte', icon: Bus },
+    { value: 'Tarjeta de Crédito', label: 'Tarjeta de Crédito', icon: CreditCard },
 ]
 
 const walletTypeValues = walletTypes.map((type) => type.value)
@@ -43,6 +43,12 @@ const formSchema = z.object({
         .string()
         .optional()
         .refine((val) => !val || !isNaN(Number(val)), { message: 'Debe ser un número válido' }),
+    creditLimit: z
+        .string()
+        .optional()
+        .refine((val) => !val || !isNaN(Number(val)), { message: 'Debe ser un número válido' }),
+    statementClosingDay: z.string().optional(),
+    paymentDueDay: z.string().optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -50,6 +56,8 @@ type FormData = z.infer<typeof formSchema>
 export const CreateWalletForm = () => {
 
     const router = useRouter()
+    const [error, setError] = useState<string | null>(null)
+    const [isPending, setIsPending] = useState(false)
 
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
@@ -60,8 +68,18 @@ export const CreateWalletForm = () => {
     })
 
     const watchType = form.watch('type')
+    const isCreditCard = watchType === 'Tarjeta de Crédito'
+    const isTransport = watchType === 'Transporte'
+
+    useEffect(() => {
+        if (isCreditCard || isTransport) {
+            form.setValue('includeInTotal', false)
+        }
+    }, [form, isCreditCard, isTransport])
 
     const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+        setError(null)
+        setIsPending(true)
         const selectedType = walletTypes.find((t) => t.value === values.type)
     
         if (!selectedType) {
@@ -73,18 +91,31 @@ export const CreateWalletForm = () => {
             values.type === 'Transporte' && values.fareValue
                 ? parseFloat(values.fareValue)
                 : undefined
+
+        const isCreditCard = values.type === 'Tarjeta de Crédito'
     
         const walletData = {
-            userId: currentUser.id,
             name: values.name,
-            balance: parseFloat(values.balance),
+            balance: roundMoney(parseFloat(values.balance)),
             type: values.type as WalletType,
             color: values.color,
             includeInTotal: values.includeInTotal,
             fareValue,
+            creditLimit: isCreditCard && values.creditLimit ? roundMoney(parseFloat(values.creditLimit)) : undefined,
+            availableCredit: isCreditCard && values.creditLimit ? roundMoney(parseFloat(values.creditLimit) - parseFloat(values.balance)) : undefined,
+            statementClosingDay: isCreditCard && values.statementClosingDay ? parseInt(values.statementClosingDay, 10) : undefined,
+            paymentDueDay: isCreditCard && values.paymentDueDay ? parseInt(values.paymentDueDay, 10) : undefined,
         }
 
-        await createWallet( walletData )
+        const response = await createWallet( walletData )
+
+        setIsPending(false)
+
+        if (!response.ok) {
+            setError(response.message)
+            return
+        }
+
         router.push('/billeteras')
         router.refresh()
     }
@@ -112,10 +143,20 @@ export const CreateWalletForm = () => {
                     name='balance'
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Cantidad Inicial</FormLabel>
+                            <FormLabel>{isCreditCard ? 'Deuda Actual' : 'Saldo Inicial'}</FormLabel>
                             <FormControl>
-                                <Input type='number' step='0.01' placeholder='0.00' {...field} />
+                                <Input
+                                    type='number'
+                                    step='0.01'
+                                    placeholder={isCreditCard ? '0.00' : '0.00'}
+                                    {...field}
+                                />
                             </FormControl>
+                            <FormDescription>
+                                {isCreditCard
+                                    ? 'Si la tarjeta ya tiene compras pendientes, registra aquí la deuda actual para iniciar el seguimiento.'
+                                    : 'Este saldo crea el punto de partida de la cuenta al momento de registrarla.'}
+                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -165,6 +206,14 @@ export const CreateWalletForm = () => {
                         )}
                     />
                 )}
+                {isCreditCard && (
+                    <div className='rounded-lg border border-violet-500/30 bg-violet-500/10 p-4 text-left'>
+                        <p className='text-sm font-medium text-violet-200'>Configuración de tarjeta de crédito</p>
+                        <p className='mt-1 text-sm text-muted-foreground'>
+                            El saldo de esta tarjeta se interpreta como deuda pendiente. Los pagos se registran desde otra cuenta hacia esta tarjeta.
+                        </p>
+                    </div>
+                )}
                 <FormField
                     control={form.control}
                     name='color'
@@ -203,6 +252,7 @@ export const CreateWalletForm = () => {
                             <FormControl>
                                 <Checkbox
                                     checked={field.value}
+                                    disabled={isCreditCard || isTransport}
                                     onCheckedChange={field.onChange}
                                 />
                             </FormControl>
@@ -211,14 +261,77 @@ export const CreateWalletForm = () => {
                                     Incluir en el balance total
                                 </FormLabel>
                                 <FormDescription>
-                                    Si está marcado, esta billetera se incluirá en el cálculo del balance total.
+                                    {isCreditCard
+                                        ? 'Las tarjetas no se suman al disponible general; se muestran aparte como deuda.'
+                                        : isTransport
+                                            ? 'Las tarjetas de transporte se mantienen fuera del balance general para no inflar el disponible.'
+                                            : 'Si está marcado, esta cuenta se incluirá en el cálculo del balance total.'}
                                 </FormDescription>
                             </div>
                         </FormItem>
                     )}
                 />
+                {error && (
+                    <Alert variant='destructive'>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+                {watchType === 'Tarjeta de Crédito' && (
+                    <>
+                        <FormField
+                            control={form.control}
+                            name='creditLimit'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Cupo de Crédito</FormLabel>
+                                    <FormControl>
+                                        <Input type='number' step='0.01' placeholder='0.00' {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                        Cupo total aprobado por el banco para esta tarjeta.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className='grid grid-cols-2 gap-4'>
+                            <FormField
+                                control={form.control}
+                                name='statementClosingDay'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Día de Corte</FormLabel>
+                                        <FormControl>
+                                            <Input type='number' min='1' max='31' placeholder='18' {...field} />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Día en que se cierra el extracto.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='paymentDueDay'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Día Límite de Pago</FormLabel>
+                                        <FormControl>
+                                            <Input type='number' min='1' max='31' placeholder='5' {...field} />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Día máximo para pagar ese corte.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    </>
+                )}
                 <Button type='submit' className='w-full text-white'>
-                    Crear Billetera
+                    {isPending ? 'Creando...' : 'Crear Billetera'}
                 </Button>
             </form>
         </Form>

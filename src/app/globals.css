@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
+    --background: 215 45% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 216 34% 12%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 216 34% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 208 89% 60%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 216 27% 18%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 216 25% 18%;
+    --muted-foreground: 215 18% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 213 29% 20%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 214 27% 24%;
+    --input: 214 27% 24%;
+    --ring: 205 88% 63%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
   }
 }
 
@@ -40,12 +40,49 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 26%),
+      radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 24%),
+      radial-gradient(circle at bottom center, rgba(71, 85, 105, 0.22), transparent 34%),
+      linear-gradient(180deg, #06111f 0%, #081222 42%, #09101d 100%);
+    min-height: 100vh;
   }
 }
 
 .currency-with-small-decimals {
   display: inline-flex;
   align-items: flex-end;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.24);
+  color: white;
+}
+
+@layer utilities {
+  .glass-panel {
+    background: linear-gradient(180deg, rgba(8, 15, 28, 0.72), rgba(15, 23, 42, 0.56));
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: 0 20px 60px rgba(2, 6, 23, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(22px);
+  }
+
+  .glass-pill {
+    background: rgba(15, 23, 42, 0.62);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.28);
+    backdrop-filter: blur(24px);
+  }
+
+  .ambient-grid {
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
 }

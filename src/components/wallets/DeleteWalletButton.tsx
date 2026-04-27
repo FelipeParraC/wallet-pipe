@@ -26,11 +26,17 @@ export function DeleteWalletButton({ walletId }: DeleteWalletButtonProps) {
     const router = useRouter()
 
     const [open, setOpen] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     const onDelete = async (id: string) => {
-        await deleteWalletById( id )
+        const response = await deleteWalletById( id )
+        if (!response.ok) {
+            setError(response.message)
+            return
+        }
         setOpen(false)
         router.push('/billeteras')
+        router.refresh()
     }
 
     return (
@@ -54,6 +60,7 @@ export function DeleteWalletButton({ walletId }: DeleteWalletButtonProps) {
                     <AlertDialogDescription className="text-sm sm:text-base">
                         Esta acción no se puede deshacer. Esto eliminará permanentemente la billetera.
                     </AlertDialogDescription>
+                    {error && <p className='text-sm text-red-400'>{error}</p>}
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
                     <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>

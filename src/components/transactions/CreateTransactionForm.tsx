@@ -7,12 +7,13 @@ import * as z from 'zod'
 import { format } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
 import type { Category, CreateTransactionInput, Wallet } from '@/interfaces'
-import { Button, Calendar, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '../ui'
+import { Alert, AlertDescription, Button, Calendar, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '../ui'
 import { createTransaction } from '@/actions'
 import { useRouter } from 'next/navigation'
+import { combineDateAndTime, roundMoney, toSignedAmount, toTransferAmount } from '@/lib/finance'
 
 const standardFormSchema = z.object({
-    type: z.enum(['INGRESO', 'GASTO']),
+    type: z.enum(['INGRESO', 'GASTO', 'TARJETA_CONSUMO']),
     title: z.string().min(1, 'El título es requerido'),
     amount: z.string().min(1, 'El monto es requerido'),
     wallet: z.string().min(1, 'La billetera es requerida'),
@@ -21,7 +22,7 @@ const standardFormSchema = z.object({
     date: z.date({
         required_error: 'La fecha es requerida',
     }),
-    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido'),
+    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Formato de hora inválido'),
 })
 
 const transportFormSchema = z.object({
@@ -33,11 +34,11 @@ const transportFormSchema = z.object({
     date: z.date({
         required_error: 'La fecha es requerida',
     }),
-    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido'),
+    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Formato de hora inválido'),
 })
 
 const transferFormSchema = z.object({
-    type: z.literal('TRANSFERENCIA'),
+    type: z.enum(['TRANSFERENCIA', 'PAGO_TARJETA']),
     title: z.string().min(1, 'El título es requerido'),
     amount: z.string().min(1, 'El monto es requerido'),
     fromWallet: z.string().min(1, 'La billetera de origen es requerida'),
@@ -46,7 +47,7 @@ const transferFormSchema = z.object({
     date: z.date({
         required_error: 'La fecha es requerida',
     }),
-    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido'),
+    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Formato de hora inválido'),
 })
 
 const formSchema = z.discriminatedUnion('type', [
@@ -56,6 +57,15 @@ const formSchema = z.discriminatedUnion('type', [
 ])
 
 type FormData = z.infer<typeof formSchema>
+
+const transactionTypeLabel: Record<FormData['type'], string> = {
+    INGRESO: 'Ingreso',
+    GASTO: 'Gasto',
+    TRANSPORTE: 'Transporte',
+    TRANSFERENCIA: 'Transferencia',
+    TARJETA_CONSUMO: 'Consumo con tarjeta',
+    PAGO_TARJETA: 'Pago de tarjeta',
+}
 
 interface CreateTransactionFormProps {
     wallets: Wallet[]
@@ -68,6 +78,8 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
     const router = useRouter()
 
     const [selectedWalletType, setSelectedWalletType] = useState<string>('')
+    const [error, setError] = useState<string | null>(null)
+    const [isPending, setIsPending] = useState(false)
 
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
@@ -75,12 +87,15 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
             type: 'GASTO',
             wallet: wallet?.id || '',
             date: new Date(),
-            time: format(new Date(), 'HH:mm'),
+            time: format(new Date(), 'HH:mm:ss'),
         },
     })
 
     const watchWallet = form.watch('wallet')
     const watchType = form.watch('type')
+    const activeWallets = wallets.filter(w => w.isActive)
+    const isCreditCardContext = selectedWalletType === 'Tarjeta de Crédito'
+    const isTransferLike = watchType === 'TRANSFERENCIA' || watchType === 'PAGO_TARJETA'
 
     useEffect(() => {
         const selectedWallet = wallets.find(w => w.id === watchWallet)
@@ -96,49 +111,64 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
     }, [selectedWalletType, watchType, form])
 
     const handleSubmit = async (values: FormData) => {
-        const date = Date.parse(format(new Date(values.date), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"))
-        if (values.type === 'TRANSPORTE') {
-            const fareValue = wallets.find(w => w.id === values.wallet)?.fareValue || 0
-            const submissionData: CreateTransactionInput = {
-                type: values.type,
-                title: values.title,
-                description: values.description,
-                date: date,
-                fareValue: fareValue,
-                numberOfTrips: parseInt(values.numberOfTrips),
-                categoryId: '02',
-                walletId: values.wallet,
-                amount: -(fareValue * parseInt(values.numberOfTrips))
-            }
-            await createTransaction( submissionData )
-        } else if (values.type === 'TRANSFERENCIA') {
-            const submissionData: CreateTransactionInput = {
-                type: values.type,
-                title: values.title,
-                description: values.description,
-                date: date,
-                amount: -Math.abs(parseFloat(values.amount)),
-                categoryId: '11',
-                fromWalletId: values.fromWallet,
-                toWalletId: values.toWallet,
-                walletId: values.fromWallet
-            }
-            await createTransaction(submissionData)
-        } else if ( categories ) {
-            const submissionData: CreateTransactionInput = {
-                type: values.type,
-                title: values.title,
-                description: values.description,
-                date: date,
-                amount: parseFloat(values.amount) * (values.type === 'GASTO' ? -1 : 1),
-                categoryId: categories.find( c => c.name === values.category )?.id || '10',
-                walletId: values.wallet
-            }
-            await createTransaction(submissionData)
-        }
+        setError(null)
+        setIsPending(true)
 
-        router.push( wallet ? `/billeteras/${ wallet.id }` : '/transacciones' )
-        router.refresh()
+        try {
+            const date = combineDateAndTime(values.date, values.time)
+
+            let response
+
+            if (values.type === 'TRANSPORTE') {
+                const fareValue = activeWallets.find(w => w.id === values.wallet)?.fareValue || 0
+                const submissionData: CreateTransactionInput = {
+                    type: values.type,
+                    title: values.title,
+                    description: values.description,
+                    date,
+                    fareValue,
+                    numberOfTrips: parseInt(values.numberOfTrips, 10),
+                    categoryId: categories?.find(c => c.name === 'Transporte')?.id,
+                    walletId: values.wallet,
+                    amount: toSignedAmount('TRANSPORTE', roundMoney(fareValue * parseInt(values.numberOfTrips, 10)))
+                }
+                response = await createTransaction(submissionData)
+            } else if (values.type === 'TRANSFERENCIA' || values.type === 'PAGO_TARJETA') {
+                const submissionData: CreateTransactionInput = {
+                    type: values.type,
+                    title: values.title,
+                    description: values.description,
+                    date,
+                    amount: toTransferAmount(parseFloat(values.amount)),
+                    categoryId: categories?.find(c => c.name === 'Finanzas')?.id ?? categories?.find(c => c.name === 'Otros')?.id,
+                    fromWalletId: values.fromWallet,
+                    toWalletId: values.toWallet,
+                    walletId: values.fromWallet
+                }
+                response = await createTransaction(submissionData)
+            } else if ('wallet' in values && 'category' in values && categories) {
+                const submissionData: CreateTransactionInput = {
+                    type: values.type,
+                    title: values.title,
+                    description: values.description,
+                    date,
+                    amount: toSignedAmount(values.type, parseFloat(values.amount)),
+                    categoryId: categories.find(c => c.name === values.category)?.id || categories.find(c => c.name === 'Otros')?.id,
+                    walletId: values.wallet
+                }
+                response = await createTransaction(submissionData)
+            }
+
+            if (!response?.ok) {
+                setError(response?.message || 'No se pudo guardar la transacción')
+                return
+            }
+
+            router.push(wallet ? `/billeteras/${wallet.id}` : '/transacciones')
+            router.refresh()
+        } finally {
+            setIsPending(false)
+        }
     }
 
     return (
@@ -152,7 +182,11 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                             <FormLabel>Tipo de Transacción</FormLabel>
                             <FormControl>
                                 <div className='flex flex-wrap gap-4'>
-                                    {(selectedWalletType === 'Transporte' ? ['TRANSPORTE'] : ['GASTO', 'INGRESO', 'TRANSFERENCIA']).map((type) => (
+                                        {(selectedWalletType === 'Transporte'
+                                            ? ['TRANSPORTE']
+                                            : selectedWalletType === 'Tarjeta de Crédito'
+                                                ? ['TARJETA_CONSUMO']
+                                                : ['GASTO', 'INGRESO', 'TRANSFERENCIA', 'PAGO_TARJETA']).map((type) => (
                                         <Button
                                             key={type}
                                             type='button'
@@ -160,12 +194,21 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                             className='flex-1'
                                             onClick={() => field.onChange(type)}
                                         >
-                                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                                            {transactionTypeLabel[type as FormData['type']]}
                                         </Button>
                                     ))}
 
                                 </div>
                             </FormControl>
+                            <FormDescription>
+                                {watchType === 'PAGO_TARJETA'
+                                    ? 'Usa este tipo para mover dinero desde una cuenta o efectivo hacia una tarjeta de crédito.'
+                                    : watchType === 'TARJETA_CONSUMO'
+                                        ? 'Registra una compra real hecha con la tarjeta de crédito seleccionada.'
+                                        : watchType === 'TRANSPORTE'
+                                            ? 'Registra viajes realizados; el sistema calcula el monto usando el valor del pasaje.'
+                                            : 'Cada transacción guarda la fecha y hora exactas del evento, incluyendo segundos.'}
+                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -176,21 +219,26 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                         name='wallet'
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Billetera</FormLabel>
+                                <FormLabel>{isCreditCardContext ? 'Tarjeta' : 'Cuenta o billetera'}</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                         <SelectTrigger className='h-14'>
-                                            <SelectValue placeholder='Selecciona una billetera' />
+                                            <SelectValue placeholder={isCreditCardContext ? 'Selecciona una tarjeta' : 'Selecciona una cuenta'} />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {wallets.map((wallet) => (
+                                        {activeWallets.map((wallet) => (
                                             <SelectItem key={wallet.id} value={wallet.id}>
                                                 {wallet.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                <FormDescription>
+                                    {isCreditCardContext
+                                        ? 'La compra quedará asociada a esta tarjeta y aumentará su deuda pendiente.'
+                                        : 'Selecciona la cuenta principal sobre la que impactará el movimiento.'}
+                                </FormDescription>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -248,14 +296,14 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                         )}
                     />
                 )}
-                {watchType === 'TRANSFERENCIA' && (
+                {isTransferLike && (
                     <>
                         <FormField
                             control={form.control}
                             name='fromWallet'
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Billetera de Origen</FormLabel>
+                                    <FormLabel>Cuenta de Origen</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
                                             <SelectTrigger className='h-14'>
@@ -263,7 +311,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {wallets.map((wallet) => (
+                                            {activeWallets.map((wallet) => (
                                                 <SelectItem key={wallet.id} value={wallet.id}>
                                                     {wallet.name}
                                                 </SelectItem>
@@ -279,7 +327,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                             name='toWallet'
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Billetera de Destino</FormLabel>
+                                    <FormLabel>{watchType === 'PAGO_TARJETA' ? 'Tarjeta a pagar' : 'Cuenta de Destino'}</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
                                             <SelectTrigger className='h-14'>
@@ -287,7 +335,10 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {wallets.filter(w => w.id !== form.watch('fromWallet')).map((wallet) => (
+                                            {activeWallets
+                                                .filter(w => w.id !== form.watch('fromWallet'))
+                                                .filter(w => watchType === 'PAGO_TARJETA' ? w.type === 'Tarjeta de Crédito' : true)
+                                                .map((wallet) => (
                                                 <SelectItem key={wallet.id} value={wallet.id}>
                                                     {wallet.name}
                                                 </SelectItem>
@@ -300,7 +351,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                         />
                     </>
                 )}
-                {watchType !== 'TRANSFERENCIA' && watchType !== 'TRANSPORTE' && (
+                {watchType !== 'TRANSFERENCIA' && watchType !== 'TRANSPORTE' && watchType !== 'PAGO_TARJETA' && (
                     <FormField
                         control={form.control}
                         name='category'
@@ -395,6 +446,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                     <div className='relative'>
                                         <Input
                                             type='time'
+                                            step='1'
                                             {...field}
                                             className='h-14 pl-10'
                                         />
@@ -406,8 +458,13 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                         )}
                     />
                 </div>
+                {error && (
+                    <Alert variant='destructive'>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
                 <Button type='submit' className='w-full h-14 text-lg'>
-                    Guardar Transacción
+                    {isPending ? 'Guardando...' : 'Guardar Transacción'}
                 </Button>
             </form>
         </Form>

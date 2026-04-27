@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { formatCurrency } from '@/utils'
 
 interface SafeCurrencyDisplayProps {
     amount: number
@@ -8,25 +8,9 @@ interface SafeCurrencyDisplayProps {
 }
 
 export const SafeCurrencyDisplay = ({ amount, className = '' }: SafeCurrencyDisplayProps) => {
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => {
-        setMounted(true)
-    }, [])
-
-    // Render nothing until mounted to avoid hydration mismatch
-    if (!mounted) {
-        return <span className={className}>$ --</span>
-    }
-
-    const formatter = new Intl.NumberFormat('es-CO', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    })
-
     return (
         <span className={className}>
-            $ {formatter.format(amount)}
+            {formatCurrency(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
         </span>
     )
 }

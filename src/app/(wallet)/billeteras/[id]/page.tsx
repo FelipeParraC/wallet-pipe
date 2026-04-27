@@ -37,14 +37,14 @@ export default async function BilleteraPage({ params }: Props) {
     const respCategories = await getCategories()
     const categories = respCategories.ok ? respCategories.categories : []
 
-    const balanceEvolutionChartTransactions = transactions?.map( t => t.toWalletId === walletId ? { ...t, amount: Math.abs(t.amount) } : t ) || null
+    const balanceEvolutionChartTransactions = transactions || null
     const dailyExpensesChartTransactions = transactions?.filter( t => t.type !== 'TRANSFERENCIA' ) || null
 
     return (
         <div className='space-y-6'>
 
             <div className="flex justify-between items-center w-full">
-                <BackButton href='/billeteras' texto='Billeteras' />
+                <BackButton href='/billeteras' texto='Cuentas' />
 
                 <EditWalletButton walletId={ wallet.id } />
             </div>

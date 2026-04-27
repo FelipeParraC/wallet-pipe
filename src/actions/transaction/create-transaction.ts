@@ -1,63 +1,25 @@
 'use server'
 
-import { auth } from '@/auth.config'
 import { CreateTransactionInput } from '@/interfaces'
 import prisma from '@/lib/prisma'
-import { mapToCreatePrismaTransaction } from '@/utils'
+import { actionSuccess } from '@/lib/action-response'
+import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { createTransactionInTx } from '@/lib/transaction-service'
 
-export const createTransaction = async ( data: CreateTransactionInput ) => {
+export const createTransaction = async (data: CreateTransactionInput) => {
+    try {
+        const user = await requireSessionUser()
 
-    const session = await auth()
-                
-    if ( !session ) {
-        return {
-            ok: false,
-            message: 'No hay sesión de usuario'
-        }
-    }
-
-    await prisma.$transaction( async(tx) => {
-
-        // 1. Actualizar el saldo de la billetera
-
-        if ( data.type !== 'TRANSFERENCIA' ) {
-            const walletDB = await tx.wallet.findFirst({ where: { id: data.walletId } })
-
-            if ( !walletDB ) {
-                throw new Error('No se encontró la billetera')
-            }
-
-            const walletModified = { ...walletDB, balance: walletDB.balance + data.amount }
-
-            await tx.wallet.update({ where: { id: walletModified.id }, data: walletModified })
-        } else {
-            const fromWalletDB = await tx.wallet.findFirst({ where: { id: data.fromWalletId } })
-            const toWalletDB = await tx.wallet.findFirst({ where: { id: data.toWalletId } })
-
-            if ( !fromWalletDB || !toWalletDB ) {
-                throw new Error('No se encontraron las billeteras')
-            }
-
-            const fromWalletModified = { ...fromWalletDB, balance: fromWalletDB.balance + data.amount }
-            const toWalletModified = { ...toWalletDB, balance: toWalletDB.balance - data.amount }
-
-            if ( fromWalletModified.balance < 0 ) {
-                throw new Error('La billetera de origen no tiene dinero suficiente')
-            }
-
-            await tx.wallet.updateMany({ where: { id: fromWalletModified.id }, data: fromWalletModified })
-            await tx.wallet.updateMany({ where: { id: toWalletModified.id }, data: toWalletModified })
-        }
-
-        // 2. Crear la transacción
-
-        const transaction = mapToCreatePrismaTransaction( data, session.user.id )
-        await tx.transaction.create({
-            data: transaction
+        const transaction = await prisma.$transaction(async (tx) => {
+            return createTransactionInTx(tx as unknown as import('@/lib/transaction-service').TransactionServiceTx, user.id, data)
         })
 
         return {
+            ...actionSuccess({ transaction }, 'Transacción creada'),
             transaction
         }
-    })
+    } catch (error) {
+        console.error('createTransaction', error)
+        return asFailure(error)
+    }
 }
