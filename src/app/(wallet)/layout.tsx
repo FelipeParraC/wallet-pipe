@@ -24,7 +24,7 @@ export default async function WalletLayout({
             </div>
             <Navbar />
 
-            <main className="mx-auto max-w-7xl px-3 py-6 pb-28 sm:px-4 sm:py-8 lg:px-6">
+            <main className="mx-auto max-w-7xl px-3 py-6 pb-36 sm:px-4 sm:py-8 lg:px-6 lg:pb-10">
                 {children}
             </main>
         </div>

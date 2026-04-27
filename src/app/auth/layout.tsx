@@ -1,5 +1,4 @@
 import { auth } from '@/auth.config'
-import { Navbar } from '@/components'
 import { redirect } from 'next/navigation'
 
 export default async function WalletLayout({
@@ -15,12 +14,8 @@ export default async function WalletLayout({
     }
 
     return (
-        <>
-            <Navbar />
-
-            <main className="container mx-auto -mt-48 md:mt-0">
+        <main className="container mx-auto flex min-h-screen items-center justify-center px-4 py-10">
                 {children}
-            </main>
-        </>
+        </main>
     )
 }

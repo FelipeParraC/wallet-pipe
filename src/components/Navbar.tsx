@@ -27,6 +27,7 @@ export const Navbar = () => {
     const pathname = usePathname()
     const { data: session } = useSession()
     const user = session?.user
+    const hideMobileNewAction = pathname === '/transacciones/nueva' || pathname.startsWith('/transacciones/editar')
 
     const onClickLogout = async () => {
         await logout()
@@ -156,33 +157,38 @@ export const Navbar = () => {
             </header>
 
             <nav className='pointer-events-none fixed inset-x-0 bottom-4 z-40 px-3 lg:hidden'>
-                <div className='pointer-events-auto mx-auto grid max-w-md grid-cols-5 gap-2 rounded-[1.8rem] border border-white/10 bg-slate-950/72 p-2 shadow-[0_20px_60px_rgba(2,6,23,0.35)] backdrop-blur-2xl'>
-                    {mobileDockItems.map((item) => {
-                        const isActive = pathname === item.href
+                <div className='pointer-events-auto mx-auto flex max-w-md items-center justify-center gap-2'>
+                    <div className='grid min-w-0 flex-1 grid-cols-4 gap-1.5 rounded-[1.8rem] border border-white/10 bg-slate-950/72 p-2 shadow-[0_20px_60px_rgba(2,6,23,0.35)] backdrop-blur-2xl'>
+                        {mobileDockItems.map((item) => {
+                            const isActive = pathname === item.href
 
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={[
-                                    'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 text-[11px] font-medium transition-all duration-200',
-                                    isActive
-                                        ? 'bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-[0_10px_22px_rgba(14,165,233,0.28)]'
-                                        : 'text-slate-300 hover:bg-white/[0.07] hover:text-white',
-                                ].join(' ')}
-                            >
-                                <item.icon className='h-4 w-4' />
-                                <span className='truncate'>{item.name}</span>
-                            </Link>
-                        )
-                    })}
-                    <Link
-                        href='/transacciones/nueva'
-                        className='flex flex-col items-center justify-center gap-1 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 px-2 py-2.5 text-[11px] font-medium text-white shadow-[0_10px_22px_rgba(14,165,233,0.28)] transition-all duration-200 hover:brightness-110'
-                    >
-                        <Plus className='h-4 w-4' />
-                        <span className='truncate'>Nuevo</span>
-                    </Link>
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={[
+                                        'flex h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 text-[11px] font-medium transition-all duration-200',
+                                        isActive
+                                            ? 'bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-[0_10px_22px_rgba(14,165,233,0.28)]'
+                                            : 'text-slate-300 hover:bg-white/[0.07] hover:text-white',
+                                    ].join(' ')}
+                                >
+                                    <item.icon className='h-4 w-4' />
+                                    <span className='max-w-full truncate'>{item.name}</span>
+                                </Link>
+                            )
+                        })}
+                    </div>
+
+                    {!hideMobileNewAction && (
+                        <Link
+                            href='/transacciones/nueva'
+                            className='flex h-[4.5rem] w-[4.5rem] shrink-0 flex-col items-center justify-center gap-1 rounded-[1.6rem] border border-sky-200/20 bg-gradient-to-b from-sky-400 to-blue-600 text-[11px] font-medium text-white shadow-[0_18px_36px_rgba(14,165,233,0.32)] transition-all duration-200 hover:brightness-110'
+                        >
+                            <Plus className='h-5 w-5' />
+                            <span className='truncate'>Nuevo</span>
+                        </Link>
+                    )}
                 </div>
             </nav>
         </>

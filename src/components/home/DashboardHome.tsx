@@ -76,9 +76,9 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
     return (
         <div className='space-y-6'>
             <section className='grid gap-4 xl:grid-cols-[1.15fr_0.85fr]'>
-                <Card className='rounded-[2rem] overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(7,16,30,0.78),rgba(9,19,36,0.62))] shadow-[0_24px_70px_rgba(2,6,23,0.34)]'>
+                <Card className='overflow-hidden rounded-[2rem] border-white/10 bg-slate-950/58 shadow-[0_24px_70px_rgba(2,6,23,0.34)] backdrop-blur-2xl'>
                     <CardContent className='relative p-5 sm:p-6'>
-                        <div className='absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_54%)]' />
+                        <div className='pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(56,189,248,0.10),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.035),transparent_42%)]' />
                         <div className='relative space-y-5'>
                             <div className='flex items-start justify-between gap-4'>
                                 <div>
@@ -94,17 +94,17 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
                                     </p>
                                 </div>
 
-                                <div className='rounded-[1.4rem] border border-white/10 bg-white/[0.06] p-3 text-slate-200 backdrop-blur-xl'>
+                                <div className='rounded-[1.4rem] border border-white/10 bg-white/[0.05] p-3 text-slate-200'>
                                     <CalendarRange className='h-5 w-5' />
                                 </div>
                             </div>
 
                             <div className='grid gap-3 sm:grid-cols-2'>
-                                <div className='rounded-[1.5rem] border border-white/10 bg-slate-900/52 p-4 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]'>
+                                <div className='rounded-[1.5rem] border border-white/10 bg-white/[0.045] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]'>
                                     <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Proyectado</p>
                                     <CurrencyDisplay amount={projectedAvailable} showDecimals={true} className='mt-2 text-xl font-semibold text-white' />
                                 </div>
-                                <div className='rounded-[1.5rem] border border-white/10 bg-slate-900/52 p-4 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]'>
+                                <div className='rounded-[1.5rem] border border-white/10 bg-white/[0.045] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]'>
                                     <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Pendiente</p>
                                     <CurrencyDisplay amount={pendingObligations} showDecimals={true} className='mt-2 text-xl font-semibold text-white' />
                                 </div>
