@@ -30,7 +30,7 @@ export default async function TransaccionesPage() {
 
             {wallets && wallets.length > 0 ? (
                 <>
-                    <TransactionsGrid transactions={ transactions } categories={ categories } />
+                    <TransactionsGrid transactions={ transactions } categories={ categories } wallets={ wallets } />
                     <NewTransactionFloatingButton walletId='' />
                 </>
             ) : (

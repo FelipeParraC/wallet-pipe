@@ -2,7 +2,7 @@
 
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import type { Category, Transaction } from "@/interfaces"
+import type { Category, Transaction, Wallet } from "@/interfaces"
 import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 import { CurrencyDisplay } from '../CurrencyDisplay'
 import { TransactionActions } from './TransactionActions'
@@ -24,16 +24,17 @@ const transactionTypeLabel: Record<Transaction['type'], string> = {
 interface TransactionCardProps {
     transaction: Transaction
     categories: Category[]
+    wallets: Wallet[]
+    contextWalletId?: string
     onClick: () => void
 }
 
-export const TransactionCard = ({ transaction, categories, onClick }: TransactionCardProps) => {
+export const TransactionCard = ({ transaction, categories, wallets, contextWalletId, onClick }: TransactionCardProps) => {
 
     const router = useRouter()
 
     const onEdit = () => {
-        router.push(`/transacciones/editar/${ transaction.id }`)
-        router.refresh()
+        router.push(`/transacciones/editar/${ transaction.id }${contextWalletId ? `?walletId=${contextWalletId}` : ''}`)
     }
 
     const onDelete = async ( id: string ) => {
@@ -42,6 +43,13 @@ export const TransactionCard = ({ transaction, categories, onClick }: Transactio
             router.refresh()
         }
     }
+
+    const walletName = wallets.find((wallet) => wallet.id === transaction.walletId)?.name
+    const fromWalletName = wallets.find((wallet) => wallet.id === transaction.fromWalletId)?.name
+    const toWalletName = wallets.find((wallet) => wallet.id === transaction.toWalletId)?.name
+    const accountLabel = transaction.fromWalletId && transaction.toWalletId
+        ? `${fromWalletName ?? 'Origen'} → ${toWalletName ?? 'Destino'}`
+        : walletName
 
     return (
         <Card
@@ -69,6 +77,9 @@ export const TransactionCard = ({ transaction, categories, onClick }: Transactio
                         {transactionTypeLabel[transaction.type]}
                         {transaction.categoryId ? ` · ${categories.find( c => c.id === transaction.categoryId )?.name ?? 'Sin categoría'}` : ''}
                     </p>
+                    {accountLabel && (
+                        <p className="text-sm text-slate-400">{accountLabel}</p>
+                    )}
                     {transaction.description && (
                         <p className="text-sm text-slate-300">{ transaction.description }</p>
                     )}

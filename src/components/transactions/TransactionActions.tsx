@@ -1,37 +1,59 @@
+'use client'
+
 import { Pencil, Trash2 } from 'lucide-react'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, Button } from '../ui'
+import { useState } from 'react'
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui'
 
 
 interface TransactionActionsProps {
     onEdit: () => void
-    onDelete: () => void
+    onDelete: () => void | Promise<void>
 }
 
 export const TransactionActions = ({ onEdit, onDelete }: TransactionActionsProps) => {
+    const [isOpen, setIsOpen] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+
+    const handleDelete = async () => {
+        setIsDeleting(true)
+        try {
+            await onDelete()
+            setIsOpen(false)
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
     return (
         <div className="flex space-x-2">
-            <Button variant="outline" size="icon" onClick={ onEdit }>
+            <Button variant="outline" size="icon" onClick={(event) => {
+                event.stopPropagation()
+                onEdit()
+            }}>
                 <Pencil className="h-4 w-4" />
             </Button>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={(e) => e.stopPropagation()}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="max-w-[90vw] w-full sm:max-w-[425px]">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-lg sm:text-xl">¿Estás seguro?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-sm sm:text-base">
-                            Esta acción no se puede deshacer. Esto eliminará permanentemente la transacción.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-                        <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={ onDelete } className="w-full sm:w-auto">Eliminar</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <Button variant="outline" size="icon" onClick={(event) => {
+                    event.stopPropagation()
+                    setIsOpen(true)
+                }}>
+                    <Trash2 className="h-4 w-4 text-rose-300" />
+                </Button>
+                <DialogContent className="max-w-[90vw] sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Eliminar movimiento</DialogTitle>
+                        <DialogDescription>
+                            Esta acción no se puede deshacer. El saldo asociado se revertirá según el tipo de movimiento.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                            {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

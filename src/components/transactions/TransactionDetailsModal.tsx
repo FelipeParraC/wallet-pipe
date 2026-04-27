@@ -1,9 +1,11 @@
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import type { Category, Transaction } from "@/interfaces"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui'
+import type { ReactNode } from 'react'
+import type { Category, Transaction, Wallet } from "@/interfaces"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui'
 import { CurrencyDisplay } from '../CurrencyDisplay'
 import { getAmountColor } from '@/utils'
+import { TransactionActions } from './TransactionActions'
 
 const transactionTypeLabel: Record<Transaction['type'], string> = {
     INGRESO: 'Ingreso',
@@ -21,69 +23,84 @@ interface TransactionDetailsModalProps {
     onClose: () => void
     transaction: Transaction | null
     categories: Category[]
+    wallets: Wallet[]
+    onEdit?: (transaction: Transaction) => void
+    onDelete?: (transaction: Transaction) => void | Promise<void>
 }
 
-export const TransactionDetailsModal = ({ isOpen, onClose, transaction, categories }: TransactionDetailsModalProps) => {
+const relationLabel = (transaction: Transaction) => {
+    if (transaction.scheduledOccurrenceId) return 'Pago programado'
+    if (transaction.installmentOccurrenceId) return 'Cuota'
+    if (transaction.debtId) return 'Deuda'
+    return null
+}
+
+const DetailRow = ({ label, value }: { label: string; value: ReactNode }) => (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{label}</p>
+        <div className="mt-1 text-sm font-medium text-slate-100">{value}</div>
+    </div>
+)
+
+export const TransactionDetailsModal = ({ isOpen, onClose, transaction, categories, wallets, onEdit, onDelete }: TransactionDetailsModalProps) => {
     if (!transaction) return null
 
+    const categoryName = categories.find( c => c.id === transaction.categoryId )?.name ?? 'Sin categoría'
+    const walletName = wallets.find((wallet) => wallet.id === transaction.walletId)?.name ?? 'Cuenta no disponible'
+    const fromWalletName = wallets.find((wallet) => wallet.id === transaction.fromWalletId)?.name
+    const toWalletName = wallets.find((wallet) => wallet.id === transaction.toWalletId)?.name
+    const relation = relationLabel(transaction)
+
     return (
-        <Dialog open={ isOpen } onOpenChange={ onClose }>
-            <DialogContent className="sm:max-w-[425px]">
+        <Dialog open={ isOpen } onOpenChange={(open) => {
+            if (!open) onClose()
+        }}>
+            <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{ transaction.title }</DialogTitle>
-                    <DialogDescription>Detalles de la transacción</DialogDescription>
+                    <DialogTitle className="pr-8 text-2xl">{ transaction.title }</DialogTitle>
+                    <DialogDescription>
+                        {transactionTypeLabel[transaction.type]} · {categoryName}
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-3 items-center gap-4">
-                        <span className="font-bold">Tipo:</span>
-                        <span className="col-span-2">{transactionTypeLabel[transaction.type]}</span>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                        <span className="font-bold">Monto:</span>
-                        <span className={`col-span-2 text-lg font-semibold ${transaction.type === 'TRANSFERENCIA' ? 'text-blue-400' : getAmountColor( transaction.amount )}`}>
+
+                <div className="rounded-[1.5rem] border border-white/10 bg-gradient-to-br from-sky-400/12 via-white/[0.04] to-transparent p-4">
+                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Monto</p>
+                    <div className={`mt-2 text-3xl font-bold ${transaction.type === 'TRANSFERENCIA' ? 'text-blue-300' : getAmountColor( transaction.amount )}`}>
                             <CurrencyDisplay
                                 amount={ Math.abs(transaction.amount) }
                                 showDecimals={ true }
                             />
-                        </span>
                     </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                        <span className="font-bold">Ocurrió:</span>
-                        <span className="col-span-2">
-                            {format(parseISO( transaction.occurredAt || transaction.date ), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })}
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                        <span className="font-bold">Registrada:</span>
-                        <span className="col-span-2">
-                            {format(parseISO( transaction.recordedAt || transaction.date ), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })}
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                        <span className="font-bold">Categoría:</span>
-                        <span className="col-span-2">{ categories.find( c => c.id === transaction.categoryId )?.name ?? 'Sin categoría' }</span>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                        <span className="font-bold">Cuenta base:</span>
-                        <span className="col-span-2">{ transaction.walletId }</span>
-                    </div>
+                    {relation && <span className="mt-3 inline-flex rounded-full bg-sky-400/10 px-3 py-1 text-xs font-medium text-sky-200">{relation}</span>}
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                    <DetailRow label="Ocurrió" value={format(parseISO( transaction.occurredAt || transaction.date ), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })} />
+                    <DetailRow label="Registrado" value={format(parseISO( transaction.recordedAt || transaction.date ), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })} />
+                    <DetailRow label="Cuenta" value={walletName} />
+                    <DetailRow label="Categoría" value={categoryName} />
                     {transaction.fromWalletId && transaction.toWalletId && (
                         <>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <span className="font-bold">Origen:</span>
-                                <span className="col-span-2">{ transaction.fromWalletId }</span>
-                            </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <span className="font-bold">Destino:</span>
-                                <span className="col-span-2">{ transaction.toWalletId }</span>
-                            </div>
+                            <DetailRow label="Origen" value={fromWalletName ?? 'Cuenta no disponible'} />
+                            <DetailRow label="Destino" value={toWalletName ?? 'Cuenta no disponible'} />
                         </>
                     )}
-                    <div className="grid grid-cols-3 items-start gap-4">
-                        <span className="font-bold">Descripción:</span>
-                        <span className="col-span-2">{ transaction.description }</span>
-                    </div>
+                    {transaction.description && (
+                        <div className="sm:col-span-2">
+                            <DetailRow label="Descripción" value={transaction.description} />
+                        </div>
+                    )}
                 </div>
+
+                <DialogFooter className="items-center gap-2 sm:justify-between sm:space-x-0">
+                    <Button variant="outline" onClick={onClose}>Cerrar</Button>
+                    {onEdit && onDelete && (
+                        <TransactionActions
+                            onEdit={() => onEdit(transaction)}
+                            onDelete={() => onDelete(transaction)}
+                        />
+                    )}
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )

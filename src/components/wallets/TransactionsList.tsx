@@ -1,15 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { format, isSameDay, parseISO } from 'date-fns'
 import type { Category, Transaction, Wallet } from '@/interfaces'
-import { es } from 'date-fns/locale'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui'
-import { TransactionDatePicker } from '../transactions/TransactionDatePicker'
-import { TransactionActions } from '../transactions/TransactionActions'
-import { CurrencyDisplay } from '../CurrencyDisplay'
-import { useRouter } from 'next/navigation'
-import { deleteTransactionById } from '@/actions'
+import { TransactionsGrid } from '../transactions/TransactionsGrid'
 
 interface TransactionsListProps {
     transactions: Transaction[] | null
@@ -18,113 +10,19 @@ interface TransactionsListProps {
     wallets: Wallet[] | null
 }
 
-
 export const TransactionsList = ({ transactions, categories, walletId, wallets }: TransactionsListProps) => {
-
-    const router = useRouter()
-
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
-
-    if ( !transactions || !categories || !wallets ) {
-        return null
-    }
-    
-    const filteredTransactions = selectedDate
-        ? transactions.filter(t => isSameDay(parseISO(t.occurredAt || t.date), selectedDate))
-        : transactions
-
-    const handleEdit = (transaction: Transaction) => {
-        router.push(`/transacciones/editar/${ transaction.id }?walletId=${ walletId }`)
-        router.refresh()
-    }
-
-    const handleDelete = async (id: string) => {
-        const response = await deleteTransactionById( id )
-        if (response.ok) {
-            router.refresh()
-        }
-    }
-
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Movimientos</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className='mb-4 w-full max-w-sm'>
-                    <TransactionDatePicker onDateSelect={ setSelectedDate } />
-                </div>
-                {transactions.filter((transaction) => transaction.isVisible).length === 0 && (
-                    <p className='text-center text-muted-foreground'>No hay movimientos aún</p>
-                )}
-                {filteredTransactions.length === 0 ? (
-                    <p className='text-center text-muted-foreground'>No hay movimientos en este día</p>
-                ) : (
-                    <div className='space-y-4'>
-                        {filteredTransactions.map((transaction) => transaction.isVisible && (
-                            <div key={transaction.id} className='flex justify-between items-start border-b pb-4'>
-                                <div>
-                                    <p className='font-medium'>{ transaction.title }</p>
-                                    <p className='text-sm text-muted-foreground'>{ categories.find( c => c.id === transaction.categoryId )?.name ?? 'Sin categoría' }</p>
-                                    <p className='text-xs text-muted-foreground'>
-                                        {format(parseISO( transaction.occurredAt || transaction.date ), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })}
-                                    </p>
-                                </div>
-                                <div className='text-right flex flex-col items-end'>
-                                    {transaction.numberOfTrips && transaction.fareValue ? (
-                                        <>
-                                            <p className='font-bold text-blue-500'>
-                                                { transaction.numberOfTrips } viaje{ transaction.numberOfTrips > 1 ? 's' : '' }
-                                            </p>
-                                            <CurrencyDisplay
-                                                amount={ transaction.fareValue * transaction.numberOfTrips }
-                                                showDecimals={ true }
-                                                className='font-bold text-red-500 mb-2'
-                                            />
-                                        </>
-                                    ) : transaction.fromWalletId && transaction.toWalletId ? (
-                                        <>
-                                            <p className='font-bold text-white'>
-                                                {transaction.type === 'PAGO_TARJETA'
-                                                    ? transaction.fromWalletId === walletId
-                                                        ? 'Pago hacia '
-                                                        : 'Pago recibido desde '
-                                                    : transaction.fromWalletId === walletId
-                                                        ? 'Transferencia a '
-                                                        : 'Transferencia desde '}
-                                                <span style={{ color: transaction.toWalletId === walletId
-                                                    ? wallets.find(w => w.id === transaction.fromWalletId)?.color
-                                                    : wallets.find(w => w.id === transaction.toWalletId)?.color
-                                                }}>
-                                                    {transaction.toWalletId === walletId
-                                                        ? wallets.find(w => w.id === transaction.fromWalletId)?.name
-                                                        : wallets.find(w => w.id === transaction.toWalletId)?.name
-                                                    }  
-                                                </span>
-                                            </p>
-                                            <CurrencyDisplay
-                                                amount={ Math.abs(transaction.amount) }
-                                                showDecimals={ true }
-                                                className={`font-bold ${transaction.fromWalletId === walletId ? 'text-yellow-400' : 'text-blue-400'} mb-2`}
-                                            />
-                                        </>
-                                    ) : (
-                                        <CurrencyDisplay
-                                            amount={Math.abs((transaction as Transaction).amount)}
-                                            showDecimals={ true }
-                                            className={`font-bold ${(transaction as Transaction).amount > 0 ? 'text-green-500' : 'text-red-500'} mb-2`}
-                                        />
-                                    )}
-                                    <TransactionActions
-                                        onEdit={() => handleEdit(transaction)}
-                                        onDelete={() => handleDelete(transaction.id)}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+        <section className='space-y-4'>
+            <div className='glass-panel rounded-[1.75rem] p-5'>
+                <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Cuenta</p>
+                <h2 className='mt-2 text-xl font-semibold text-white'>Movimientos</h2>
+            </div>
+            <TransactionsGrid
+                transactions={transactions}
+                categories={categories}
+                wallets={wallets}
+                contextWalletId={walletId}
+            />
+        </section>
     )
 }
