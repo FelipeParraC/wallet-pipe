@@ -196,6 +196,43 @@ const testDeleteTransferInTx = async () => {
   assert.equal(tx.state.transactions.has(created.id), false)
 }
 
+const testDeleteStandardMovementsInTx = async () => {
+  const tx = createMemoryTx()
+  const expense = await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-1',
+    type: 'GASTO',
+    title: 'Mercado',
+    description: '',
+    date: Date.parse('2025-01-02T08:00:00.000Z'),
+    categoryId: '10',
+    amount: -75,
+  }) as TransactionRecord
+
+  assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(925))
+
+  await deleteTransactionInTx(tx, 'user-1', expense.id)
+
+  assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(1000))
+  assert.equal(tx.state.transactions.has(expense.id), false)
+
+  const income = await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-1',
+    type: 'INGRESO',
+    title: 'Ingreso',
+    description: '',
+    date: Date.parse('2025-01-02T08:00:00.000Z'),
+    categoryId: '11',
+    amount: 125,
+  }) as TransactionRecord
+
+  assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(1125))
+
+  await deleteTransactionInTx(tx, 'user-1', income.id)
+
+  assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(1000))
+  assert.equal(tx.state.transactions.has(income.id), false)
+}
+
 const testOwnershipValidation = async () => {
   const tx = createMemoryTx()
   await assert.rejects(
@@ -207,6 +244,21 @@ const testOwnershipValidation = async () => {
       date: Date.parse('2025-01-02T08:00:00.000Z'),
       categoryId: '10',
       amount: -50,
+    }),
+    /no pertenece al usuario/
+  )
+
+  await assert.rejects(
+    () => createTransactionInTx(tx, 'user-1', {
+      walletId: 'wallet-1',
+      type: 'TRANSFERENCIA',
+      title: 'Transferencia ajena',
+      description: '',
+      date: Date.parse('2025-01-02T08:00:00.000Z'),
+      categoryId: '11',
+      amount: -50,
+      fromWalletId: 'wallet-1',
+      toWalletId: 'wallet-3',
     }),
     /no pertenece al usuario/
   )
@@ -271,6 +323,7 @@ const testCreditCardChargeAndPayment = async () => {
   await testCreateTransferInTx()
   await testUpdateTransferInTx()
   await testDeleteTransferInTx()
+  await testDeleteStandardMovementsInTx()
   await testOwnershipValidation()
   await testCreditCardChargeAndPayment()
 
