@@ -9,7 +9,7 @@ import { updateTransactionById } from '@/actions'
 import type { Category, Tag, Transaction, UpdateTransactionInput } from '@/interfaces'
 import { isTransportTransaction, isTransferTransaction } from '@/interfaces'
 import { combineDateAndTime, roundMoney, toSignedAmount, toTransferAmount } from '@/lib/finance'
-import { formatCurrency } from '@/utils'
+import { formatCurrency, getTransactionTypeLabel } from '@/utils'
 import { Alert, AlertDescription, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '@/components/ui'
 
 interface EditTransactionFormProps {
@@ -123,7 +123,7 @@ export const EditTransactionForm = ({ transaction, categories, tags, walletId }:
                         <h2 className='mt-2 text-2xl font-semibold text-white'>{transaction.title}</h2>
                     </div>
                     <span className='rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300'>
-                        {transaction.type.replaceAll('_', ' ')}
+                        {getTransactionTypeLabel(transaction.type)}
                     </span>
                 </div>
 

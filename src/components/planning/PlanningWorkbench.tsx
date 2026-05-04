@@ -25,7 +25,7 @@ import {
 import { CurrencyDisplay } from '@/components/CurrencyDisplay'
 import { DebtForm, ScheduledPlanForm } from '@/components'
 import { Alert, AlertDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '@/components/ui'
-import { formatCurrency } from '@/utils'
+import { formatCurrency, getRecurrenceFrequencyLabel, getScheduledPlanKindLabel } from '@/utils'
 
 type OccurrenceStatus = 'PENDIENTE' | 'EJECUTADA' | 'OMITIDA' | 'CANCELADA'
 
@@ -737,7 +737,7 @@ export const PlanningWorkbench = ({
                 <OccurrenceCard
                   key={occurrence.id}
                   title={occurrence.plan.title}
-                  subtitle={`${occurrence.plan.kind} · ${occurrence.plan.amountMode === 'VARIABLE' ? 'Variable' : occurrence.plan.categoryName ?? 'Programado'}`}
+                  subtitle={`${getScheduledPlanKindLabel(occurrence.plan.kind)} · ${occurrence.plan.amountMode === 'VARIABLE' ? 'Variable' : occurrence.plan.categoryName ?? 'Programado'}`}
                   amount={occurrence.expectedAmount}
                   dueAt={occurrence.dueAt}
                   status={occurrence.status}
@@ -841,7 +841,7 @@ export const PlanningWorkbench = ({
                     <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
                       <div>
                         <p className='font-semibold text-white'>{plan.title}</p>
-                        <p className='mt-1 text-sm text-slate-400'>{plan.kind} · {plan.frequency} · {plan.amountMode === 'VARIABLE' ? 'Variable' : formatCurrency(plan.fixedAmount ?? 0)}</p>
+                        <p className='mt-1 text-sm text-slate-400'>{getScheduledPlanKindLabel(plan.kind)} · {getRecurrenceFrequencyLabel(plan.frequency)} · {plan.amountMode === 'VARIABLE' ? 'Variable' : formatCurrency(plan.fixedAmount ?? 0)}</p>
                       </div>
                       <div className='flex flex-wrap gap-2'>
                         <PlanEditDialog plan={plan} categories={categories} wallets={paymentWallets} />

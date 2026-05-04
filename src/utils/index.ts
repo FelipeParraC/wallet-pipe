@@ -1,5 +1,6 @@
 export * from './capitalizar'
 export * from './currency'
 export * from './getIcon'
+export * from './labels'
 export * from './mapper'
 export * from './sleep'
