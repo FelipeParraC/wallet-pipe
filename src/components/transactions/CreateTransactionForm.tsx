@@ -12,6 +12,7 @@ import { formatCurrency } from '@/utils'
 
 type MovementKind = 'INGRESO' | 'GASTO' | 'CARD_PURCHASE' | 'TRANSFER' | 'CARD_PAYMENT' | 'TRANSPORT'
 type InstallmentMode = 'SINGLE' | 'INSTALLMENTS'
+type InstallmentEntryMode = 'NEW' | 'IN_PROGRESS'
 type PaymentMode = 'PARCIAL' | 'TOTAL'
 
 interface CreateTransactionFormProps {
@@ -118,7 +119,9 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
     const [toWalletId, setToWalletId] = useState(normalWallets.find((item) => item.id !== normalWallets[0]?.id)?.id ?? '')
     const [numberOfTrips, setNumberOfTrips] = useState('1')
     const [installmentMode, setInstallmentMode] = useState<InstallmentMode>('SINGLE')
+    const [installmentEntryMode, setInstallmentEntryMode] = useState<InstallmentEntryMode>('NEW')
     const [totalInstallments, setTotalInstallments] = useState('2')
+    const [paidInstallments, setPaidInstallments] = useState('0')
     const [firstDueAt, setFirstDueAt] = useState('')
     const [paymentMode, setPaymentMode] = useState<PaymentMode>('PARCIAL')
     const [date, setDate] = useState(nowDate())
@@ -134,6 +137,11 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
     const paymentAmount = paymentMode === 'TOTAL' ? selectedCard?.balance ?? 0 : Number(amount || 0)
     const transportAmount = (selectedTransportWallet?.fareValue ?? 0) * Number(numberOfTrips || 0)
     const paymentDueAt = installmentMode === 'INSTALLMENTS' ? deriveCardPaymentDueAt(selectedCard, firstDueAt) : ''
+    const normalizedTotalInstallments = Math.max(0, Math.trunc(Number(totalInstallments || 0)))
+    const normalizedPaidInstallments = installmentEntryMode === 'IN_PROGRESS'
+        ? Math.max(0, Math.trunc(Number(paidInstallments || 0)))
+        : 0
+    const remainingInstallments = Math.max(0, normalizedTotalInstallments - normalizedPaidInstallments)
 
     const availableKinds = useMemo(() => {
         const kinds: MovementKind[] = []
@@ -170,6 +178,8 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
         setTitle('')
         setDescription('')
         setInstallmentMode('SINGLE')
+        setInstallmentEntryMode('NEW')
+        setPaidInstallments('0')
         setPaymentMode('PARCIAL')
         setFirstDueAt('')
     }
@@ -181,6 +191,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
         if ((kind === 'GASTO' || kind === 'INGRESO') && !walletId) return 'Selecciona una cuenta'
         if (kind === 'CARD_PURCHASE' && !cardWalletId) return 'Selecciona una tarjeta'
         if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && Number(totalInstallments) < 2) return 'Las cuotas deben ser mínimo 2'
+        if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && installmentEntryMode === 'IN_PROGRESS' && normalizedPaidInstallments >= normalizedTotalInstallments) return 'Las cuotas pagadas deben ser menores al total de cuotas'
         if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && !firstDueAt) return 'Selecciona el primer corte de la tarjeta'
         if (kind === 'TRANSFER' && (!fromWalletId || !toWalletId || fromWalletId === toWalletId)) return 'Selecciona cuentas de origen y destino diferentes'
         if (kind === 'CARD_PAYMENT' && (!fromWalletId || !cardWalletId)) return 'Selecciona cuenta origen y tarjeta'
@@ -250,7 +261,9 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                 cardWalletId,
                 amount: Number(amount),
                 installmentMode,
+                installmentEntryMode: installmentMode === 'INSTALLMENTS' ? installmentEntryMode : undefined,
                 totalInstallments: installmentMode === 'INSTALLMENTS' ? Number(totalInstallments) : undefined,
+                paidInstallments: installmentMode === 'INSTALLMENTS' ? normalizedPaidInstallments : undefined,
                 firstDueAt: installmentMode === 'INSTALLMENTS' ? new Date(firstDueAt).toISOString() : undefined,
                 merchant: title,
             }
@@ -429,16 +442,43 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                 ]}
                             />
                             {installmentMode === 'INSTALLMENTS' && (
-                                <div className='grid gap-4 sm:grid-cols-3'>
-                                    <Field label='Número de cuotas'>
-                                        <Input type='number' min='2' value={totalInstallments} onChange={(event) => setTotalInstallments(event.target.value)} />
-                                    </Field>
-                                    <Field label='Primer corte asociado' className='sm:col-span-2'>
-                                        <Input type='datetime-local' step='1' value={firstDueAt} onChange={(event) => setFirstDueAt(event.target.value)} />
-                                        <p className='text-xs text-slate-500'>
-                                            Es la fecha de corte donde entra esta compra. La fecha límite de pago se calcula aparte según tu tarjeta.
+                                <div className='space-y-4 rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-4'>
+                                    <div>
+                                        <p className='text-xs uppercase tracking-[0.24em] text-slate-500'>Plan de cuotas</p>
+                                        <h3 className='mt-1 text-base font-semibold text-white'>¿Esta compra es nueva o ya venías pagándola?</h3>
+                                    </div>
+
+                                    <Segmented
+                                        value={installmentEntryMode}
+                                        onChange={(value) => {
+                                            setInstallmentEntryMode(value as InstallmentEntryMode)
+                                            if (value === 'NEW') setPaidInstallments('0')
+                                        }}
+                                        options={[
+                                            { value: 'NEW', label: 'Compra nueva' },
+                                            { value: 'IN_PROGRESS', label: 'Ya la venía pagando' },
+                                        ]}
+                                    />
+
+                                    <div className='grid gap-4 sm:grid-cols-3'>
+                                        <Field label='Total de cuotas'>
+                                            <Input type='number' min='2' value={totalInstallments} onChange={(event) => setTotalInstallments(event.target.value)} />
+                                        </Field>
+                                        {installmentEntryMode === 'IN_PROGRESS' && (
+                                            <Field label='Cuotas ya pagadas'>
+                                                <Input type='number' min='0' max={Math.max(Number(totalInstallments) - 1, 0)} value={paidInstallments} onChange={(event) => setPaidInstallments(event.target.value)} />
+                                            </Field>
+                                        )}
+                                        <Field label='Primer corte asociado' className={installmentEntryMode === 'IN_PROGRESS' ? '' : 'sm:col-span-2'}>
+                                            <Input type='datetime-local' step='1' value={firstDueAt} onChange={(event) => setFirstDueAt(event.target.value)} />
+                                        </Field>
+                                    </div>
+
+                                    <div className='rounded-2xl border border-sky-300/15 bg-sky-400/[0.07] p-3'>
+                                        <p className='text-xs text-sky-100'>
+                                            El primer corte es donde entró la primera cuota. Si ya pagaste algunas, quedarán como historial importado y solo verás pendientes las que faltan.
                                         </p>
-                                    </Field>
+                                    </div>
                                 </div>
                             )}
                         </>
@@ -494,10 +534,13 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                     </div>
 
                     {installmentMode === 'INSTALLMENTS' && kind === 'CARD_PURCHASE' && Number(totalInstallments) > 0 && Number(amount) > 0 && (
-                        <div className='grid gap-2 rounded-2xl border border-sky-300/20 bg-sky-400/10 p-3 text-sm text-sky-100 sm:grid-cols-3'>
-                            <span>Cuota estimada: <strong>{formatCurrency(estimatedInstallment)}</strong></span>
-                            {firstDueAt && <span>Primer corte: <strong>{formatDateTimePreview(firstDueAt)}</strong></span>}
-                            {paymentDueAt && <span>Límite pago: <strong>{formatDateTimePreview(paymentDueAt)}</strong></span>}
+                        <div className='space-y-3 rounded-2xl border border-sky-300/20 bg-sky-400/10 p-3 text-sm text-sky-100'>
+                            <div className='grid gap-2 sm:grid-cols-3'>
+                                <span>Cuota estimada: <strong>{formatCurrency(estimatedInstallment)}</strong></span>
+                                {firstDueAt && <span>Primer corte: <strong>{formatDateTimePreview(firstDueAt)}</strong></span>}
+                                {paymentDueAt && <span>Límite pago: <strong>{formatDateTimePreview(paymentDueAt)}</strong></span>}
+                            </div>
+                            <InstallmentTimeline total={normalizedTotalInstallments} paid={normalizedPaidInstallments} />
                         </div>
                     )}
                 </div>
@@ -513,6 +556,9 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                     <SummaryRow label='Monto' value={formatCurrency(kind === 'TRANSPORT' ? transportAmount : paymentAmount || Number(amount || 0))} />
                     {kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && (
                         <SummaryRow label='Cuotas' value={`${totalInstallments} cuotas de aprox. ${formatCurrency(estimatedInstallment)}`} />
+                    )}
+                    {kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && installmentEntryMode === 'IN_PROGRESS' && (
+                        <SummaryRow label='Estado importado' value={`${normalizedPaidInstallments} pagadas · ${remainingInstallments} pendientes`} />
                     )}
                     {kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && firstDueAt && (
                         <SummaryRow label='Primer corte' value={formatDateTimePreview(firstDueAt)} />
@@ -593,6 +639,46 @@ const Segmented = ({ value, onChange, options }: { value: string; onChange: (val
         ))}
     </div>
 )
+
+const InstallmentTimeline = ({ total, paid }: { total: number; paid: number }) => {
+    if (total <= 0) return null
+
+    const visibleItems = Array.from({ length: Math.min(total, 18) }, (_, index) => index + 1)
+    const pendingStart = Math.min(paid + 1, total)
+
+    return (
+        <div className='space-y-2'>
+            <div className='flex items-center justify-between gap-3 text-xs text-sky-100/80'>
+                <span>{paid > 0 ? `${paid} importadas como pagadas` : 'Todas pendientes'}</span>
+                <span>{Math.max(total - paid, 0)} por pagar</span>
+            </div>
+            <div className='flex flex-wrap gap-1.5'>
+                {visibleItems.map((installmentNumber) => {
+                    const isPaid = installmentNumber <= paid
+                    const isNext = installmentNumber === pendingStart && !isPaid
+
+                    return (
+                        <span
+                            key={installmentNumber}
+                            className={[
+                                'flex h-8 min-w-8 items-center justify-center rounded-xl border px-2 text-xs font-bold',
+                                isPaid ? 'border-emerald-300/30 bg-emerald-300/15 text-emerald-100' : isNext ? 'border-sky-200/50 bg-sky-300/20 text-white' : 'border-white/10 bg-white/[0.05] text-slate-300',
+                            ].join(' ')}
+                            title={isPaid ? 'Pagada importada' : isNext ? 'Próxima cuota' : 'Pendiente'}
+                        >
+                            {installmentNumber}
+                        </span>
+                    )
+                })}
+                {total > visibleItems.length && (
+                    <span className='flex h-8 min-w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] px-2 text-xs font-bold text-slate-300'>
+                        +{total - visibleItems.length}
+                    </span>
+                )}
+            </div>
+        </div>
+    )
+}
 
 const SummaryRow = ({ label, value }: { label: string; value: string }) => (
     <div className='flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3'>

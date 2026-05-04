@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 import { actionSuccess } from '@/lib/action-response'
-import { absMinorUnits, moneyInputToMinorUnits, moneyToMinorUnits, moneyToNumber } from '@/lib/finance'
+import { absMinorUnits, addMinorUnits, moneyInputToMinorUnits, moneyToMinorUnits, moneyToNumber } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { createTransactionInTx } from '@/lib/transaction-service'
 import type { CreateTransactionInput, TransactionType } from '@/interfaces'
@@ -41,7 +41,9 @@ export type CreateCardPurchaseInput = BaseMovementInput & {
   cardWalletId: string
   amount: number
   installmentMode: 'SINGLE' | 'INSTALLMENTS'
+  installmentEntryMode?: 'NEW' | 'IN_PROGRESS'
   totalInstallments?: number
+  paidInstallments?: number
   firstDueAt?: string
   merchant?: string
 }
@@ -210,6 +212,14 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
             throw new Error('Las compras a cuotas requieren mínimo 2 cuotas')
           }
 
+          const paidInstallments = data.installmentEntryMode === 'IN_PROGRESS'
+            ? Math.trunc(data.paidInstallments ?? 0)
+            : 0
+
+          if (paidInstallments < 0 || paidInstallments >= totalInstallments) {
+            throw new Error('Las cuotas pagadas deben ser menores al total de cuotas')
+          }
+
           if (!data.firstDueAt) {
             throw new Error('El primer corte de la tarjeta es requerido')
           }
@@ -217,6 +227,10 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
           const firstDueAt = parseRequiredDate(data.firstDueAt, 'El primer corte de la tarjeta')
           const installmentAmounts = buildInstallmentAmounts(totalAmount, totalInstallments)
           const firstInstallmentAmount = moneyToNumber(installmentAmounts[0])
+          const importedPaidAmount = installmentAmounts
+            .slice(0, paidInstallments)
+            .reduce((sum, value) => addMinorUnits(sum, value), BigInt(0))
+          const remainingInstallments = totalInstallments - paidInstallments
 
           const plan = await tx.installmentPlan.create({
             data: {
@@ -230,11 +244,11 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
               totalAmount: moneyInputToMinorUnits(totalAmount),
               installmentAmount: installmentAmounts[0],
               totalInstallments,
-              remainingInstallments: totalInstallments,
+              remainingInstallments,
               interestRate: 0,
               occurredAt,
               firstDueAt,
-              isActive: true,
+              isActive: remainingInstallments > 0,
             },
           })
 
@@ -256,10 +270,27 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
               installmentNumber: index + 1,
               dueAt: addMonthsPreservingTime(firstDueAt, index),
               expectedAmount,
-              status: 'PENDIENTE' as const,
+              status: index < paidInstallments ? 'EJECUTADA' as const : 'PENDIENTE' as const,
             })),
             skipDuplicates: true,
           })
+
+          if (importedPaidAmount > BigInt(0)) {
+            const nextDebt = addMinorUnits(
+              moneyToMinorUnits(creditCard.balance),
+              moneyInputToMinorUnits(totalAmount),
+              -importedPaidAmount,
+            )
+            const creditLimit = moneyToMinorUnits(creditCard.creditLimit ?? 0)
+
+            await tx.wallet.update({
+              where: { id: creditCard.id },
+              data: {
+                balance: nextDebt,
+                availableCredit: creditLimit > BigInt(0) ? creditLimit - nextDebt : undefined,
+              },
+            })
+          }
 
           return {
             transaction,
