@@ -35,7 +35,7 @@ export default async function EditarBilleteraPage({ params }: Props) {
             <EditWalletForm wallet={ wallet } />
             
             <div className='mt-16'>
-                <DeleteWalletButton walletId={ walletId } />
+                <DeleteWalletButton walletId={ walletId } walletName={ wallet.name } walletType={ wallet.type } />
             </div>
         </div>
     )
