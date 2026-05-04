@@ -41,8 +41,8 @@ const clampDay = (year: number, month: number, day: number) => {
     return Math.min(day, lastDay)
 }
 
-const deriveFirstDueAt = (card: Wallet | undefined, date: string) => {
-    if (!card?.statementClosingDay || !card.paymentDueDay || !date) return ''
+const deriveCardCutoffAt = (card: Wallet | undefined, date: string) => {
+    if (!card?.statementClosingDay || !date) return ''
 
     const purchase = new Date(`${date}T12:00:00`)
     let statementYear = purchase.getFullYear()
@@ -54,16 +54,30 @@ const deriveFirstDueAt = (card: Wallet | undefined, date: string) => {
         statementMonth = nextStatement.getMonth()
     }
 
-    let dueYear = statementYear
-    let dueMonth = statementMonth
+    return toLocalDateTimeValue(new Date(statementYear, statementMonth, clampDay(statementYear, statementMonth, card.statementClosingDay), 12, 0, 0))
+}
 
-    if (card.paymentDueDay <= card.statementClosingDay) {
+const deriveCardPaymentDueAt = (card: Wallet | undefined, cutoffAt: string) => {
+    if (!card?.paymentDueDay || !cutoffAt) return ''
+
+    const cutoff = new Date(cutoffAt)
+    let dueYear = cutoff.getFullYear()
+    let dueMonth = cutoff.getMonth()
+
+    if (card.paymentDueDay <= cutoff.getDate()) {
         const nextDue = addMonths(new Date(dueYear, dueMonth, 1), 1)
         dueYear = nextDue.getFullYear()
         dueMonth = nextDue.getMonth()
     }
 
-    return toLocalDateTimeValue(new Date(dueYear, dueMonth, clampDay(dueYear, dueMonth, card.paymentDueDay), 8, 0, 0))
+    return toLocalDateTimeValue(new Date(dueYear, dueMonth, clampDay(dueYear, dueMonth, card.paymentDueDay), 12, 0, 0))
+}
+
+const formatDateTimePreview = (value: string) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    return format(date, 'yyyy-MM-dd · HH:mm:ss')
 }
 
 const movementMeta: Record<MovementKind, { label: string; description: string; icon: typeof Banknote }> = {
@@ -119,6 +133,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
         : 0
     const paymentAmount = paymentMode === 'TOTAL' ? selectedCard?.balance ?? 0 : Number(amount || 0)
     const transportAmount = (selectedTransportWallet?.fareValue ?? 0) * Number(numberOfTrips || 0)
+    const paymentDueAt = installmentMode === 'INSTALLMENTS' ? deriveCardPaymentDueAt(selectedCard, firstDueAt) : ''
 
     const availableKinds = useMemo(() => {
         const kinds: MovementKind[] = []
@@ -138,7 +153,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
 
     useEffect(() => {
         if (kind !== 'CARD_PURCHASE' || installmentMode !== 'INSTALLMENTS') return
-        setFirstDueAt((current) => current || deriveFirstDueAt(selectedCard, date))
+        setFirstDueAt((current) => current || deriveCardCutoffAt(selectedCard, date))
     }, [kind, installmentMode, selectedCard, date])
 
     useEffect(() => {
@@ -166,12 +181,28 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
         if ((kind === 'GASTO' || kind === 'INGRESO') && !walletId) return 'Selecciona una cuenta'
         if (kind === 'CARD_PURCHASE' && !cardWalletId) return 'Selecciona una tarjeta'
         if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && Number(totalInstallments) < 2) return 'Las cuotas deben ser mínimo 2'
-        if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && !firstDueAt) return 'Selecciona la primera fecha de pago'
+        if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && !firstDueAt) return 'Selecciona el primer corte de la tarjeta'
         if (kind === 'TRANSFER' && (!fromWalletId || !toWalletId || fromWalletId === toWalletId)) return 'Selecciona cuentas de origen y destino diferentes'
         if (kind === 'CARD_PAYMENT' && (!fromWalletId || !cardWalletId)) return 'Selecciona cuenta origen y tarjeta'
         if (kind === 'CARD_PAYMENT' && paymentMode === 'TOTAL' && (!selectedCard || selectedCard.balance <= 0)) return 'La tarjeta no tiene deuda pendiente'
         if (kind === 'TRANSPORT' && (!transportWalletId || Number(numberOfTrips) < 1)) return 'Selecciona billetera y número de viajes'
         return null
+    }
+
+    const canOpenStep = (targetStep: number) => {
+        if (targetStep <= step) return true
+        if (targetStep === 2) return Boolean(kind)
+        return !validate()
+    }
+
+    const openStep = (targetStep: number) => {
+        if (canOpenStep(targetStep)) {
+            setError(null)
+            setStep(targetStep)
+            return
+        }
+
+        setError(targetStep === 2 ? 'Primero selecciona un tipo de movimiento' : validate())
     }
 
     const buildPayload = () => {
@@ -267,20 +298,29 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
 
     return (
         <div className='space-y-5 text-left'>
-            <div className='grid grid-cols-3 gap-2 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-2'>
+            <div className='rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-3'>
+                <div className='grid grid-cols-3 gap-2'>
                 {['Tipo', 'Datos', 'Resumen'].map((label, index) => (
                     <button
                         key={label}
                         type='button'
-                        onClick={() => setStep(index + 1)}
+                        onClick={() => openStep(index + 1)}
+                        disabled={!canOpenStep(index + 1)}
                         className={[
-                            'rounded-2xl px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all',
+                            'group flex items-center gap-2 rounded-2xl px-2 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-45 sm:px-3',
                             step === index + 1 ? 'bg-sky-400 text-white shadow-[0_10px_24px_rgba(14,165,233,0.26)]' : 'text-slate-400 hover:bg-white/[0.06] hover:text-white',
                         ].join(' ')}
                     >
-                        {label}
+                        <span className='flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.08] text-xs font-bold'>
+                            {index + 1}
+                        </span>
+                        <span className='min-w-0'>
+                            <span className='block text-[10px] font-semibold uppercase tracking-[0.18em] text-current/70'>Paso</span>
+                            <span className='block truncate text-xs font-semibold sm:text-sm'>{label}</span>
+                        </span>
                     </button>
                 ))}
+                </div>
             </div>
 
             {step === 1 && (
@@ -381,7 +421,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                 value={installmentMode}
                                 onChange={(value) => {
                                     setInstallmentMode(value as InstallmentMode)
-                                    if (value === 'INSTALLMENTS') setFirstDueAt(deriveFirstDueAt(selectedCard, date))
+                                    if (value === 'INSTALLMENTS') setFirstDueAt(deriveCardCutoffAt(selectedCard, date))
                                 }}
                                 options={[
                                     { value: 'SINGLE', label: 'Una cuota' },
@@ -393,8 +433,11 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                                     <Field label='Número de cuotas'>
                                         <Input type='number' min='2' value={totalInstallments} onChange={(event) => setTotalInstallments(event.target.value)} />
                                     </Field>
-                                    <Field label='Primera fecha de pago' className='sm:col-span-2'>
+                                    <Field label='Primer corte asociado' className='sm:col-span-2'>
                                         <Input type='datetime-local' step='1' value={firstDueAt} onChange={(event) => setFirstDueAt(event.target.value)} />
+                                        <p className='text-xs text-slate-500'>
+                                            Es la fecha de corte donde entra esta compra. La fecha límite de pago se calcula aparte según tu tarjeta.
+                                        </p>
                                     </Field>
                                 </div>
                             )}
@@ -441,7 +484,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                             <Input type='date' value={date} onChange={(event) => {
                                 setDate(event.target.value)
                                 if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS') {
-                                    setFirstDueAt(deriveFirstDueAt(selectedCard, event.target.value))
+                                    setFirstDueAt(deriveCardCutoffAt(selectedCard, event.target.value))
                                 }
                             }} />
                         </Field>
@@ -451,9 +494,11 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                     </div>
 
                     {installmentMode === 'INSTALLMENTS' && kind === 'CARD_PURCHASE' && Number(totalInstallments) > 0 && Number(amount) > 0 && (
-                        <p className='rounded-2xl border border-sky-300/20 bg-sky-400/10 p-3 text-sm text-sky-100'>
-                            Cuota estimada: {formatCurrency(estimatedInstallment)}
-                        </p>
+                        <div className='grid gap-2 rounded-2xl border border-sky-300/20 bg-sky-400/10 p-3 text-sm text-sky-100 sm:grid-cols-3'>
+                            <span>Cuota estimada: <strong>{formatCurrency(estimatedInstallment)}</strong></span>
+                            {firstDueAt && <span>Primer corte: <strong>{formatDateTimePreview(firstDueAt)}</strong></span>}
+                            {paymentDueAt && <span>Límite pago: <strong>{formatDateTimePreview(paymentDueAt)}</strong></span>}
+                        </div>
                     )}
                 </div>
             )}
@@ -468,6 +513,12 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                     <SummaryRow label='Monto' value={formatCurrency(kind === 'TRANSPORT' ? transportAmount : paymentAmount || Number(amount || 0))} />
                     {kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && (
                         <SummaryRow label='Cuotas' value={`${totalInstallments} cuotas de aprox. ${formatCurrency(estimatedInstallment)}`} />
+                    )}
+                    {kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && firstDueAt && (
+                        <SummaryRow label='Primer corte' value={formatDateTimePreview(firstDueAt)} />
+                    )}
+                    {kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && paymentDueAt && (
+                        <SummaryRow label='Fecha límite' value={formatDateTimePreview(paymentDueAt)} />
                     )}
                     {kind === 'CARD_PAYMENT' && paymentMode === 'TOTAL' && (
                         <SummaryRow label='Efecto' value='Saldará la tarjeta y cerrará cuotas pendientes' />

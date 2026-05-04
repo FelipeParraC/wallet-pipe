@@ -21,6 +21,7 @@ export const getTransactionsByWalletId = async ( id: string ) => {
                 userId: user.id,
                 OR: [
                     { walletId: id },
+                    { fromWalletId: id },
                     { toWalletId: id },
                 ]
             },
@@ -29,7 +30,8 @@ export const getTransactionsByWalletId = async ( id: string ) => {
             }
         }) as PrismaTransaction[]
 
-        const transactions = prismaTransactions.map( t => mapToTransaction(t))
+        const uniqueTransactions = Array.from(new Map(prismaTransactions.map((transaction) => [transaction.id, transaction])).values())
+        const transactions = uniqueTransactions.map( t => mapToTransaction(t))
 
         return { ...actionSuccess({ transactions }), transactions }
 

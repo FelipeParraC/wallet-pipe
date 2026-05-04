@@ -1,29 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { format, parseISO } from 'date-fns'
-import { CalendarIcon, Clock } from 'lucide-react'
-import { Alert, AlertDescription, Form, FormField, FormItem, FormLabel, FormControl, Input, FormMessage, FormDescription, Textarea, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Popover, PopoverTrigger, PopoverContent, Calendar } from '@/components/ui'
+import type { ReactNode } from 'react'
+import { format } from 'date-fns'
+import { CheckCircle2, LockKeyhole } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { updateTransactionById } from '@/actions'
 import type { Category, Transaction, UpdateTransactionInput } from '@/interfaces'
 import { isTransportTransaction, isTransferTransaction } from '@/interfaces'
-import { updateTransactionById } from '@/actions'
-import { useRouter } from 'next/navigation'
 import { combineDateAndTime, roundMoney, toSignedAmount, toTransferAmount } from '@/lib/finance'
-
-const editTransactionSchema = z.object({
-    title: z.string().min(1, 'El título es requerido'),
-    description: z.string().max(100, 'La descripción no debe exceder 100 caracteres'),
-    date: z.date({ required_error: 'La fecha es requerida' }),
-    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Formato de hora inválido'),
-    amount: z.string().min(0, 'El monto debe ser mayor o igual a 0'),
-    categoryId: z.string().optional(),
-    numberOfTrips: z.string().optional(),
-})
-
-type EditTransactionFormData = z.infer<typeof editTransactionSchema>
+import { formatCurrency } from '@/utils'
+import { Alert, AlertDescription, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '@/components/ui'
 
 interface EditTransactionFormProps {
     transaction: Transaction
@@ -31,73 +18,93 @@ interface EditTransactionFormProps {
     walletId: string
 }
 
-export const EditTransactionForm = ({ transaction, categories, walletId }: EditTransactionFormProps) => {
+const toDatePart = (value: string) => format(new Date(value), 'yyyy-MM-dd')
+const toTimePart = (value: string) => format(new Date(value), 'HH:mm:ss')
+const toLocalDate = (date: string) => new Date(`${date}T00:00:00`)
 
+const linkedMovementLabel = (transaction: Transaction) => {
+    if (transaction.installmentPlanId || transaction.installmentOccurrenceId) return 'Está ligado a una compra/cuota de tarjeta.'
+    if (transaction.scheduledOccurrenceId || transaction.scheduledPlanId) return 'Está ligado a un pago programado.'
+    if (transaction.debtId) return 'Está ligado a una deuda.'
+    if (transaction.type === 'PAGO_TARJETA') return 'Es un pago de tarjeta.'
+    return null
+}
+
+export const EditTransactionForm = ({ transaction, categories, walletId }: EditTransactionFormProps) => {
     const router = useRouter()
+    const occurredAt = transaction.occurredAt || transaction.date
+    const isLinkedOrCardPayment = Boolean(linkedMovementLabel(transaction))
+    const [title, setTitle] = useState(transaction.title)
+    const [description, setDescription] = useState(transaction.description ?? '')
+    const [amount, setAmount] = useState(Math.abs(transaction.amount).toString())
+    const [categoryId, setCategoryId] = useState(transaction.categoryId ?? 'none')
+    const [numberOfTrips, setNumberOfTrips] = useState(isTransportTransaction(transaction) ? transaction.numberOfTrips.toString() : '1')
+    const [date, setDate] = useState(toDatePart(occurredAt))
+    const [time, setTime] = useState(toTimePart(occurredAt))
     const [error, setError] = useState<string | null>(null)
     const [isPending, setIsPending] = useState(false)
 
-    const form = useForm<EditTransactionFormData>({
-        resolver: zodResolver(editTransactionSchema),
-        defaultValues: {
-            title: transaction.title,
-            description: transaction.description,
-            date: parseISO(transaction.occurredAt || transaction.date),
-            time: format(parseISO(transaction.occurredAt || transaction.date), 'HH:mm:ss'),
-            amount: Math.abs(transaction.amount).toString(),
-            categoryId: categories ? categories.find( c => c.id === transaction.categoryId )?.name || 'Otros' : 'Otros',
-            numberOfTrips: isTransportTransaction(transaction) ? transaction.numberOfTrips.toString() : undefined,
-        },
-    })
+    const categoryOptions = categories ?? []
+    const categoryIsEditable = !isTransferTransaction(transaction) && !isTransportTransaction(transaction) && transaction.type !== 'PAGO_TARJETA'
+    const amountIsLocked = isLinkedOrCardPayment
+    const parsedAmount = amountIsLocked ? Math.abs(transaction.amount) : Number(amount || 0)
+    const label = linkedMovementLabel(transaction)
 
-    const onSubmit = async (values: EditTransactionFormData) => {
+    const submit = async () => {
         setError(null)
-        setIsPending(true)
-        const date = combineDateAndTime(values.date, values.time)
 
-        const updateData: UpdateTransactionInput = {
-            title: values.title,
-            description: values.description,
-            date: date,
-            categoryId: categories ? categories.find( c => c.name === values.categoryId )?.id || categories.find(c => c.name === 'Otros')?.id : undefined,
-            newAmount: toSignedAmount(transaction.type, parseFloat(values.amount)),
-            numberOfTrips: parseInt(values.numberOfTrips || '0'),
-            walletId: transaction.walletId,
-            type: transaction.type,
-            amount: transaction.amount,
+        if (!title.trim()) {
+            setError('El título es requerido')
+            return
         }
 
-        try {
-            let response
+        if (!amountIsLocked && !isTransportTransaction(transaction) && (!Number.isFinite(parsedAmount) || parsedAmount <= 0)) {
+            setError('El monto debe ser mayor a 0')
+            return
+        }
 
-        if ( transaction.type !== 'TRANSFERENCIA' && transaction.type !== 'PAGO_TARJETA' ) {
-                if ( transaction.fareValue && values.numberOfTrips ) {
-                    const updateTransportData: UpdateTransactionInput = {
-                        ...updateData,
-                        fareValue: transaction.fareValue,
-                        newAmount: toSignedAmount('TRANSPORTE', roundMoney(transaction.fareValue * parseInt(values.numberOfTrips, 10)))
-                    }
-                    response = await updateTransactionById( updateTransportData, transaction.id )
-                } else {
-                    response = await updateTransactionById( updateData, transaction.id )
-                }
-        } else {
-            const updateTransferData: UpdateTransactionInput = {
-                ...updateData,
-                amount: toTransferAmount(transaction.amount),
-                newAmount: toTransferAmount(parseFloat(values.amount)),
+        if (isTransportTransaction(transaction) && Number(numberOfTrips) < 1) {
+            setError('El número de viajes debe ser mayor a 0')
+            return
+        }
+
+        setIsPending(true)
+        try {
+            const timestamp = combineDateAndTime(toLocalDate(date), time)
+            const nextAmount = isTransportTransaction(transaction) && transaction.fareValue
+                ? roundMoney(transaction.fareValue * Number(numberOfTrips || 0))
+                : parsedAmount
+
+            const updateData: UpdateTransactionInput = {
+                title: title.trim(),
+                description: description.trim(),
+                date: timestamp,
+                categoryId: categoryId === 'none' ? undefined : categoryId,
+                newAmount: isTransferTransaction(transaction) || transaction.type === 'PAGO_TARJETA'
+                    ? toTransferAmount(nextAmount)
+                    : toSignedAmount(transaction.type, nextAmount),
+                numberOfTrips: isTransportTransaction(transaction) ? Number(numberOfTrips) : undefined,
+                fareValue: isTransportTransaction(transaction) ? transaction.fareValue : undefined,
+                walletId: transaction.walletId,
+                type: transaction.type,
+                amount: transaction.amount,
                 fromWalletId: transaction.fromWalletId,
                 toWalletId: transaction.toWalletId,
-            }
-            response = await updateTransactionById( updateTransferData, transaction.id )
+                scheduledPlanId: transaction.scheduledPlanId,
+                scheduledOccurrenceId: transaction.scheduledOccurrenceId,
+                installmentPlanId: transaction.installmentPlanId,
+                installmentOccurrenceId: transaction.installmentOccurrenceId,
+                debtId: transaction.debtId,
+                personId: transaction.personId,
             }
 
+            const response = await updateTransactionById(updateData, transaction.id)
             if (!response?.ok) {
-                setError(response?.message || 'No se pudo actualizar la transacción')
+                setError(response?.message || 'No se pudo actualizar el movimiento')
                 return
             }
 
-            router.push( walletId ? `/billeteras/${ transaction.walletId }` : '/transacciones' )
+            router.push(walletId ? `/billeteras/${walletId}` : '/transacciones')
             router.refresh()
         } finally {
             setIsPending(false)
@@ -105,177 +112,103 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
     }
 
     return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Título</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Título de la transacción" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                {isTransportTransaction(transaction) && (
-                    <FormField
-                        control={form.control}
-                        name="numberOfTrips"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Número de Viajes</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        type="number"
-                                        placeholder="1"
-                                        {...field}
-                                        className="text-3xl h-16 text-center font-bold"
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )}
-                {!isTransportTransaction(transaction) && (
-                    <FormField
-                        control={form.control}
-                        name="amount"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Monto</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        placeholder="0.00"
-                                        {...field}
-                                        className="text-3xl h-16 text-center font-bold"
-                                        type="number"
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )}
-                {!isTransferTransaction(transaction) && !isTransportTransaction(transaction) && (
-                    <FormField
-                        control={form.control}
-                        name="categoryId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Categoría</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger className="h-14">
-                                            <SelectValue placeholder="Selecciona una categoría" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {categories ? categories.map((category) => (
-                                            <SelectItem key={ category.id } value={ category.name }>
-                                                { category.name }
-                                            </SelectItem>
-                                        )) : <></>}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )}
-                <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Descripción</FormLabel>
-                            <FormControl>
-                                <Textarea
-                                    placeholder="Breve descripción de la transacción"
-                                    className="resize-none h-24"
-                                    {...field}
-                                />
-                            </FormControl>
-                            <FormDescription>
-                                Máximo 100 caracteres.
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <div className="flex space-x-4">
-                    <FormField
-                        control={form.control}
-                        name="date"
-                        render={({ field }) => (
-                            <FormItem className="flex-1">
-                                <FormLabel>Fecha</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant={"outline"}
-                                                className={`w-full h-14 pl-3 text-left font-normal ${!field.value && 'text-muted-foreground'}`}
-                                            >
-                                                {field.value ? (
-                                                    format(field.value, 'PPP')
-                                                ) : (
-                                                    <span>Selecciona una fecha</span>
-                                                )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            disabled={(date) =>
-                                                date > new Date() || date < new Date('1900-01-01')
-                                            }
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="time"
-                        render={({ field }) => (
-                            <FormItem className="flex-1">
-                                <FormLabel>Hora</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <Input
-                                            type="time"
-                                            step='1'
-                                            {...field}
-                                            className="h-14 pl-10"
-                                        />
-                                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+        <div className='space-y-5 text-left'>
+            <section className='rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 sm:p-5'>
+                <div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
+                    <div>
+                        <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Editar movimiento</p>
+                        <h2 className='mt-2 text-2xl font-semibold text-white'>{transaction.title}</h2>
+                    </div>
+                    <span className='rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300'>
+                        {transaction.type.replaceAll('_', ' ')}
+                    </span>
                 </div>
-                {error && (
-                    <Alert variant='destructive'>
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
+
+                {label && (
+                    <div className='mt-4 flex gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100'>
+                        <LockKeyhole className='mt-0.5 h-4 w-4 shrink-0' />
+                        <p>{label} Por seguridad puedes corregir título, categoría, nota, fecha y hora; el monto queda protegido para no descuadrar saldos o cierres.</p>
+                    </div>
                 )}
-                <Button type="submit" className="w-full h-14 text-lg">
-                    {isPending ? 'Guardando...' : 'Guardar Cambios'}
-                </Button>
-            </form>
-        </Form>
+            </section>
+
+            <section className='space-y-5 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 sm:p-5'>
+                <div className='grid gap-4 sm:grid-cols-2'>
+                    <Field label='Título'>
+                        <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder='Título del movimiento' />
+                    </Field>
+
+                    {isTransportTransaction(transaction) ? (
+                        <Field label='Número de viajes'>
+                            <Input className='h-14 text-center text-2xl font-bold' type='number' min='1' value={numberOfTrips} onChange={(event) => setNumberOfTrips(event.target.value)} disabled={amountIsLocked} />
+                        </Field>
+                    ) : (
+                        <Field label='Monto'>
+                            <Input
+                                className='h-14 text-center text-2xl font-bold'
+                                type='number'
+                                min='0'
+                                step='0.01'
+                                value={amount}
+                                onChange={(event) => setAmount(event.target.value)}
+                                disabled={amountIsLocked}
+                            />
+                        </Field>
+                    )}
+                </div>
+
+                {categoryIsEditable && (
+                    <Field label='Categoría'>
+                        <Select value={categoryId} onValueChange={setCategoryId}>
+                            <SelectTrigger className='h-12'><SelectValue placeholder='Selecciona una categoría' /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value='none'>Sin categoría</SelectItem>
+                                {categoryOptions.map((category) => (
+                                    <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                )}
+
+                <Field label='Descripción'>
+                    <Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder='Opcional' className='min-h-20 resize-none' maxLength={160} />
+                </Field>
+
+                <div className='grid gap-4 sm:grid-cols-2'>
+                    <Field label='Fecha'>
+                        <Input type='date' value={date} onChange={(event) => setDate(event.target.value)} />
+                    </Field>
+                    <Field label='Hora'>
+                        <Input type='time' step='1' value={time} onChange={(event) => setTime(event.target.value)} />
+                    </Field>
+                </div>
+
+                <div className='rounded-2xl border border-white/10 bg-white/[0.04] p-3'>
+                    <div className='flex items-center justify-between gap-4'>
+                        <span className='text-sm text-slate-400'>Monto registrado</span>
+                        <span className='text-right text-sm font-semibold text-white'>{formatCurrency(isTransportTransaction(transaction) && transaction.fareValue ? transaction.fareValue * Number(numberOfTrips || 0) : parsedAmount)}</span>
+                    </div>
+                    <div className='mt-2 flex items-center justify-between gap-4'>
+                        <span className='text-sm text-slate-400'>Fecha</span>
+                        <span className='text-right text-sm font-semibold text-white'>{date} · {time}</span>
+                    </div>
+                </div>
+            </section>
+
+            {error && <Alert variant='destructive'><AlertDescription>{error}</AlertDescription></Alert>}
+
+            <Button type='button' className='h-12 w-full text-base' onClick={submit} disabled={isPending}>
+                <CheckCircle2 className='h-4 w-4' />
+                {isPending ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+        </div>
     )
 }
+
+const Field = ({ label, children }: { label: string; children: ReactNode }) => (
+    <div className='grid gap-2'>
+        <Label>{label}</Label>
+        {children}
+    </div>
+)

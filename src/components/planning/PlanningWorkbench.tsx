@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { CalendarClock, CheckCircle2, PauseCircle, Pencil, RotateCcw, Trash2, WalletCards } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Category, Wallet } from '@/interfaces'
 import {
@@ -22,7 +23,7 @@ import {
   updateScheduledPlan,
 } from '@/actions'
 import { CurrencyDisplay } from '@/components/CurrencyDisplay'
-import { DebtForm, InstallmentPlanForm, ScheduledPlanForm } from '@/components'
+import { DebtForm, ScheduledPlanForm } from '@/components'
 import { Alert, AlertDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '@/components/ui'
 import { formatCurrency } from '@/utils'
 
@@ -138,13 +139,14 @@ interface PlanningWorkbenchProps {
   }
 }
 
-type Tab = 'pendientes' | 'pagados' | 'planes' | 'deudas'
+type Tab = 'pendientes' | 'pagados' | 'planes' | 'deudas' | 'crear'
 
 const tabs: Array<{ id: Tab; label: string }> = [
   { id: 'pendientes', label: 'Pendientes' },
   { id: 'pagados', label: 'Pagados' },
   { id: 'planes', label: 'Planes' },
   { id: 'deudas', label: 'Deudas' },
+  { id: 'crear', label: 'Crear' },
 ]
 
 const toDateTimeLocal = (value?: string) => {
@@ -621,7 +623,7 @@ export const PlanningWorkbench = ({
               <OccurrenceCard
                 key={occurrence.id}
                 title={occurrence.plan.title}
-                subtitle={`Cuota ${occurrence.installmentNumber} de ${occurrence.plan.totalInstallments}${occurrence.plan.merchant ? ` · ${occurrence.plan.merchant}` : ''}`}
+                subtitle={`Corte de tarjeta · Cuota ${occurrence.installmentNumber} de ${occurrence.plan.totalInstallments}${occurrence.plan.merchant ? ` · ${occurrence.plan.merchant}` : ''}`}
                 amount={occurrence.expectedAmount}
                 dueAt={occurrence.dueAt}
                 status={occurrence.status}
@@ -655,7 +657,9 @@ export const PlanningWorkbench = ({
           ) : paidItems.map((item) => {
             const occurrence = item.occurrence
             const isScheduled = item.kind === 'scheduled'
-            const subtitle = isScheduled ? 'Pago programado' : `Cuota ${item.occurrence.installmentNumber}`
+            const subtitle = isScheduled
+              ? 'Pago programado'
+              : `${occurrence.status === 'EJECUTADA' && !occurrence.linkedTransactionId ? 'Cerrada por pago total' : 'Corte de tarjeta'} · Cuota ${item.occurrence.installmentNumber} de ${item.occurrence.plan.totalInstallments}`
 
             return (
               <OccurrenceCard key={occurrence.id} title={occurrence.plan.title} subtitle={subtitle} amount={occurrence.expectedAmount} dueAt={occurrence.dueAt} status={occurrence.status}>
@@ -666,6 +670,7 @@ export const PlanningWorkbench = ({
                   </Button>
                 )}
                 {occurrence.linkedTransactionId && <span className='rounded-full bg-emerald-400/10 px-3 py-2 text-xs text-emerald-200'>Movimiento vinculado</span>}
+                {!occurrence.linkedTransactionId && !isScheduled && occurrence.status === 'EJECUTADA' && <span className='rounded-full bg-sky-400/10 px-3 py-2 text-xs text-sky-100'>Liquidada con pago total</span>}
               </OccurrenceCard>
             )
           })}
@@ -673,23 +678,20 @@ export const PlanningWorkbench = ({
       )}
 
       {activeTab === 'planes' && (
-        <section className='grid gap-4 xl:grid-cols-2'>
+        <section className='grid gap-4'>
           <div className='glass-panel rounded-[1.75rem] p-5'>
-            <h2 className='text-lg font-semibold text-white'>Nuevo pago programado</h2>
-            <div className='mt-5'>
-              <ScheduledPlanForm categories={categories} wallets={wallets} />
-            </div>
-          </div>
-          <div className='glass-panel rounded-[1.75rem] p-5'>
-            <h2 className='text-lg font-semibold text-white'>Nueva compra a cuotas</h2>
-            <div className='mt-5'>
-              <InstallmentPlanForm categories={categories} wallets={wallets} />
+            <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+              <div>
+                <h2 className='text-lg font-semibold text-white'>Planes activos e históricos</h2>
+                <p className='mt-1 text-sm text-slate-400'>Pagos programados y compras a cuotas ya creadas.</p>
+              </div>
+              <Button type='button' onClick={() => setActiveTab('crear')}>Crear plan</Button>
             </div>
           </div>
 
-          <div className='grid gap-3 xl:col-span-2'>
+          <div className='grid gap-3'>
             {[...scheduledPlans, ...installmentPlans].length === 0 ? (
-              <div className='rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5 text-sm text-slate-400'>No tienes planes creados.</div>
+              <div className='rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5 text-sm text-slate-400'>No tienes planes creados. Usa la pestaña Crear para pagos programados o registra una compra con tarjeta a cuotas desde Nuevo movimiento.</div>
             ) : (
               <>
                 {scheduledPlans.map((plan) => (
@@ -718,7 +720,9 @@ export const PlanningWorkbench = ({
                     <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
                       <div>
                         <p className='font-semibold text-white'>{plan.title}</p>
-                        <p className='mt-1 text-sm text-slate-400'>{plan.remainingInstallments} de {plan.totalInstallments} pendientes · {formatCurrency(plan.installmentAmount)}</p>
+                        <p className='mt-1 text-sm text-slate-400'>
+                          {plan.remainingInstallments === 0 ? `${plan.totalInstallments} de ${plan.totalInstallments} liquidadas` : `${plan.remainingInstallments} de ${plan.totalInstallments} pendientes`} · {formatCurrency(plan.installmentAmount)}
+                        </p>
                       </div>
                       <div className='flex flex-wrap gap-2'>
                         <PlanEditDialog plan={plan} categories={categories} wallets={wallets} />
@@ -741,11 +745,14 @@ export const PlanningWorkbench = ({
       )}
 
       {activeTab === 'deudas' && (
-        <section className='grid gap-4 xl:grid-cols-[0.9fr_1.1fr]'>
+        <section className='grid gap-4'>
           <div className='glass-panel rounded-[1.75rem] p-5'>
-            <h2 className='text-lg font-semibold text-white'>Nueva deuda</h2>
-            <div className='mt-5'>
-              <DebtForm />
+            <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+              <div>
+                <h2 className='text-lg font-semibold text-white'>Deudas y abonos</h2>
+                <p className='mt-1 text-sm text-slate-400'>Registra abonos parciales sin mezclarlo con pagos programados.</p>
+              </div>
+              <Button type='button' onClick={() => setActiveTab('crear')}>Nueva deuda</Button>
             </div>
           </div>
           <div className='grid gap-3'>
@@ -782,6 +789,39 @@ export const PlanningWorkbench = ({
                 Las deudas activas también cuentan para el disponible proyectado de tu ciclo.
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {activeTab === 'crear' && (
+        <section className='grid gap-4 xl:grid-cols-2'>
+          <div className='glass-panel rounded-[1.75rem] p-5'>
+            <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Programado</p>
+            <h2 className='mt-2 text-lg font-semibold text-white'>Nuevo pago programado</h2>
+            <div className='mt-5'>
+              <ScheduledPlanForm categories={categories} wallets={wallets} />
+            </div>
+          </div>
+
+          <div className='glass-panel rounded-[1.75rem] p-5'>
+            <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Persona</p>
+            <h2 className='mt-2 text-lg font-semibold text-white'>Nueva deuda</h2>
+            <div className='mt-5'>
+              <DebtForm />
+            </div>
+          </div>
+
+          <div className='glass-panel rounded-[1.75rem] p-5 xl:col-span-2'>
+            <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+              <div>
+                <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Tarjeta</p>
+                <h2 className='mt-2 text-lg font-semibold text-white'>Compra a cuotas</h2>
+                <p className='mt-1 text-sm text-slate-400'>Las cuotas nacen desde una compra real con tarjeta para que la deuda y el cupo queden correctos.</p>
+              </div>
+              <Button asChild>
+                <Link href='/transacciones/nueva'>Crear desde Nuevo movimiento</Link>
+              </Button>
+            </div>
           </div>
         </section>
       )}

@@ -211,10 +211,10 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
           }
 
           if (!data.firstDueAt) {
-            throw new Error('La primera fecha de pago es requerida')
+            throw new Error('El primer corte de la tarjeta es requerido')
           }
 
-          const firstDueAt = parseRequiredDate(data.firstDueAt, 'La primera fecha de pago')
+          const firstDueAt = parseRequiredDate(data.firstDueAt, 'El primer corte de la tarjeta')
           const installmentAmounts = buildInstallmentAmounts(totalAmount, totalInstallments)
           const firstInstallmentAmount = moneyToNumber(installmentAmounts[0])
 
@@ -258,6 +258,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
               expectedAmount,
               status: 'PENDIENTE' as const,
             })),
+            skipDuplicates: true,
           })
 
           return {
@@ -314,16 +315,44 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
             chargeWalletId: creditCard.id,
             isActive: true,
           },
-          select: { id: true },
+          select: {
+            id: true,
+            totalInstallments: true,
+            firstDueAt: true,
+            installmentAmount: true,
+            occurrences: {
+              select: { installmentNumber: true },
+            },
+          },
         })
         const activePlanIds = activePlans.map((plan) => plan.id)
 
         if (activePlanIds.length > 0) {
+          for (const plan of activePlans) {
+            const existingNumbers = new Set(plan.occurrences.map((occurrence) => occurrence.installmentNumber))
+            const missingOccurrences = Array.from({ length: plan.totalInstallments }, (_, index) => index + 1)
+              .filter((installmentNumber) => !existingNumbers.has(installmentNumber))
+
+            if (missingOccurrences.length > 0) {
+              await tx.installmentOccurrence.createMany({
+                data: missingOccurrences.map((installmentNumber) => ({
+                  installmentPlanId: plan.id,
+                  userId: user.id,
+                  installmentNumber,
+                  dueAt: addMonthsPreservingTime(plan.firstDueAt, installmentNumber - 1),
+                  expectedAmount: plan.installmentAmount,
+                  status: 'PENDIENTE' as const,
+                })),
+                skipDuplicates: true,
+              })
+            }
+          }
+
           await tx.installmentOccurrence.updateMany({
             where: {
               userId: user.id,
               installmentPlanId: { in: activePlanIds },
-              status: 'PENDIENTE',
+              status: { in: ['PENDIENTE', 'OMITIDA'] },
             },
             data: { status: 'EJECUTADA' },
           })
