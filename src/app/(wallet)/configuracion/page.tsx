@@ -2,7 +2,7 @@ export const revalidate = 0
 
 import { getCurrentCycleSummary, getCycleSettings, getSettingsOverview } from '@/actions'
 import { auth } from '@/auth.config'
-import { CategoryForm, CycleSettingsForm, TagForm } from '@/components'
+import { CycleSettingsForm, TaxonomyManager } from '@/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 
 export default async function ConfiguracionPage() {
@@ -68,53 +68,7 @@ export default async function ConfiguracionPage() {
                 </Card>
             </div>
 
-            <div className='grid gap-4 xl:grid-cols-2'>
-                <Card className='rounded-[1.75rem]'>
-                    <CardHeader>
-                        <CardTitle>Categorías</CardTitle>
-                    </CardHeader>
-                    <CardContent className='space-y-5'>
-                        <CategoryForm categories={categories.filter((category) => !category.isSystem)} />
-                        <div className='grid gap-3'>
-                            {categories.length === 0 ? (
-                                <p className='text-sm text-slate-400'>Sin categorías.</p>
-                            ) : categories.map((category) => (
-                                <div key={category.id} className='flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-3'>
-                                    <div>
-                                        <p className='font-medium text-white'>{category.name}</p>
-                                        <p className='text-xs text-slate-500'>
-                                            {category.parentId ? 'Subcategoría' : category.isSystem ? 'Sistema' : 'Personal'}
-                                        </p>
-                                    </div>
-                                    <span className='h-4 w-4 rounded-full' style={{ backgroundColor: category.color }} />
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className='rounded-[1.75rem]'>
-                    <CardHeader>
-                        <CardTitle>Tags</CardTitle>
-                    </CardHeader>
-                    <CardContent className='space-y-5'>
-                        <TagForm />
-                        <div className='flex flex-wrap gap-2'>
-                            {tags.length === 0 ? (
-                                <p className='text-sm text-slate-400'>Sin tags.</p>
-                            ) : tags.map((tag) => (
-                                <span
-                                    key={tag.id}
-                                    className='rounded-full border border-white/10 px-3 py-1.5 text-sm font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
-                                    style={{ backgroundColor: tag.color || '#334155' }}
-                                >
-                                    #{tag.name}
-                                </span>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+            <TaxonomyManager categories={categories} tags={tags} />
         </div>
     )
 }

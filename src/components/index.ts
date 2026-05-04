@@ -12,6 +12,7 @@ export * from './settings/CycleSettingsForm'
 export * from './settings/DebtForm'
 export * from './settings/ScheduledPlanForm'
 export * from './settings/TagForm'
+export * from './settings/TaxonomyManager'
 
 
 export * from './auth/LoginForm'

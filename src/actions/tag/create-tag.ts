@@ -4,6 +4,7 @@ import type { CreateTagInput } from '@/interfaces'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { revalidatePath } from 'next/cache'
 
 export const createTag = async (data: CreateTagInput) => {
     try {
@@ -32,6 +33,7 @@ export const createTag = async (data: CreateTagInput) => {
             }
         })
 
+        revalidatePath('/configuracion')
         return {
             ...actionSuccess({ tag }, 'Tag creado'),
             tag,

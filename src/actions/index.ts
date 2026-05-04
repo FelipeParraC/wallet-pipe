@@ -3,7 +3,9 @@ export { logout } from './auth/logout'
 export { register } from './auth/register'
 
 export { createCategory } from './category/create-category'
+export { deleteCategory } from './category/delete-category'
 export { getCategories } from './category/get-categories'
+export { updateCategory } from './category/update-category'
 export { getCycleSettings } from './cycle/get-cycle-settings'
 export { updateCycleSettings } from './cycle/update-cycle-settings'
 export { getCurrentCycleSummary } from './dashboard/get-current-cycle-summary'
@@ -28,6 +30,8 @@ export {
 export { createScheduledPlan } from './scheduled/create-scheduled-plan'
 export { getSettingsOverview } from './settings/get-settings-overview'
 export { createTag } from './tag/create-tag'
+export { deleteTag } from './tag/delete-tag'
+export { updateTag } from './tag/update-tag'
 
 export { createMovementFromForm } from './transaction/create-movement-from-form'
 export { deleteTransactionById } from './transaction/delete-transaction-by-id'
