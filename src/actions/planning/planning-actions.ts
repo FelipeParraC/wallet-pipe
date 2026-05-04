@@ -123,6 +123,21 @@ const buildMonthlyDueDate = (year: number, month: number, day: number, timeSourc
   )
 )
 
+const buildCardPaymentDueDate = (cutoffAt: Date, paymentDueDay?: number | null) => {
+  if (!paymentDueDay) return cutoffAt
+
+  let dueYear = cutoffAt.getFullYear()
+  let dueMonth = cutoffAt.getMonth()
+
+  if (paymentDueDay <= cutoffAt.getDate()) {
+    const nextMonth = new Date(dueYear, dueMonth + 1, 1, cutoffAt.getHours(), cutoffAt.getMinutes(), cutoffAt.getSeconds(), 0)
+    dueYear = nextMonth.getFullYear()
+    dueMonth = nextMonth.getMonth()
+  }
+
+  return buildMonthlyDueDate(dueYear, dueMonth, paymentDueDay, cutoffAt)
+}
+
 const getCurrentCycle = async (db: Db, userId: string) => {
   const settings = await db.userCycleSettings.findUnique({
     where: { userId },
@@ -188,6 +203,7 @@ const installmentDueDatesForCycle = (
     firstDueAt: Date
     totalInstallments: number
     installmentAmount: bigint
+    chargeWallet?: { paymentDueDay: number | null } | null
   },
   startsAt: Date,
   endsAt: Date,
@@ -195,8 +211,9 @@ const installmentDueDatesForCycle = (
   const dates: Array<{ installmentNumber: number; dueAt: Date; expectedAmount: bigint }> = []
 
   for (let installmentNumber = 1; installmentNumber <= plan.totalInstallments; installmentNumber += 1) {
-    const dueAt = new Date(plan.firstDueAt)
-    dueAt.setMonth(plan.firstDueAt.getMonth() + installmentNumber - 1)
+    const cutoffAt = new Date(plan.firstDueAt)
+    cutoffAt.setMonth(plan.firstDueAt.getMonth() + installmentNumber - 1)
+    const dueAt = buildCardPaymentDueDate(cutoffAt, plan.chargeWallet?.paymentDueDay)
     if (dueAt >= startsAt && dueAt <= endsAt) {
       dates.push({ installmentNumber, dueAt, expectedAmount: plan.installmentAmount })
     }
@@ -216,7 +233,7 @@ const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: string) => {
   })
   const installmentPlans = await db.installmentPlan.findMany({
     where: { userId, isActive: true, firstDueAt: { lte: endsAt }, remainingInstallments: { gt: 0 } },
-    include: { occurrences: true },
+    include: { occurrences: true, chargeWallet: true },
   })
 
   for (const plan of scheduledPlans) {
@@ -240,11 +257,25 @@ const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: string) => {
   }
 
   for (const plan of installmentPlans) {
-    const existingNumbers = new Set(plan.occurrences.map((occurrence) => occurrence.installmentNumber))
+    const existingByNumber = new Map(plan.occurrences.map((occurrence) => [occurrence.installmentNumber, occurrence]))
     const dueDates = installmentDueDatesForCycle(plan, startsAt, endsAt)
 
     for (const item of dueDates) {
-      if (existingNumbers.has(item.installmentNumber)) continue
+      const existing = existingByNumber.get(item.installmentNumber)
+
+      if (existing) {
+        if (
+          existing.status === 'PENDIENTE'
+          && !existing.linkedTransactionId
+          && existing.dueAt.getTime() !== item.dueAt.getTime()
+        ) {
+          await db.installmentOccurrence.update({
+            where: { id: existing.id },
+            data: { dueAt: item.dueAt },
+          })
+        }
+        continue
+      }
 
       await db.installmentOccurrence.create({
         data: {
@@ -358,7 +389,11 @@ export const getPlanningCycleOverview = async () => {
         orderBy: { dueAt: 'asc' },
       })
       const scheduledPlans = await prisma.scheduledPlan.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } })
-      const installmentPlans = await prisma.installmentPlan.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } })
+      const installmentPlans = await prisma.installmentPlan.findMany({
+        where: { userId: user.id },
+        include: { occurrences: { orderBy: { installmentNumber: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+      })
       const debts = await prisma.debt.findMany({ where: { userId: user.id }, include: { person: true, transactions: true }, orderBy: { createdAt: 'desc' } })
       const transactions = await prisma.transaction.findMany({
         where: { userId: user.id, occurredAt: { gte: startsAt, lte: endsAt } },
@@ -413,6 +448,10 @@ export const getPlanningCycleOverview = async () => {
         isActive: plan.isActive,
       })),
       installmentPlans: installmentPlans.map((plan) => ({
+        paidInstallments: plan.occurrences.filter((occurrence) => occurrence.status === 'EJECUTADA').length,
+        nextDueAt: plan.occurrences
+          .filter((occurrence) => occurrence.status === 'PENDIENTE')
+          .sort((left, right) => left.dueAt.getTime() - right.dueAt.getTime())[0]?.dueAt.toISOString(),
         id: plan.id,
         title: plan.title,
         description: plan.description ?? undefined,

@@ -171,7 +171,7 @@ export const seedInstallmentPlans = [
     remainingInstallments: 4,
     interestRate: 0,
     occurredAt: new Date('2026-02-02T14:30:15-05:00'),
-    firstDueAt: new Date('2026-03-05T08:00:00-05:00'),
+    firstDueAt: new Date('2026-02-18T08:00:00-05:00'),
     isActive: true,
   },
 ]

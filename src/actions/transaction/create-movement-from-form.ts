@@ -86,6 +86,34 @@ const addMonthsPreservingTime = (date: Date, months: number) => {
   return next
 }
 
+const clampDay = (year: number, month: number, day: number) => {
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  return Math.min(Math.max(day, 1), lastDay)
+}
+
+const buildCardPaymentDueDate = (cutoffAt: Date, paymentDueDay?: number | null) => {
+  if (!paymentDueDay) return cutoffAt
+
+  let dueYear = cutoffAt.getFullYear()
+  let dueMonth = cutoffAt.getMonth()
+
+  if (paymentDueDay <= cutoffAt.getDate()) {
+    const nextMonth = addMonthsPreservingTime(new Date(dueYear, dueMonth, 1, cutoffAt.getHours(), cutoffAt.getMinutes(), cutoffAt.getSeconds()), 1)
+    dueYear = nextMonth.getFullYear()
+    dueMonth = nextMonth.getMonth()
+  }
+
+  return new Date(
+    dueYear,
+    dueMonth,
+    clampDay(dueYear, dueMonth, paymentDueDay),
+    cutoffAt.getHours(),
+    cutoffAt.getMinutes(),
+    cutoffAt.getSeconds(),
+    0,
+  )
+}
+
 const buildInstallmentAmounts = (totalAmount: number, totalInstallments: number) => {
   const totalMinor = moneyInputToMinorUnits(totalAmount)
   const installments = BigInt(totalInstallments)
@@ -268,7 +296,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
               installmentPlanId: plan.id,
               userId: user.id,
               installmentNumber: index + 1,
-              dueAt: addMonthsPreservingTime(firstDueAt, index),
+              dueAt: buildCardPaymentDueDate(addMonthsPreservingTime(firstDueAt, index), creditCard.paymentDueDay),
               expectedAmount,
               status: index < paidInstallments ? 'EJECUTADA' as const : 'PENDIENTE' as const,
             })),
@@ -351,6 +379,9 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
             totalInstallments: true,
             firstDueAt: true,
             installmentAmount: true,
+            chargeWallet: {
+              select: { paymentDueDay: true },
+            },
             occurrences: {
               select: { installmentNumber: true },
             },
@@ -370,7 +401,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
                   installmentPlanId: plan.id,
                   userId: user.id,
                   installmentNumber,
-                  dueAt: addMonthsPreservingTime(plan.firstDueAt, installmentNumber - 1),
+                  dueAt: buildCardPaymentDueDate(addMonthsPreservingTime(plan.firstDueAt, installmentNumber - 1), plan.chargeWallet?.paymentDueDay),
                   expectedAmount: plan.installmentAmount,
                   status: 'PENDIENTE' as const,
                 })),

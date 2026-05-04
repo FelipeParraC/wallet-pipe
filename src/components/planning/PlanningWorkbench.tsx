@@ -100,7 +100,9 @@ interface InstallmentPlanView {
   totalAmount: number
   installmentAmount: number
   totalInstallments: number
+  paidInstallments?: number
   remainingInstallments: number
+  nextDueAt?: string
   occurredAt: string
   firstDueAt: string
   isActive: boolean
@@ -510,6 +512,12 @@ export const PlanningWorkbench = ({
   const [activeTab, setActiveTab] = useState<Tab>('pendientes')
   const [error, setError] = useState<string | null>(null)
   const activeDebts = debts.filter((debt) => debt.status === 'ACTIVA')
+  const realAccountAvailable = wallets
+    .filter((wallet) => wallet.includeInTotal && wallet.type !== 'Tarjeta de Crédito')
+    .reduce((sum, wallet) => sum + wallet.balance, 0)
+  const cardDueThisCycle = summary.pendingInstallmentTotal
+  const otherObligations = summary.pendingScheduledTotal + summary.pendingDebtTotal
+  const projectedAvailable = realAccountAvailable - cardDueThisCycle - otherObligations
 
   const pendingItems = useMemo(() => [
     ...scheduledOccurrences.filter((occurrence) => occurrence.status === 'PENDIENTE').map((occurrence) => ({ kind: 'scheduled' as const, occurrence })),
@@ -557,21 +565,25 @@ export const PlanningWorkbench = ({
 
       <div className='grid gap-4 md:grid-cols-4'>
         <div className='glass-panel rounded-[1.5rem] p-4'>
-          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Pendiente</p>
-          <CurrencyDisplay amount={summary.pendingScheduledTotal + summary.pendingInstallmentTotal} showDecimals={true} className='mt-2 text-xl font-bold text-white' />
+          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Cuentas reales</p>
+          <CurrencyDisplay amount={realAccountAvailable} showDecimals={true} className='mt-2 text-xl font-bold text-white' />
         </div>
         <div className='glass-panel rounded-[1.5rem] p-4'>
-          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Pagado</p>
-          <CurrencyDisplay amount={summary.paidInCycle} showDecimals={true} className='mt-2 text-xl font-bold text-emerald-300' />
+          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Tarjeta mes</p>
+          <CurrencyDisplay amount={cardDueThisCycle} showDecimals={true} className='mt-2 text-xl font-bold text-sky-200' />
         </div>
         <div className='glass-panel rounded-[1.5rem] p-4'>
-          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Deudas</p>
-          <CurrencyDisplay amount={summary.pendingDebtTotal} showDecimals={true} className='mt-2 text-xl font-bold text-amber-300' />
+          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Otros deberes</p>
+          <CurrencyDisplay amount={otherObligations} showDecimals={true} className='mt-2 text-xl font-bold text-amber-300' />
         </div>
         <div className='glass-panel rounded-[1.5rem] p-4'>
-          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Items</p>
-          <p className='mt-2 text-xl font-bold text-white'>{summary.pendingCount} pendientes · {summary.paidCount} pagados</p>
+          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Disponible ciclo</p>
+          <CurrencyDisplay amount={projectedAvailable} showDecimals={true} className='mt-2 text-xl font-bold text-emerald-300' />
         </div>
+      </div>
+
+      <div className='rounded-[1.5rem] border border-sky-300/10 bg-sky-400/[0.06] p-4 text-sm text-sky-100'>
+        Planeación cruza tus cuentas reales con pagos programados, deudas y cuotas de tarjeta que vencen en este ciclo. El cupo de la tarjeta no se suma como dinero disponible.
       </div>
 
       <ActionError message={error} />
@@ -623,7 +635,7 @@ export const PlanningWorkbench = ({
               <OccurrenceCard
                 key={occurrence.id}
                 title={occurrence.plan.title}
-                subtitle={`Corte de tarjeta · Cuota ${occurrence.installmentNumber} de ${occurrence.plan.totalInstallments}${occurrence.plan.merchant ? ` · ${occurrence.plan.merchant}` : ''}`}
+                subtitle={`Pago de tarjeta · Cuota ${occurrence.installmentNumber} de ${occurrence.plan.totalInstallments}${occurrence.plan.merchant ? ` · ${occurrence.plan.merchant}` : ''}`}
                 amount={occurrence.expectedAmount}
                 dueAt={occurrence.dueAt}
                 status={occurrence.status}
@@ -659,7 +671,7 @@ export const PlanningWorkbench = ({
             const isScheduled = item.kind === 'scheduled'
             const subtitle = isScheduled
               ? 'Pago programado'
-              : `${occurrence.status === 'EJECUTADA' && !occurrence.linkedTransactionId ? 'Cerrada por pago total' : 'Corte de tarjeta'} · Cuota ${item.occurrence.installmentNumber} de ${item.occurrence.plan.totalInstallments}`
+              : `${occurrence.status === 'EJECUTADA' && !occurrence.linkedTransactionId ? 'Importada o cerrada' : 'Pago de tarjeta'} · Cuota ${item.occurrence.installmentNumber} de ${item.occurrence.plan.totalInstallments}`
 
             return (
               <OccurrenceCard key={occurrence.id} title={occurrence.plan.title} subtitle={subtitle} amount={occurrence.expectedAmount} dueAt={occurrence.dueAt} status={occurrence.status}>
@@ -722,6 +734,10 @@ export const PlanningWorkbench = ({
                         <p className='font-semibold text-white'>{plan.title}</p>
                         <p className='mt-1 text-sm text-slate-400'>
                           {plan.remainingInstallments === 0 ? `${plan.totalInstallments} de ${plan.totalInstallments} liquidadas` : `${plan.remainingInstallments} de ${plan.totalInstallments} pendientes`} · {formatCurrency(plan.installmentAmount)}
+                        </p>
+                        <p className='mt-1 text-xs text-slate-500'>
+                          {plan.paidInstallments ?? 0} pagadas
+                          {plan.nextDueAt ? ` · Próxima cuota ${format(parseISO(plan.nextDueAt), "d MMM yyyy", { locale: es })}` : ' · Sin próximas cuotas pendientes'}
                         </p>
                       </div>
                       <div className='flex flex-wrap gap-2'>
