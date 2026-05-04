@@ -138,7 +138,7 @@ const buildCardPaymentDueDate = (cutoffAt: Date, paymentDueDay?: number | null) 
   return buildMonthlyDueDate(dueYear, dueMonth, paymentDueDay, cutoffAt)
 }
 
-const getCurrentCycle = async (db: Db, userId: string) => {
+const getCurrentCycle = async (db: Db, userId: string, referenceDate?: Date) => {
   const settings = await db.userCycleSettings.findUnique({
     where: { userId },
     include: { overrides: true },
@@ -154,7 +154,7 @@ const getCurrentCycle = async (db: Db, userId: string) => {
       }
     : defaultCycleSettings(userId)
 
-  return getCyclePeriodForDate(safeSettings)
+  return getCyclePeriodForDate(safeSettings, referenceDate)
 }
 
 const scheduledDueDatesForCycle = (
@@ -222,8 +222,8 @@ const installmentDueDatesForCycle = (
   return dates
 }
 
-const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: string) => {
-  const currentCycle = await getCurrentCycle(db, userId)
+const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: string, referenceDate?: Date) => {
+  const currentCycle = await getCurrentCycle(db, userId, referenceDate)
   const startsAt = new Date(currentCycle.startsAt)
   const endsAt = new Date(currentCycle.endsAt)
 
@@ -358,10 +358,13 @@ export const ensureCurrentCycleOccurrences = async () => {
   }
 }
 
-export const getPlanningCycleOverview = async () => {
+export const getPlanningCycleOverview = async (referenceDate?: string) => {
   try {
     const user = await requireSessionUser()
-    const { currentCycle, startsAt, endsAt } = await withPrismaConnectionRetry(() => ensureCurrentCycleOccurrencesForUser(prisma, user.id))
+    const cycleReference = referenceDate ? new Date(referenceDate) : undefined
+    if (cycleReference && Number.isNaN(cycleReference.getTime())) throw new Error('El ciclo seleccionado no es válido')
+
+    const { currentCycle, startsAt, endsAt } = await withPrismaConnectionRetry(() => ensureCurrentCycleOccurrencesForUser(prisma, user.id, cycleReference))
 
     const {
       wallets,
@@ -449,6 +452,7 @@ export const getPlanningCycleOverview = async () => {
       })),
       installmentPlans: installmentPlans.map((plan) => ({
         paidInstallments: plan.occurrences.filter((occurrence) => occurrence.status === 'EJECUTADA').length,
+        importedPaidInstallments: plan.occurrences.filter((occurrence) => occurrence.status === 'EJECUTADA' && !occurrence.linkedTransactionId).length,
         nextDueAt: plan.occurrences
           .filter((occurrence) => occurrence.status === 'PENDIENTE')
           .sort((left, right) => left.dueAt.getTime() - right.dueAt.getTime())[0]?.dueAt.toISOString(),

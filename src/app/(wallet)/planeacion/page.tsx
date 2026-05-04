@@ -3,14 +3,20 @@ export const revalidate = 0
 import { getPlanningCycleOverview } from '@/actions'
 import { PlanningWorkbench } from '@/components/planning/PlanningWorkbench'
 
-export default async function PlaneacionPage() {
-    const overviewResponse = await getPlanningCycleOverview()
+interface PlaneacionPageProps {
+    searchParams?: {
+        cycle?: string
+    }
+}
+
+export default async function PlaneacionPage({ searchParams }: PlaneacionPageProps) {
+    const overviewResponse = await getPlanningCycleOverview(searchParams?.cycle)
     const overview = overviewResponse.ok && overviewResponse.data ? overviewResponse.data : null
 
     return (
         overview ? (
             <PlanningWorkbench
-                currentCycleLabel={overview.currentCycle.label}
+                currentCycle={overview.currentCycle}
                 wallets={overview.wallets}
                 categories={overview.categories}
                 scheduledOccurrences={overview.scheduledOccurrences}

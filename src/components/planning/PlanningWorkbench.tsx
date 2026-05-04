@@ -96,11 +96,13 @@ interface InstallmentPlanView {
   description?: string
   merchant?: string
   categoryId?: string
+  chargeWalletId?: string
   paymentWalletId?: string
   totalAmount: number
   installmentAmount: number
   totalInstallments: number
   paidInstallments?: number
+  importedPaidInstallments?: number
   remainingInstallments: number
   nextDueAt?: string
   occurredAt: string
@@ -123,7 +125,11 @@ interface DebtView {
 }
 
 interface PlanningWorkbenchProps {
-  currentCycleLabel: string
+  currentCycle: {
+    startsAt: string
+    endsAt: string
+    label: string
+  }
   wallets: Wallet[]
   categories: Category[]
   scheduledOccurrences: ScheduledOccurrenceView[]
@@ -144,8 +150,8 @@ interface PlanningWorkbenchProps {
 type Tab = 'pendientes' | 'pagados' | 'planes' | 'deudas' | 'crear'
 
 const tabs: Array<{ id: Tab; label: string }> = [
-  { id: 'pendientes', label: 'Pendientes' },
-  { id: 'pagados', label: 'Pagados' },
+  { id: 'pendientes', label: 'Por pagar' },
+  { id: 'pagados', label: 'Pagado' },
   { id: 'planes', label: 'Planes' },
   { id: 'deudas', label: 'Deudas' },
   { id: 'crear', label: 'Crear' },
@@ -155,6 +161,21 @@ const toDateTimeLocal = (value?: string) => {
   const date = value ? new Date(value) : new Date()
   const pad = (part: number) => String(part).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+const toCycleQueryDate = (date: Date) => date.toISOString().slice(0, 10)
+
+const getCycleNavDates = (startsAt: string, endsAt: string) => {
+  const previous = new Date(startsAt)
+  previous.setDate(previous.getDate() - 1)
+
+  const next = new Date(endsAt)
+  next.setSeconds(next.getSeconds() + 1)
+
+  return {
+    previous: toCycleQueryDate(previous),
+    next: toCycleQueryDate(next),
+  }
 }
 
 const statusLabel: Record<OccurrenceStatus, string> = {
@@ -188,8 +209,9 @@ const PayOccurrenceDialog = ({
   onPay: (values: { walletId: string; amount?: number; occurredAt: string; description?: string }) => Promise<{ ok: boolean; message: string }>
 }) => {
   const router = useRouter()
+  const safeDefaultWalletId = defaultWalletId && wallets.some((wallet) => wallet.id === defaultWalletId) ? defaultWalletId : wallets[0]?.id ?? ''
   const [open, setOpen] = useState(false)
-  const [walletId, setWalletId] = useState(defaultWalletId ?? wallets[0]?.id ?? '')
+  const [walletId, setWalletId] = useState(safeDefaultWalletId)
   const [amount, setAmount] = useState(defaultAmount > 0 ? String(defaultAmount) : '')
   const [occurredAt, setOccurredAt] = useState(toDateTimeLocal(dueAt))
   const [note, setNote] = useState('')
@@ -221,7 +243,7 @@ const PayOccurrenceDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button size='sm' onClick={() => setOpen(true)}>
+      <Button size='sm' disabled={wallets.length === 0} onClick={() => setOpen(true)}>
         <CheckCircle2 className='h-4 w-4' />
         Pagar
       </Button>
@@ -455,7 +477,7 @@ const DebtPayDialog = ({ debt, wallets }: { debt: DebtView; wallets: Wallet[] })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button size='sm' disabled={debt.status === 'SALDADA'} onClick={() => setOpen(true)}>
+      <Button size='sm' disabled={debt.status === 'SALDADA' || wallets.length === 0} onClick={() => setOpen(true)}>
         <CheckCircle2 className='h-4 w-4' />
         Abonar
       </Button>
@@ -498,7 +520,7 @@ const DebtPayDialog = ({ debt, wallets }: { debt: DebtView; wallets: Wallet[] })
 }
 
 export const PlanningWorkbench = ({
-  currentCycleLabel,
+  currentCycle,
   wallets,
   categories,
   scheduledOccurrences,
@@ -512,6 +534,9 @@ export const PlanningWorkbench = ({
   const [activeTab, setActiveTab] = useState<Tab>('pendientes')
   const [error, setError] = useState<string | null>(null)
   const activeDebts = debts.filter((debt) => debt.status === 'ACTIVA')
+  const walletById = useMemo(() => new Map(wallets.map((wallet) => [wallet.id, wallet])), [wallets])
+  const paymentWallets = useMemo(() => wallets.filter((wallet) => wallet.type !== 'Tarjeta de Crédito'), [wallets])
+  const cycleNavDates = useMemo(() => getCycleNavDates(currentCycle.startsAt, currentCycle.endsAt), [currentCycle.startsAt, currentCycle.endsAt])
   const realAccountAvailable = wallets
     .filter((wallet) => wallet.includeInTotal && wallet.type !== 'Tarjeta de Crédito')
     .reduce((sum, wallet) => sum + wallet.balance, 0)
@@ -539,6 +564,8 @@ export const PlanningWorkbench = ({
     router.refresh()
   }
 
+  const walletName = (walletId?: string) => walletId ? walletById.get(walletId)?.name ?? 'Cuenta no disponible' : 'Sin cuenta sugerida'
+
   return (
     <div className='space-y-6'>
       <section className='glass-panel rounded-[2rem] p-5 sm:p-6'>
@@ -546,19 +573,32 @@ export const PlanningWorkbench = ({
         <div className='mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
           <div>
             <h1 className='text-2xl font-semibold text-white md:text-3xl'>Centro del ciclo</h1>
-            <p className='mt-1 text-sm text-slate-400'>{currentCycleLabel}</p>
+            <p className='mt-1 text-sm text-slate-400'>{currentCycle.label}</p>
           </div>
-          <div className='flex flex-wrap gap-2'>
-            {tabs.map((tab) => (
-              <Button
-                key={tab.id}
-                variant={activeTab === tab.id ? 'default' : 'outline'}
-                size='sm'
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
+          <div className='flex flex-col gap-3 md:items-end'>
+            <div className='flex flex-wrap gap-2'>
+              <Button variant='outline' size='sm' asChild>
+                <Link href={`/planeacion?cycle=${cycleNavDates.previous}`}>Anterior</Link>
               </Button>
-            ))}
+              <Button variant='outline' size='sm' asChild>
+                <Link href='/planeacion'>Hoy</Link>
+              </Button>
+              <Button variant='outline' size='sm' asChild>
+                <Link href={`/planeacion?cycle=${cycleNavDates.next}`}>Siguiente</Link>
+              </Button>
+            </div>
+            <div className='flex flex-wrap gap-2'>
+              {tabs.map((tab) => (
+                <Button
+                  key={tab.id}
+                  variant={activeTab === tab.id ? 'default' : 'outline'}
+                  size='sm'
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -588,7 +628,7 @@ export const PlanningWorkbench = ({
 
       <ActionError message={error} />
 
-      {wallets.length === 0 && (
+      {paymentWallets.length === 0 && (
         <Alert>
           <AlertDescription>Necesitas al menos una cuenta para marcar pagos, cuotas o deudas como ejecutadas.</AlertDescription>
         </Alert>
@@ -618,7 +658,7 @@ export const PlanningWorkbench = ({
                     defaultAmount={occurrence.expectedAmount}
                     amountMode={occurrence.plan.amountMode}
                     dueAt={occurrence.dueAt}
-                    wallets={wallets}
+                    wallets={paymentWallets}
                     defaultWalletId={occurrence.plan.sourceWalletId}
                     onPay={(values) => payScheduledOccurrence({ occurrenceId: occurrence.id, ...values })}
                   />
@@ -635,7 +675,7 @@ export const PlanningWorkbench = ({
               <OccurrenceCard
                 key={occurrence.id}
                 title={occurrence.plan.title}
-                subtitle={`Pago de tarjeta · Cuota ${occurrence.installmentNumber} de ${occurrence.plan.totalInstallments}${occurrence.plan.merchant ? ` · ${occurrence.plan.merchant}` : ''}`}
+                subtitle={`Tarjeta ${walletName(occurrence.plan.chargeWalletId)} · Cuota ${occurrence.installmentNumber} de ${occurrence.plan.totalInstallments} · Pago con ${walletName(occurrence.plan.paymentWalletId)}${occurrence.plan.merchant ? ` · ${occurrence.plan.merchant}` : ''}`}
                 amount={occurrence.expectedAmount}
                 dueAt={occurrence.dueAt}
                 status={occurrence.status}
@@ -646,7 +686,7 @@ export const PlanningWorkbench = ({
                   defaultAmount={occurrence.expectedAmount}
                   amountMode='FIJO'
                   dueAt={occurrence.dueAt}
-                  wallets={wallets}
+                  wallets={paymentWallets}
                   defaultWalletId={occurrence.plan.paymentWalletId}
                   onPay={(values) => payInstallmentOccurrence({ occurrenceId: occurrence.id, ...values })}
                 />
@@ -671,7 +711,7 @@ export const PlanningWorkbench = ({
             const isScheduled = item.kind === 'scheduled'
             const subtitle = isScheduled
               ? 'Pago programado'
-              : `${occurrence.status === 'EJECUTADA' && !occurrence.linkedTransactionId ? 'Importada o cerrada' : 'Pago de tarjeta'} · Cuota ${item.occurrence.installmentNumber} de ${item.occurrence.plan.totalInstallments}`
+              : `${occurrence.status === 'EJECUTADA' && !occurrence.linkedTransactionId ? 'Importada o cerrada' : 'Pago de tarjeta'} · ${walletName(item.occurrence.plan.chargeWalletId)} · Cuota ${item.occurrence.installmentNumber} de ${item.occurrence.plan.totalInstallments}`
 
             return (
               <OccurrenceCard key={occurrence.id} title={occurrence.plan.title} subtitle={subtitle} amount={occurrence.expectedAmount} dueAt={occurrence.dueAt} status={occurrence.status}>
@@ -714,7 +754,7 @@ export const PlanningWorkbench = ({
                         <p className='mt-1 text-sm text-slate-400'>{plan.kind} · {plan.frequency} · {plan.amountMode === 'VARIABLE' ? 'Variable' : formatCurrency(plan.fixedAmount ?? 0)}</p>
                       </div>
                       <div className='flex flex-wrap gap-2'>
-                        <PlanEditDialog plan={plan} categories={categories} wallets={wallets} />
+                        <PlanEditDialog plan={plan} categories={categories} wallets={paymentWallets} />
                         <Button variant='outline' size='sm' onClick={() => runAction(() => updateScheduledPlan({ id: plan.id, isActive: !plan.isActive }))}>
                           <PauseCircle className='h-4 w-4' />
                           {plan.isActive ? 'Pausar' : 'Activar'}
@@ -736,12 +776,16 @@ export const PlanningWorkbench = ({
                           {plan.remainingInstallments === 0 ? `${plan.totalInstallments} de ${plan.totalInstallments} liquidadas` : `${plan.remainingInstallments} de ${plan.totalInstallments} pendientes`} · {formatCurrency(plan.installmentAmount)}
                         </p>
                         <p className='mt-1 text-xs text-slate-500'>
+                          Tarjeta {walletName(plan.chargeWalletId)} · Pago con {walletName(plan.paymentWalletId)}
+                        </p>
+                        <p className='mt-1 text-xs text-slate-500'>
                           {plan.paidInstallments ?? 0} pagadas
+                          {(plan.importedPaidInstallments ?? 0) > 0 ? ` · ${plan.importedPaidInstallments} importadas` : ''}
                           {plan.nextDueAt ? ` · Próxima cuota ${format(parseISO(plan.nextDueAt), "d MMM yyyy", { locale: es })}` : ' · Sin próximas cuotas pendientes'}
                         </p>
                       </div>
                       <div className='flex flex-wrap gap-2'>
-                        <PlanEditDialog plan={plan} categories={categories} wallets={wallets} />
+                        <PlanEditDialog plan={plan} categories={categories} wallets={paymentWallets} />
                         <Button variant='outline' size='sm' onClick={() => runAction(() => updateInstallmentPlan({ id: plan.id, isActive: !plan.isActive }))}>
                           <PauseCircle className='h-4 w-4' />
                           {plan.isActive ? 'Pausar' : 'Activar'}
@@ -787,7 +831,7 @@ export const PlanningWorkbench = ({
                   <CurrencyDisplay amount={debt.currentBalance} showDecimals={true} className='text-lg font-bold text-white' />
                 </div>
                 <div className='mt-4 flex flex-wrap gap-2'>
-                  <DebtPayDialog debt={debt} wallets={wallets} />
+                  <DebtPayDialog debt={debt} wallets={paymentWallets} />
                   <Button variant='outline' size='sm' onClick={() => runAction(() => updateDebt({ id: debt.id, title: debt.title, notes: debt.notes ?? null }))}>
                     <Pencil className='h-4 w-4' />
                     Guardar
@@ -815,7 +859,7 @@ export const PlanningWorkbench = ({
             <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Programado</p>
             <h2 className='mt-2 text-lg font-semibold text-white'>Nuevo pago programado</h2>
             <div className='mt-5'>
-              <ScheduledPlanForm categories={categories} wallets={wallets} />
+              <ScheduledPlanForm categories={categories} wallets={paymentWallets} />
             </div>
           </div>
 
