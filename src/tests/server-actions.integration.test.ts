@@ -242,7 +242,7 @@ const testCreditCardChargeAndPayment = async () => {
     amount: -300,
   })
 
-  await createTransactionInTx(tx, 'user-1', {
+  const payment = await createTransactionInTx(tx, 'user-1', {
     walletId: 'wallet-1',
     type: 'PAGO_TARJETA',
     title: 'Pago TC',
@@ -252,11 +252,18 @@ const testCreditCardChargeAndPayment = async () => {
     amount: -120,
     fromWalletId: 'wallet-1',
     toWalletId: 'wallet-credit',
-  })
+  }) as TransactionRecord
 
   assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(880))
   assert.equal(tx.state.wallets.get('wallet-credit')?.balance, cents(180))
   assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(820))
+
+  await deleteTransactionInTx(tx, 'user-1', payment.id)
+
+  assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(1000))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.balance, cents(300))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(700))
+  assert.equal(tx.state.transactions.has(payment.id), false)
 }
 
 ;(async () => {
