@@ -10,7 +10,6 @@ export * from './WalletChart'
 export * from './settings/CategoryForm'
 export * from './settings/CycleSettingsForm'
 export * from './settings/DebtForm'
-export * from './settings/InstallmentPlanForm'
 export * from './settings/ScheduledPlanForm'
 export * from './settings/TagForm'
 

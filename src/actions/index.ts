@@ -8,7 +8,6 @@ export { getCycleSettings } from './cycle/get-cycle-settings'
 export { updateCycleSettings } from './cycle/update-cycle-settings'
 export { getCurrentCycleSummary } from './dashboard/get-current-cycle-summary'
 export { createDebt } from './debt/create-debt'
-export { createInstallmentPlan } from './installment/create-installment-plan'
 export {
   deleteOrCloseDebt,
   deleteOrDeactivateInstallmentPlan,
@@ -30,7 +29,6 @@ export { createScheduledPlan } from './scheduled/create-scheduled-plan'
 export { getSettingsOverview } from './settings/get-settings-overview'
 export { createTag } from './tag/create-tag'
 
-export { createTransaction } from './transaction/create-transaction'
 export { createMovementFromForm } from './transaction/create-movement-from-form'
 export { deleteTransactionById } from './transaction/delete-transaction-by-id'
 export { getTransactionById } from './transaction/get-transaction-by-id'
