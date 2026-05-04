@@ -122,6 +122,12 @@ interface DebtView {
   settledAt?: string
   notes?: string
   hasTransactions: boolean
+  payments: Array<{
+    id: string
+    title: string
+    amount: number
+    occurredAt: string
+  }>
 }
 
 interface PlanningWorkbenchProps {
@@ -519,6 +525,90 @@ const DebtPayDialog = ({ debt, wallets }: { debt: DebtView; wallets: Wallet[] })
   )
 }
 
+const DebtEditDialog = ({ debt }: { debt: DebtView }) => {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [personName, setPersonName] = useState(debt.personName)
+  const [title, setTitle] = useState(debt.title)
+  const [notes, setNotes] = useState(debt.notes ?? '')
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, setIsPending] = useState(false)
+
+  const submit = async () => {
+    setError(null)
+    setIsPending(true)
+    try {
+      const response = await updateDebt({
+        id: debt.id,
+        personName,
+        title,
+        notes: notes || null,
+      })
+
+      if (!response.ok) {
+        setError(response.message)
+        return
+      }
+
+      setOpen(false)
+      router.refresh()
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button variant='outline' size='sm' onClick={() => setOpen(true)}>
+        <Pencil className='h-4 w-4' />
+        Editar
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar deuda</DialogTitle>
+          <DialogDescription>Corrige la persona, el nombre o notas sin alterar abonos históricos.</DialogDescription>
+        </DialogHeader>
+        <div className='grid gap-4'>
+          <div className='grid gap-2'>
+            <Label>Persona</Label>
+            <Input value={personName} onChange={(event) => setPersonName(event.target.value)} />
+          </div>
+          <div className='grid gap-2'>
+            <Label>Título</Label>
+            <Input value={title} onChange={(event) => setTitle(event.target.value)} />
+          </div>
+          <div className='grid gap-2'>
+            <Label>Notas</Label>
+            <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder='Opcional' />
+          </div>
+          <ActionError message={error} />
+        </div>
+        <DialogFooter>
+          <Button variant='outline' onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={submit} disabled={!personName.trim() || !title.trim() || isPending}>{isPending ? 'Guardando...' : 'Guardar'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const DebtProgress = ({ debt }: { debt: DebtView }) => {
+  const paid = Math.max(debt.principalAmount - debt.currentBalance, 0)
+  const progress = debt.principalAmount > 0 ? Math.min(100, Math.max(0, (paid / debt.principalAmount) * 100)) : 0
+
+  return (
+    <div className='mt-4 space-y-2'>
+      <div className='flex justify-between gap-3 text-xs text-slate-500'>
+        <span>Abonado {formatCurrency(paid)}</span>
+        <span>{Math.round(progress)}%</span>
+      </div>
+      <div className='h-2 overflow-hidden rounded-full bg-white/[0.06]'>
+        <div className='h-full rounded-full bg-sky-400' style={{ width: `${progress}%` }} />
+      </div>
+    </div>
+  )
+}
+
 export const PlanningWorkbench = ({
   currentCycle,
   wallets,
@@ -822,20 +912,43 @@ export const PlanningWorkbench = ({
               <article key={debt.id} className='rounded-[1.5rem] border border-white/10 bg-white/[0.045] p-4'>
                 <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
                   <div>
-                    <p className='font-semibold text-white'>{debt.title}</p>
+                    <div className='flex flex-wrap items-center gap-2'>
+                      <p className='font-semibold text-white'>{debt.title}</p>
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${debt.direction === 'YO_DEBO' ? 'bg-rose-400/12 text-rose-100' : 'bg-emerald-400/12 text-emerald-100'}`}>
+                        {debt.direction === 'YO_DEBO' ? 'Yo debo' : 'Me deben'}
+                      </span>
+                    </div>
                     <p className='mt-1 text-sm text-slate-400'>
                       {debt.direction === 'YO_DEBO' ? `Le debes a ${debt.personName}` : `${debt.personName} te debe`}
                     </p>
-                    <p className='mt-2 text-xs text-slate-500'>{debt.status === 'SALDADA' ? 'Saldada' : 'Activa'}</p>
+                    <p className='mt-2 text-xs text-slate-500'>
+                      {debt.status === 'SALDADA' ? 'Saldada' : 'Activa'} · Capital {formatCurrency(debt.principalAmount)}
+                    </p>
                   </div>
-                  <CurrencyDisplay amount={debt.currentBalance} showDecimals={true} className='text-lg font-bold text-white' />
+                  <div className='text-left sm:text-right'>
+                    <p className='text-xs uppercase tracking-[0.2em] text-slate-500'>Pendiente</p>
+                    <CurrencyDisplay amount={debt.currentBalance} showDecimals={true} className='text-lg font-bold text-white' />
+                  </div>
                 </div>
+                <DebtProgress debt={debt} />
+                {debt.payments.length > 0 && (
+                  <div className='mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3'>
+                    <p className='text-[11px] uppercase tracking-[0.22em] text-slate-500'>Últimos abonos</p>
+                    <div className='mt-3 grid gap-2'>
+                      {debt.payments.slice(0, 3).map((payment) => (
+                        <div key={payment.id} className='flex items-center justify-between gap-3 text-sm'>
+                          <span className='truncate text-slate-300'>{payment.title}</span>
+                          <span className='shrink-0 text-slate-500'>
+                            {format(parseISO(payment.occurredAt), 'd MMM', { locale: es })} · {formatCurrency(Math.abs(payment.amount))}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className='mt-4 flex flex-wrap gap-2'>
                   <DebtPayDialog debt={debt} wallets={paymentWallets} />
-                  <Button variant='outline' size='sm' onClick={() => runAction(() => updateDebt({ id: debt.id, title: debt.title, notes: debt.notes ?? null }))}>
-                    <Pencil className='h-4 w-4' />
-                    Guardar
-                  </Button>
+                  <DebtEditDialog debt={debt} />
                   <Button variant='destructive' size='sm' onClick={() => runAction(() => deleteOrCloseDebt(debt.id))}>
                     <Trash2 className='h-4 w-4' />
                     {debt.hasTransactions ? 'Cerrar' : 'Eliminar'}

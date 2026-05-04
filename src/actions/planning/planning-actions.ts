@@ -56,6 +56,7 @@ interface PayDebtInput {
 interface UpdateDebtInput {
   id: string
   title?: string
+  personName?: string
   notes?: string | null
 }
 
@@ -397,7 +398,11 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
         include: { occurrences: { orderBy: { installmentNumber: 'asc' } } },
         orderBy: { createdAt: 'desc' },
       })
-      const debts = await prisma.debt.findMany({ where: { userId: user.id }, include: { person: true, transactions: true }, orderBy: { createdAt: 'desc' } })
+      const debts = await prisma.debt.findMany({
+        where: { userId: user.id },
+        include: { person: true, transactions: { orderBy: { occurredAt: 'desc' } } },
+        orderBy: { createdAt: 'desc' },
+      })
       const transactions = await prisma.transaction.findMany({
         where: { userId: user.id, occurredAt: { gte: startsAt, lte: endsAt } },
         orderBy: { occurredAt: 'desc' },
@@ -485,6 +490,12 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
         settledAt: debt.settledAt?.toISOString(),
         notes: debt.notes ?? undefined,
         hasTransactions: debt.transactions.length > 0,
+        payments: debt.transactions.map((transaction) => ({
+          id: transaction.id,
+          title: transaction.title,
+          amount: moneyToNumber(transaction.amount),
+          occurredAt: transaction.occurredAt.toISOString(),
+        })),
       })),
       summary: {
         pendingScheduledTotal: pendingScheduled.reduce((sum, occurrence) => sum + occurrence.expectedAmount, 0),
@@ -883,10 +894,26 @@ export const updateDebt = async (data: UpdateDebtInput) => {
     const debt = await prisma.debt.findFirst({ where: { id: data.id, userId: user.id } })
     if (!debt) throw new Error('La deuda no existe')
 
+    let personId: string | undefined
+    const personName = data.personName?.trim()
+
+    if (personName) {
+      let person = await prisma.person.findFirst({
+        where: { userId: user.id, name: { equals: personName, mode: 'insensitive' } },
+      })
+
+      if (!person) {
+        person = await prisma.person.create({ data: { userId: user.id, name: personName } })
+      }
+
+      personId = person.id
+    }
+
     await prisma.debt.update({
       where: { id: data.id },
       data: {
         title: data.title?.trim() || undefined,
+        personId,
         notes: data.notes,
       },
     })
