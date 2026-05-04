@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma'
 import bcryptjs from 'bcryptjs'
+import { existsSync, readFileSync } from 'fs'
 import {
     seedCategories,
     seedCycleSettings,
@@ -14,6 +15,30 @@ import {
     seedUser,
     seedWallets
 } from './data';
+
+const readDatabaseUrl = () => {
+    if (process.env.DATABASE_URL) return process.env.DATABASE_URL
+
+    if (!existsSync('.env')) return ''
+
+    const envFile = readFileSync('.env', 'utf8')
+    const match = envFile
+        .split(/\r?\n/)
+        .find((line) => line.trim().startsWith('DATABASE_URL='))
+
+    return match?.replace(/^DATABASE_URL=/, '').replace(/^"|"$/g, '') ?? ''
+}
+
+const assertSafeSeedTarget = () => {
+    const databaseUrl = readDatabaseUrl().toLowerCase()
+    const allowRemoteSeed = process.env.ALLOW_REMOTE_SEED === 'true'
+    const knownRemoteHosts = ['supabase.co', 'supabase.com', 'amazonaws.com', 'neon.tech', 'railway.app', 'render.com']
+    const isRemoteHost = knownRemoteHosts.some((host) => databaseUrl.includes(host))
+
+    if (isRemoteHost && !allowRemoteSeed) {
+        throw new Error('Seed completo bloqueado: DATABASE_URL apunta a una base remota. Usa una DB local/dev o define ALLOW_REMOTE_SEED=true si realmente quieres continuar.')
+    }
+}
 
 type SeedWriter = {
     transactionTag: { deleteMany: () => Promise<unknown> }
@@ -33,6 +58,7 @@ type SeedWriter = {
 }
 
 async function main() {
+    assertSafeSeedTarget()
     const prismaClient = prisma as unknown as SeedWriter
 
     // Borrar registros previos
