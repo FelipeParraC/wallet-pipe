@@ -117,6 +117,13 @@ export const mapToTransaction = (data: PrismaTransaction): Transaction => {
         personId: data.personId ?? undefined,
         scheduledOccurrenceId: data.scheduledOccurrenceId ?? undefined,
         scheduledPlanId: data.scheduledPlanId ?? undefined,
+        tagIds: data.tags?.map((item) => item.tag.id),
+        tags: data.tags?.map((item) => ({
+            id: item.tag.id,
+            userId: item.tag.userId,
+            name: item.tag.name,
+            color: item.tag.color ?? undefined,
+        })),
     }
 
     if ( data.fareValue && data.numberOfTrips ) {

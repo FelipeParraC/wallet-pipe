@@ -1,7 +1,7 @@
 export const revalidate = 0
 
 
-import { getCategories, getTransactionById } from '@/actions'
+import { getCategories, getTags, getTransactionById } from '@/actions'
 import { EditTransactionForm } from '@/components'
 import type { Transaction } from '@/interfaces'
 import { redirect } from 'next/navigation'
@@ -36,11 +36,13 @@ export default async function EditarTransaccionPage({ params, searchParams }: Pr
 
     const respCategories = await getCategories()
     const categories = respCategories.ok ? respCategories.categories : []
+    const respTags = await getTags()
+    const tags = respTags.ok && respTags.data ? respTags.data.tags : []
 
     return (
         <div className='space-y-6 max-w-2xl mx-auto'>
             <h1 className='text-3xl font-bold text-center mb-8'>Editar { type }</h1>
-            <EditTransactionForm transaction={ transaction } categories={ categories } walletId={ walletId } />
+            <EditTransactionForm transaction={ transaction } categories={ categories } tags={ tags } walletId={ walletId } />
         </div>
     )
 }

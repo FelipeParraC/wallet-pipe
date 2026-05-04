@@ -1,3 +1,5 @@
+import type { Tag } from './tag.interface'
+
 export type TransactionType =
     | 'INGRESO'
     | 'GASTO'
@@ -34,6 +36,8 @@ export interface Transaction {
     installmentOccurrenceId?: string
     personId?: string
     debtId?: string
+    tags?: Tag[]
+    tagIds?: string[]
 }
 
 export interface TransportTransaction extends Transaction {
@@ -78,6 +82,7 @@ export interface CreateTransactionInput {
     installmentOccurrenceId?: string
     personId?: string
     debtId?: string
+    tagIds?: string[]
 }
 
 export interface UpdateTransactionInput {
@@ -101,4 +106,5 @@ export interface UpdateTransactionInput {
     installmentOccurrenceId?: string
     personId?: string
     debtId?: string
+    tagIds?: string[]
 }

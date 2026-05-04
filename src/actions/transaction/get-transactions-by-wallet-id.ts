@@ -25,6 +25,7 @@ export const getTransactionsByWalletId = async ( id: string ) => {
                     { toWalletId: id },
                 ]
             },
+            include: { tags: { include: { tag: true } } },
             orderBy: {
                 occurredAt: 'desc'
             }

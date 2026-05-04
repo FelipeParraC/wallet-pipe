@@ -11,7 +11,10 @@ export const getTransactionById = async ( id: string ) => {
     try {
         const user = await requireSessionUser()
         
-        const prismaTransaction = await prisma.transaction.findFirst({ where: { id: id } }) as PrismaTransaction | null
+        const prismaTransaction = await prisma.transaction.findFirst({
+            where: { id: id },
+            include: { tags: { include: { tag: true } } },
+        }) as PrismaTransaction | null
 
         if ( !prismaTransaction ) {
             return {

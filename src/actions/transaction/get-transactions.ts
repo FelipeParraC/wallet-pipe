@@ -18,6 +18,7 @@ export const getTransactions = async () => {
 
         const prismaTransactions = await (prisma as unknown as TransactionReader).transaction.findMany({
             where: { userId: user.id },
+            include: { tags: { include: { tag: true } } },
             orderBy: {
                 occurredAt: 'desc'
             }

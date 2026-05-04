@@ -31,6 +31,7 @@ export { createScheduledPlan } from './scheduled/create-scheduled-plan'
 export { getSettingsOverview } from './settings/get-settings-overview'
 export { createTag } from './tag/create-tag'
 export { deleteTag } from './tag/delete-tag'
+export { getTags } from './tag/get-tags'
 export { updateTag } from './tag/update-tag'
 
 export { createMovementFromForm } from './transaction/create-movement-from-form'

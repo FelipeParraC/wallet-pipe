@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { format } from 'date-fns'
 import { ArrowRightLeft, Banknote, Bus, CheckCircle2, CreditCard, ReceiptText, WalletCards } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import type { Category, Wallet } from '@/interfaces'
+import type { Category, Tag, Wallet } from '@/interfaces'
 import { createMovementFromForm } from '@/actions'
 import { Alert, AlertDescription, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '../ui'
 import { formatCurrency } from '@/utils'
@@ -18,6 +18,7 @@ type PaymentMode = 'PARCIAL' | 'TOTAL'
 interface CreateTransactionFormProps {
     wallets: Wallet[]
     categories: Category[] | null
+    tags?: Tag[] | null
     wallet?: Wallet
 }
 
@@ -90,7 +91,7 @@ const movementMeta: Record<MovementKind, { label: string; description: string; i
     TRANSPORT: { label: 'Transporte', description: 'Viajes calculados por valor de pasaje.', icon: Bus },
 }
 
-export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTransactionFormProps) => {
+export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: CreateTransactionFormProps) => {
     const router = useRouter()
     const activeWallets = wallets.filter((item) => item.isActive)
     const normalWallets = activeWallets.filter((item) => item.type !== 'Tarjeta de Crédito' && item.type !== 'Transporte')
@@ -112,6 +113,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
     const [description, setDescription] = useState('')
     const [amount, setAmount] = useState('')
     const [categoryId, setCategoryId] = useState('')
+    const [tagIds, setTagIds] = useState<string[]>([])
     const [walletId, setWalletId] = useState(wallet && wallet.type !== 'Tarjeta de Crédito' && wallet.type !== 'Transporte' ? wallet.id : normalWallets[0]?.id ?? '')
     const [cardWalletId, setCardWalletId] = useState(wallet?.type === 'Tarjeta de Crédito' ? wallet.id : creditCards[0]?.id ?? '')
     const [transportWalletId, setTransportWalletId] = useState(wallet?.type === 'Transporte' ? wallet.id : transportWallets[0]?.id ?? '')
@@ -223,6 +225,7 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
             description,
             occurredAt,
             categoryId: categoryId || undefined,
+            tagIds,
         }
 
         if (kind === 'GASTO' || kind === 'INGRESO') {
@@ -515,6 +518,12 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                         </Field>
                     )}
 
+                    {(tags?.length ?? 0) > 0 && (
+                        <Field label='Tags'>
+                            <TagSelector tags={tags ?? []} selectedIds={tagIds} onChange={setTagIds} />
+                        </Field>
+                    )}
+
                     <Field label='Descripción'>
                         <Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder='Opcional' className='min-h-20 resize-none' />
                     </Field>
@@ -570,6 +579,9 @@ export const CreateTransactionForm = ({ wallets, categories, wallet }: CreateTra
                         <SummaryRow label='Efecto' value='Saldará la tarjeta y cerrará cuotas pendientes' />
                     )}
                     <SummaryRow label='Fecha' value={`${date} · ${time}`} />
+                    {tagIds.length > 0 && (
+                        <SummaryRow label='Tags' value={(tags ?? []).filter((tag) => tagIds.includes(tag.id)).map((tag) => `#${tag.name}`).join(', ')} />
+                    )}
                 </div>
             )}
 
@@ -637,6 +649,28 @@ const Segmented = ({ value, onChange, options }: { value: string; onChange: (val
                 {option.label}
             </button>
         ))}
+    </div>
+)
+
+const TagSelector = ({ tags, selectedIds, onChange }: { tags: Tag[]; selectedIds: string[]; onChange: (ids: string[]) => void }) => (
+    <div className='flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-3'>
+        {tags.map((tag) => {
+            const isSelected = selectedIds.includes(tag.id)
+            return (
+                <button
+                    key={tag.id}
+                    type='button'
+                    onClick={() => onChange(isSelected ? selectedIds.filter((id) => id !== tag.id) : [...selectedIds, tag.id])}
+                    className={[
+                        'rounded-full border px-3 py-1.5 text-sm font-semibold transition-all',
+                        isSelected ? 'border-sky-300/60 bg-sky-400/20 text-white' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.07]',
+                    ].join(' ')}
+                    style={!isSelected && tag.color ? { boxShadow: `inset 0 -2px 0 ${tag.color}` } : undefined}
+                >
+                    #{tag.name}
+                </button>
+            )
+        })}
     </div>
 )
 

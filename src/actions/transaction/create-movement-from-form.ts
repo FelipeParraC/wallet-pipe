@@ -6,6 +6,7 @@ import type { Prisma } from '@prisma/client'
 import { actionSuccess } from '@/lib/action-response'
 import { absMinorUnits, addMinorUnits, moneyInputToMinorUnits, moneyToMinorUnits, moneyToNumber } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { syncTransactionTagsInTx } from '@/lib/tag-service'
 import { createTransactionInTx } from '@/lib/transaction-service'
 import type { CreateTransactionInput, TransactionType } from '@/interfaces'
 
@@ -14,6 +15,7 @@ type BaseMovementInput = {
   description?: string
   occurredAt: string
   categoryId?: string
+  tagIds?: string[]
 }
 
 type StandardMovementInput = BaseMovementInput & {
@@ -167,6 +169,17 @@ const createBaseTransaction = (
   recordedAt: Date.now(),
 })
 
+const createTaggedTransaction = async (
+  tx: Prisma.TransactionClient,
+  userId: string,
+  input: CreateTransactionInput,
+  tagIds?: string[],
+) => {
+  const transaction = await createTransactionInTx(tx as unknown as import('@/lib/transaction-service').TransactionServiceTx, userId, input) as { id: string }
+  await syncTransactionTagsInTx(tx, userId, transaction.id, tagIds)
+  return transaction
+}
+
 export const createMovementFromForm = async (data: CreateMovementFromFormInput) => {
   try {
     const user = await requireSessionUser()
@@ -181,7 +194,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
       if (data.kind === 'STANDARD') {
         await ensureWalletKind(tx, data.walletId, user.id, 'NORMAL')
 
-        return createTransactionInTx(tx as unknown as import('@/lib/transaction-service').TransactionServiceTx, user.id, createBaseTransaction({
+        return createTaggedTransaction(tx, user.id, createBaseTransaction({
           type: data.type,
           title,
           description,
@@ -189,7 +202,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
           amount: data.type === 'INGRESO' ? requirePositiveNumber(data.amount, 'El monto') : -requirePositiveNumber(data.amount, 'El monto'),
           walletId: data.walletId,
           categoryId: data.categoryId,
-        }))
+        }), data.tagIds)
       }
 
       if (data.kind === 'TRANSPORT') {
@@ -199,7 +212,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
         const fareValue = moneyToNumber(wallet.fareValue)
         requirePositiveNumber(fareValue, 'El valor del pasaje')
 
-        return createTransactionInTx(tx as unknown as import('@/lib/transaction-service').TransactionServiceTx, user.id, createBaseTransaction({
+        return createTaggedTransaction(tx, user.id, createBaseTransaction({
           type: 'TRANSPORTE',
           title,
           description,
@@ -209,7 +222,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
           categoryId: data.categoryId,
           fareValue,
           numberOfTrips: trips,
-        }))
+        }), data.tagIds)
       }
 
       if (data.kind === 'TRANSFER') {
@@ -217,7 +230,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
         await ensureWalletKind(tx, data.toWalletId, user.id, 'NORMAL')
         if (data.fromWalletId === data.toWalletId) throw new Error('La transferencia debe hacerse entre cuentas diferentes')
 
-        return createTransactionInTx(tx as unknown as import('@/lib/transaction-service').TransactionServiceTx, user.id, createBaseTransaction({
+        return createTaggedTransaction(tx, user.id, createBaseTransaction({
           type: 'TRANSFERENCIA',
           title,
           description,
@@ -227,7 +240,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
           fromWalletId: data.fromWalletId,
           toWalletId: data.toWalletId,
           categoryId: data.categoryId,
-        }))
+        }), data.tagIds)
       }
 
       if (data.kind === 'CARD_PURCHASE') {
@@ -280,7 +293,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
             },
           })
 
-          const transaction = await createTransactionInTx(tx as unknown as import('@/lib/transaction-service').TransactionServiceTx, user.id, createBaseTransaction({
+          const transaction = await createTaggedTransaction(tx, user.id, createBaseTransaction({
             type: 'TARJETA_CONSUMO',
             title,
             description,
@@ -289,7 +302,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
             walletId: creditCard.id,
             categoryId: data.categoryId,
             installmentPlanId: plan.id,
-          }))
+          }), data.tagIds)
 
           await tx.installmentOccurrence.createMany({
             data: installmentAmounts.map((expectedAmount, index) => ({
@@ -327,7 +340,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
           }
         }
 
-        return createTransactionInTx(tx as unknown as import('@/lib/transaction-service').TransactionServiceTx, user.id, createBaseTransaction({
+        return createTaggedTransaction(tx, user.id, createBaseTransaction({
           type: 'TARJETA_CONSUMO',
           title,
           description,
@@ -335,7 +348,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
           amount: totalAmount,
           walletId: creditCard.id,
           categoryId: data.categoryId,
-        }))
+        }), data.tagIds)
       }
 
       const sourceWallet = await ensureWalletKind(tx, data.fromWalletId, user.id, 'NORMAL')
@@ -355,7 +368,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
         throw new Error('El pago no puede superar la deuda de la tarjeta')
       }
 
-      const transaction = await createTransactionInTx(tx as unknown as import('@/lib/transaction-service').TransactionServiceTx, user.id, createBaseTransaction({
+      const transaction = await createTaggedTransaction(tx, user.id, createBaseTransaction({
         type: 'PAGO_TARJETA',
         title,
         description,
@@ -365,7 +378,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
         fromWalletId: sourceWallet.id,
         toWalletId: creditCard.id,
         categoryId: data.categoryId,
-      }))
+      }), data.tagIds)
 
       if (data.paymentMode === 'TOTAL') {
         const activePlans = await tx.installmentPlan.findMany({

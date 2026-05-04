@@ -6,7 +6,7 @@ import { format } from 'date-fns'
 import { CheckCircle2, LockKeyhole } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { updateTransactionById } from '@/actions'
-import type { Category, Transaction, UpdateTransactionInput } from '@/interfaces'
+import type { Category, Tag, Transaction, UpdateTransactionInput } from '@/interfaces'
 import { isTransportTransaction, isTransferTransaction } from '@/interfaces'
 import { combineDateAndTime, roundMoney, toSignedAmount, toTransferAmount } from '@/lib/finance'
 import { formatCurrency } from '@/utils'
@@ -15,6 +15,7 @@ import { Alert, AlertDescription, Button, Input, Label, Select, SelectContent, S
 interface EditTransactionFormProps {
     transaction: Transaction
     categories: Category[] | null
+    tags?: Tag[] | null
     walletId: string
 }
 
@@ -30,7 +31,7 @@ const linkedMovementLabel = (transaction: Transaction) => {
     return null
 }
 
-export const EditTransactionForm = ({ transaction, categories, walletId }: EditTransactionFormProps) => {
+export const EditTransactionForm = ({ transaction, categories, tags, walletId }: EditTransactionFormProps) => {
     const router = useRouter()
     const occurredAt = transaction.occurredAt || transaction.date
     const isLinkedOrCardPayment = Boolean(linkedMovementLabel(transaction))
@@ -38,6 +39,7 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
     const [description, setDescription] = useState(transaction.description ?? '')
     const [amount, setAmount] = useState(Math.abs(transaction.amount).toString())
     const [categoryId, setCategoryId] = useState(transaction.categoryId ?? 'none')
+    const [tagIds, setTagIds] = useState<string[]>(transaction.tagIds ?? transaction.tags?.map((tag) => tag.id) ?? [])
     const [numberOfTrips, setNumberOfTrips] = useState(isTransportTransaction(transaction) ? transaction.numberOfTrips.toString() : '1')
     const [date, setDate] = useState(toDatePart(occurredAt))
     const [time, setTime] = useState(toTimePart(occurredAt))
@@ -96,6 +98,7 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
                 installmentOccurrenceId: transaction.installmentOccurrenceId,
                 debtId: transaction.debtId,
                 personId: transaction.personId,
+                tagIds,
             }
 
             const response = await updateTransactionById(updateData, transaction.id)
@@ -171,6 +174,12 @@ export const EditTransactionForm = ({ transaction, categories, walletId }: EditT
                     </Field>
                 )}
 
+                {(tags?.length ?? 0) > 0 && (
+                    <Field label='Tags'>
+                        <TagSelector tags={tags ?? []} selectedIds={tagIds} onChange={setTagIds} />
+                    </Field>
+                )}
+
                 <Field label='Descripción'>
                     <Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder='Opcional' className='min-h-20 resize-none' maxLength={160} />
                 </Field>
@@ -210,5 +219,27 @@ const Field = ({ label, children }: { label: string; children: ReactNode }) => (
     <div className='grid gap-2'>
         <Label>{label}</Label>
         {children}
+    </div>
+)
+
+const TagSelector = ({ tags, selectedIds, onChange }: { tags: Tag[]; selectedIds: string[]; onChange: (ids: string[]) => void }) => (
+    <div className='flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-3'>
+        {tags.map((tag) => {
+            const isSelected = selectedIds.includes(tag.id)
+            return (
+                <button
+                    key={tag.id}
+                    type='button'
+                    onClick={() => onChange(isSelected ? selectedIds.filter((id) => id !== tag.id) : [...selectedIds, tag.id])}
+                    className={[
+                        'rounded-full border px-3 py-1.5 text-sm font-semibold transition-all',
+                        isSelected ? 'border-sky-300/60 bg-sky-400/20 text-white' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.07]',
+                    ].join(' ')}
+                    style={!isSelected && tag.color ? { boxShadow: `inset 0 -2px 0 ${tag.color}` } : undefined}
+                >
+                    #{tag.name}
+                </button>
+            )
+        })}
     </div>
 )

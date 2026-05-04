@@ -79,6 +79,26 @@ export const TransactionDetailsModal = ({ isOpen, onClose, transaction, categori
                     <DetailRow label="Registrado" value={format(parseISO( transaction.recordedAt || transaction.date ), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })} />
                     <DetailRow label="Cuenta" value={walletName} />
                     <DetailRow label="Categoría" value={categoryName} />
+                    {(transaction.tags?.length ?? 0) > 0 && (
+                        <div className="sm:col-span-2">
+                            <DetailRow
+                                label="Tags"
+                                value={(
+                                    <div className="flex flex-wrap gap-2">
+                                        {transaction.tags?.map((tag) => (
+                                            <span
+                                                key={tag.id}
+                                                className="rounded-full border border-white/10 px-2.5 py-1 text-xs font-semibold text-white"
+                                                style={{ backgroundColor: tag.color || '#334155' }}
+                                            >
+                                                #{tag.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            />
+                        </div>
+                    )}
                     {transaction.fromWalletId && transaction.toWalletId && (
                         <>
                             <DetailRow label="Origen" value={fromWalletName ?? 'Cuenta no disponible'} />

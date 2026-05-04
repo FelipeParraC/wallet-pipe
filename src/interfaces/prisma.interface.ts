@@ -48,6 +48,14 @@ export interface PrismaTransaction {
     debtId?: string | null
     createdAt: Date
     updatedAt: Date
+    tags?: Array<{
+        tag: {
+            id: string
+            userId: string
+            name: string
+            color: string | null
+        }
+    }>
 }
 
 export interface PrismaWallet {

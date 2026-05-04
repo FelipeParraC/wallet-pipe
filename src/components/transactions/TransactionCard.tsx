@@ -83,6 +83,24 @@ export const TransactionCard = ({ transaction, categories, wallets, contextWalle
                     {transaction.description && (
                         <p className="text-sm text-slate-300">{ transaction.description }</p>
                     )}
+                    {(transaction.tags?.length ?? 0) > 0 && (
+                        <div className='flex flex-wrap gap-1.5'>
+                            {transaction.tags?.slice(0, 3).map((tag) => (
+                                <span
+                                    key={tag.id}
+                                    className='rounded-full border border-white/10 px-2 py-0.5 text-[11px] font-semibold text-white'
+                                    style={{ backgroundColor: tag.color || '#334155' }}
+                                >
+                                    #{tag.name}
+                                </span>
+                            ))}
+                            {(transaction.tags?.length ?? 0) > 3 && (
+                                <span className='rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-semibold text-slate-300'>
+                                    +{(transaction.tags?.length ?? 0) - 3}
+                                </span>
+                            )}
+                        </div>
+                    )}
                     <p className="text-sm text-slate-500">
                         {format(parseISO(transaction.occurredAt || transaction.date), "d 'de' MMMM, yyyy · HH:mm:ss", { locale: es })}
                     </p>
