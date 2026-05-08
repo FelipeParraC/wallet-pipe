@@ -29,6 +29,7 @@ export * from './home/WalletItem'
 
 
 export * from './transactions/CreateTransactionForm'
+export * from './transactions/DeleteTransactionDialog'
 export * from './transactions/EditTransactionForm'
 export * from './transactions/TransactionActions'
 export * from './transactions/TransactionCard'

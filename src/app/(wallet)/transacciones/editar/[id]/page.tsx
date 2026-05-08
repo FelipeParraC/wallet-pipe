@@ -39,8 +39,14 @@ export default async function EditarTransaccionPage({ params, searchParams }: Pr
     const tags = respTags.ok && respTags.data ? respTags.data.tags : []
 
     return (
-        <div className='space-y-6 max-w-2xl mx-auto'>
-            <h1 className='text-3xl font-bold text-center mb-8'>Editar { getTransactionTypeLabel(transaction.type) }</h1>
+        <div className='mx-auto max-w-2xl space-y-6'>
+            <section className='glass-panel rounded-[2rem] p-5 sm:p-6'>
+                <p className='text-xs uppercase tracking-[0.32em] text-slate-500'>Movimientos</p>
+                <h1 className='mt-2 text-2xl font-semibold text-white md:text-3xl'>Editar { getTransactionTypeLabel(transaction.type) }</h1>
+                <p className='mt-2 text-sm text-slate-400'>
+                    Corrige datos del movimiento sin perder la trazabilidad contable.
+                </p>
+            </section>
             <EditTransactionForm transaction={ transaction } categories={ categories } tags={ tags } walletId={ walletId } />
         </div>
     )
