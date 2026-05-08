@@ -2,7 +2,7 @@ export const revalidate = 0
 
 import { getCategories, getCurrentCycleSummary, getTransactions, getWallets } from '@/actions'
 import { auth } from '@/auth.config'
-import { DashboardHome, NewTransactionFloatingButton } from '@/components'
+import { DashboardHome } from '@/components'
 
 
 export default async function HomePage() {
@@ -33,8 +33,6 @@ export default async function HomePage() {
             </div>
 
             <DashboardHome transactions={ transactions } categories={ categories } wallets={ wallets } cycleSummary={ cycleSummary } />
-
-            <NewTransactionFloatingButton walletId='' />
         </div>
     )
 }

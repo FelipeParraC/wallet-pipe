@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BarChart3, CreditCard, LayoutDashboard, LogOut, Menu, Plus, Receipt, Settings2, Wallet } from 'lucide-react'
@@ -48,8 +49,15 @@ export const Navbar = () => {
                         href='/'
                         className='glass-pill flex h-14 items-center gap-3 rounded-[1.75rem] px-4 text-white'
                     >
-                        <span className='flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 shadow-[0_10px_25px_rgba(14,165,233,0.3)]'>
-                            <Wallet className='h-4 w-4' />
+                        <span className='flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl border border-sky-200/15 bg-slate-950/60 shadow-[0_10px_25px_rgba(14,165,233,0.3)]'>
+                            <Image
+                                src='/logo192.png'
+                                alt='Wallet Pipe'
+                                width={28}
+                                height={28}
+                                priority
+                                className='h-7 w-7'
+                            />
                         </span>
                         <div className='hidden sm:block'>
                             <p className='text-[11px] uppercase tracking-[0.28em] text-slate-400'>Wallet Pipe</p>

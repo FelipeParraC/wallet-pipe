@@ -11,6 +11,11 @@ export const metadata: Metadata = {
     description: 'La aplicación para gestionar tus finanzas personales',
     manifest: '/manifest.json',
     icons: {
+        icon: [
+            { url: '/logo.png', sizes: '96x96', type: 'image/png' },
+            { url: '/logo192.png', sizes: '192x192', type: 'image/png' },
+        ],
+        shortcut: '/logo.png',
         apple: '/logo512.png',
     }
 }
