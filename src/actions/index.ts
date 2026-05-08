@@ -42,6 +42,7 @@ export { getTransactions } from './transaction/get-transactions'
 export { updateTransactionById } from './transaction/update-transaction-by-id'
 
 export { createWallet } from './wallet/create-wallet'
+export { createSavingsBox } from './wallet/create-savings-box'
 export { deleteWalletById } from './wallet/delete-wallet-by-id'
 export { getWalletById } from './wallet/get-wallet-by-id'
 export { getWallets } from './wallet/get-wallets'

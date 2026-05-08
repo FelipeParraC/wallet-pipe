@@ -149,11 +149,13 @@ export const mapToWallet = (data: PrismaWallet): Wallet => {
     const wallet: Wallet = {
         id: data.id,
         userId: data.userId,
+        parentWalletId: data.parentWalletId ?? null,
         name: data.name,
         balance: moneyToNumber(data.balance),
         type: mapToWalletType( data.type ),
         color: data.color,
         includeInTotal: data.includeInTotal,
+        isSavingsBox: data.isSavingsBox ?? false,
         isActive: data.isActive,
         creditLimit: moneyToNumber(data.creditLimit),
         availableCredit: moneyToNumber(data.availableCredit),
@@ -186,6 +188,8 @@ export const mapToUpdatePrismaWallet = (data: UpdateWalletInput) => {
 
     const updateData = {
         name: data.name,
+        parentWalletId: data.parentWalletId,
+        isSavingsBox: data.isSavingsBox,
         color: data.color,
         includeInTotal: data.includeInTotal,
         creditLimit: normalizeOptionalMoney(data.creditLimit),
@@ -207,10 +211,12 @@ export const mapToCreatePrismaWallet = (data: CreateWalletInput, userId: string)
     const walletData = {
         userId: userId,
         name: data.name,
+        parentWalletId: data.parentWalletId ?? null,
         balance: moneyInputToMinorUnits(data.balance),
         type: mapToPrismaWalletType( data.type ),
         color: data.color,
         includeInTotal: data.includeInTotal,
+        isSavingsBox: data.isSavingsBox ?? false,
         creditLimit: normalizeOptionalMoney(data.creditLimit),
         availableCredit: normalizeOptionalMoney(data.availableCredit),
         statementClosingDay: data.statementClosingDay,

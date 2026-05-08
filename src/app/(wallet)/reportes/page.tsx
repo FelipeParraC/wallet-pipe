@@ -28,8 +28,9 @@ export default async function ReportesPage() {
     const pendingScheduledTotal = planning?.summary.pendingScheduledTotal ?? cycleSummary?.summary.pendingScheduledTotal ?? 0
     const pendingInstallmentTotal = planning?.summary.pendingInstallmentTotal ?? cycleSummary?.summary.pendingInstallmentTotal ?? 0
     const pendingDebtTotal = planning?.summary.pendingDebtTotal ?? 0
+    const pendingCreditCardTotal = planning?.summary.pendingCreditCardTotal ?? cycleSummary?.summary.pendingCreditCardTotal ?? pendingInstallmentTotal
     const creditDebt = cycleSummary?.summary.totalCreditDebt ?? 0
-    const totalPending = pendingScheduledTotal + pendingInstallmentTotal + pendingDebtTotal
+    const totalPending = pendingScheduledTotal + pendingCreditCardTotal + pendingDebtTotal
     const totalObligations = totalPending + (planning?.summary.paidInCycle ?? 0)
     const paidProgress = percent(planning?.summary.paidInCycle ?? 0, totalObligations)
 
@@ -135,9 +136,9 @@ export default async function ReportesPage() {
                     <CardContent className='space-y-3'>
                         {[
                             { label: 'Programados', value: pendingScheduledTotal, tone: 'text-sky-300' },
-                            { label: 'Cuotas', value: pendingInstallmentTotal, tone: 'text-amber-300' },
+                            { label: 'Tarjetas a pagar', value: pendingCreditCardTotal, tone: 'text-violet-300' },
                             { label: 'Deudas', value: pendingDebtTotal, tone: 'text-rose-300' },
-                            { label: 'Tarjetas', value: creditDebt, tone: 'text-violet-300' },
+                            { label: 'Deuda total tarjetas', value: creditDebt, tone: 'text-slate-300' },
                         ].map((item) => (
                             <div key={item.label} className='flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-3'>
                                 <span className='text-sm text-slate-300'>{item.label}</span>

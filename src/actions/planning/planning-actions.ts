@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
+import { calculateCreditCardCycleObligations } from '@/lib/credit-card-obligations'
 import { getCyclePeriodForDate } from '@/lib/cycle'
 import { absMinorUnits, ensurePositiveMoney, moneyInputToMinorUnits, moneyToNumber, moneyToMinorUnits } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
@@ -376,6 +377,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
       installmentPlans,
       debts,
       transactions,
+      creditCardTransactions,
     } = await withPrismaConnectionRetry(async () => {
       const wallets = await prisma.wallet.findMany({ where: { userId: user.id, isActive: true }, orderBy: { name: 'asc' } })
       const categories = await prisma.category.findMany({
@@ -407,6 +409,13 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
         where: { userId: user.id, occurredAt: { gte: startsAt, lte: endsAt } },
         orderBy: { occurredAt: 'desc' },
       })
+      const creditCardTransactions = await prisma.transaction.findMany({
+        where: {
+          userId: user.id,
+          type: { in: ['TARJETA_CONSUMO', 'PAGO_TARJETA'] },
+        },
+        orderBy: { occurredAt: 'desc' },
+      })
 
       return {
         wallets,
@@ -417,6 +426,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
         installmentPlans,
         debts,
         transactions,
+        creditCardTransactions,
       }
     })
 
@@ -432,6 +442,14 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
     const paidInCycle = transactions
       .filter((transaction) => transaction.scheduledOccurrenceId || transaction.installmentOccurrenceId || transaction.debtId)
       .reduce((sum, transaction) => sum + Math.abs(moneyToNumber(transaction.amount)), 0)
+    const creditCardObligations = calculateCreditCardCycleObligations({
+      cards: wallets.filter((wallet) => wallet.type === 'TARJETA_CREDITO'),
+      transactions: creditCardTransactions,
+      installmentOccurrences,
+      cycleStartsAt: startsAt,
+      cycleEndsAt: endsAt,
+    })
+    const pendingCreditCardTotal = creditCardObligations.reduce((sum, obligation) => sum + obligation.pendingAmount, 0)
 
     return actionSuccess({
       currentCycle,
@@ -440,6 +458,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
       transactions: transactions.map(mapToTransaction),
       scheduledOccurrences: mappedScheduledOccurrences,
       installmentOccurrences: mappedInstallmentOccurrences,
+      creditCardObligations,
       scheduledPlans: scheduledPlans.map((plan) => ({
         id: plan.id,
         title: plan.title,
@@ -501,8 +520,10 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
         pendingScheduledTotal: pendingScheduled.reduce((sum, occurrence) => sum + occurrence.expectedAmount, 0),
         pendingInstallmentTotal: pendingInstallments.reduce((sum, occurrence) => sum + occurrence.expectedAmount, 0),
         pendingDebtTotal,
+        pendingCreditCardTotal,
+        totalObligations: pendingScheduled.reduce((sum, occurrence) => sum + occurrence.expectedAmount, 0) + pendingDebtTotal + pendingCreditCardTotal,
         paidInCycle,
-        pendingCount: pendingScheduled.length + pendingInstallments.length,
+        pendingCount: pendingScheduled.length + creditCardObligations.filter((obligation) => obligation.pendingAmount > 0).length,
         paidCount: paidScheduled.length + paidInstallments.length,
       },
     })

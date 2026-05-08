@@ -13,6 +13,7 @@ export const WalletCard = ({ wallet }: WalletCardProps) => {
 
     const Icon = getIcon( wallet.type )
     const isCreditCard = wallet.type === 'Tarjeta de Crédito'
+    const isSavingsBox = wallet.isSavingsBox
 
     return (
         <Link href={`/billeteras/${wallet.id}`}>
@@ -24,6 +25,7 @@ export const WalletCard = ({ wallet }: WalletCardProps) => {
                     />
                     <CardTitle className='relative text-lg font-medium text-white md:text-xl'>
                         {wallet.name}
+                        {isSavingsBox && <span className='ml-2 rounded-full bg-sky-400/15 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-sky-100'>Cajita</span>}
                     </CardTitle>
                     <span className='relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06]'>
                         <Icon className='h-5 w-5 text-white' />
@@ -32,7 +34,7 @@ export const WalletCard = ({ wallet }: WalletCardProps) => {
                 <CardContent className='relative'>
                     <CurrencyDisplay amount={wallet.balance} showDecimals={true} className='text-2xl font-bold text-white md:text-3xl' />
                     <p className='mt-2 text-xs uppercase tracking-[0.24em] text-slate-500'>
-                        {isCreditCard ? 'Deuda actual de la tarjeta' : wallet.type}
+                        {isCreditCard ? 'Deuda actual de la tarjeta' : isSavingsBox ? 'Cajita de ahorro' : wallet.type}
                     </p>
                     {isCreditCard && (
                         <>
@@ -47,7 +49,7 @@ export const WalletCard = ({ wallet }: WalletCardProps) => {
                     )}
                     {!wallet.includeInTotal && (
                         <p className='mt-3 text-xs text-slate-500'>
-                            {isCreditCard ? 'Se muestra aparte del balance general' : 'No incluida en el balance total'}
+                            {isCreditCard ? 'Se muestra aparte del balance general' : isSavingsBox ? 'Apartada del disponible del período' : 'No incluida en el balance total'}
                         </p>
                     )}
                 </CardContent>

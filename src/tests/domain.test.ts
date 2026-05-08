@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { calculateCreditCardCycleObligations } from '../lib/credit-card-obligations'
 import { combineDateAndTime, getWalletTransferDelta, roundMoney, toSignedAmount, toTransferAmount } from '../lib/finance'
 import { isTransferTransaction, isTransportTransaction, type Transaction } from '../interfaces/transaction.interface'
 
@@ -57,5 +58,50 @@ const mergedHours = new Date(mergedDate).getHours()
 const mergedMinutes = new Date(mergedDate).getMinutes()
 assert.equal(mergedHours, 8)
 assert.equal(mergedMinutes, 45)
+
+const cardObligations = calculateCreditCardCycleObligations({
+  cards: [{
+    id: 'card-1',
+    name: 'Visa',
+    balance: BigInt(5000000),
+    type: 'TARJETA_CREDITO',
+    statementClosingDay: 23,
+    paymentDueDay: 5,
+  }],
+  transactions: [
+    {
+      id: 'purchase-1',
+      walletId: 'card-1',
+      type: 'TARJETA_CONSUMO',
+      amount: BigInt(-2000000),
+      occurredAt: new Date('2026-04-10T12:00:00.000Z'),
+    },
+    {
+      id: 'payment-1',
+      walletId: 'bank-1',
+      toWalletId: 'card-1',
+      type: 'PAGO_TARJETA',
+      amount: BigInt(-500000),
+      occurredAt: new Date('2026-05-02T12:00:00.000Z'),
+    },
+  ],
+  installmentOccurrences: [{
+    id: 'installment-1',
+    dueAt: new Date('2026-05-05T12:00:00.000Z'),
+    expectedAmount: BigInt(300000),
+    status: 'PENDIENTE',
+    installmentPlan: {
+      chargeWalletId: 'card-1',
+      title: 'Laptop',
+    },
+  }],
+  cycleStartsAt: new Date('2026-04-23T00:00:00.000Z'),
+  cycleEndsAt: new Date('2026-05-22T23:59:59.999Z'),
+})
+
+assert.equal(cardObligations.length, 1)
+assert.equal(cardObligations[0].totalDue, 23000)
+assert.equal(cardObligations[0].paymentsApplied, 5000)
+assert.equal(cardObligations[0].pendingAmount, 18000)
 
 console.log('domain.test.ts passed')

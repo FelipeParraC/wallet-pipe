@@ -20,6 +20,9 @@ interface DashboardHomeProps {
             obligationCount: number
             pendingScheduledTotal: number
             pendingInstallmentTotal: number
+            pendingDebtTotal?: number
+            pendingCreditCardTotal?: number
+            totalObligations?: number
         }
     } | null
 }
@@ -70,7 +73,9 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
     const totalCreditDebt = cycleSummary?.summary.totalCreditDebt ?? wallets
         .filter((wallet) => wallet.type === 'Tarjeta de Crédito')
         .reduce((sum, wallet) => sum + wallet.balance, 0)
-    const pendingObligations = (cycleSummary?.summary.pendingScheduledTotal ?? 0) + (cycleSummary?.summary.pendingInstallmentTotal ?? 0)
+    const pendingObligations = cycleSummary?.summary.totalObligations
+        ?? ((cycleSummary?.summary.pendingScheduledTotal ?? 0) + (cycleSummary?.summary.pendingInstallmentTotal ?? 0))
+    const pendingCreditCardTotal = cycleSummary?.summary.pendingCreditCardTotal ?? cycleSummary?.summary.pendingInstallmentTotal ?? 0
     const activeWallets = wallets.filter((wallet) => wallet.isActive).slice(0, 4)
 
     return (
@@ -84,7 +89,7 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
                                 <div>
                                     <p className='inline-flex items-center gap-2 rounded-full border border-sky-300/15 bg-sky-300/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-sky-100/80'>
                                         <Sparkles className='h-3.5 w-3.5' />
-                                        Ciclo activo
+                                        Disponible real
                                     </p>
                                     <h2 className='mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl'>
                                         <CurrencyDisplay amount={totalAvailable} showDecimals={true} className='text-3xl font-semibold text-white sm:text-4xl' />
@@ -101,11 +106,11 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
 
                             <div className='grid gap-3 sm:grid-cols-2'>
                                 <div className='rounded-[1.5rem] border border-white/10 bg-white/[0.045] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]'>
-                                    <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Proyectado</p>
+                                    <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Después de pagar</p>
                                     <CurrencyDisplay amount={projectedAvailable} showDecimals={true} className='mt-2 text-xl font-semibold text-white' />
                                 </div>
                                 <div className='rounded-[1.5rem] border border-white/10 bg-white/[0.045] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]'>
-                                    <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Pendiente</p>
+                                    <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Obligaciones</p>
                                     <CurrencyDisplay amount={pendingObligations} showDecimals={true} className='mt-2 text-xl font-semibold text-white' />
                                 </div>
                             </div>
@@ -125,7 +130,7 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
                 <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-1'>
                     <StatCard title='Ingresos' amount={totalIncome} icon={ArrowUpCircle} accent='bg-emerald-500/20' />
                     <StatCard title='Gastos' amount={totalExpenses} icon={ArrowDownCircle} accent='bg-rose-500/20' />
-                    <StatCard title='Tarjetas' amount={totalCreditDebt} icon={CreditCard} accent='bg-violet-500/20' />
+                    <StatCard title='Tarjetas a pagar' amount={pendingCreditCardTotal || totalCreditDebt} icon={CreditCard} accent='bg-violet-500/20' />
                     <StatCard title='Disponible' amount={projectedAvailable} icon={Target} accent='bg-sky-500/20' />
                 </div>
             </section>

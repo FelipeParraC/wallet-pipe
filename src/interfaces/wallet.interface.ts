@@ -3,11 +3,13 @@ export type WalletType = 'Efectivo' | 'Cuenta Bancaria' | 'Ahorros' | 'Transport
 export interface Wallet {
     id: string
     userId: string
+    parentWalletId?: string | null
     name: string
     balance: number
     type: WalletType
     color: string
     includeInTotal: boolean
+    isSavingsBox: boolean
     fareValue?: number
     isActive: boolean
     creditLimit?: number
@@ -20,6 +22,8 @@ export interface CreateWalletInput {
     name: string
     balance: number
     type: WalletType
+    parentWalletId?: string | null
+    isSavingsBox?: boolean
     fareValue?: number
     color: string
     includeInTotal: boolean
@@ -31,6 +35,8 @@ export interface CreateWalletInput {
 
 export interface UpdateWalletInput {
     name?: string
+    parentWalletId?: string | null
+    isSavingsBox?: boolean
     fareValue?: number
     color?: string
     includeInTotal?: boolean

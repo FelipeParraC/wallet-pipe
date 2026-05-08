@@ -12,11 +12,9 @@ import {
   deleteOrDeactivateInstallmentPlan,
   deleteOrDeactivateScheduledPlan,
   payDebt,
-  payInstallmentOccurrence,
   payScheduledOccurrence,
   reopenInstallmentOccurrence,
   reopenScheduledOccurrence,
-  skipInstallmentOccurrence,
   skipScheduledOccurrence,
   updateDebt,
   updateInstallmentPlan,
@@ -140,6 +138,19 @@ interface PlanningWorkbenchProps {
   categories: Category[]
   scheduledOccurrences: ScheduledOccurrenceView[]
   installmentOccurrences: InstallmentOccurrenceView[]
+  creditCardObligations: Array<{
+    walletId: string
+    walletName: string
+    statementStartsAt: string
+    statementEndsAt: string
+    paymentDueAt: string
+    purchasesTotal: number
+    installmentsTotal: number
+    paymentsApplied: number
+    totalDue: number
+    pendingAmount: number
+    installmentCount: number
+  }>
   scheduledPlans: ScheduledPlanView[]
   installmentPlans: InstallmentPlanView[]
   debts: DebtView[]
@@ -147,6 +158,8 @@ interface PlanningWorkbenchProps {
     pendingScheduledTotal: number
     pendingInstallmentTotal: number
     pendingDebtTotal: number
+    pendingCreditCardTotal: number
+    totalObligations: number
     paidInCycle: number
     pendingCount: number
     paidCount: number
@@ -615,6 +628,7 @@ export const PlanningWorkbench = ({
   categories,
   scheduledOccurrences,
   installmentOccurrences,
+  creditCardObligations,
   scheduledPlans,
   installmentPlans,
   debts,
@@ -630,14 +644,13 @@ export const PlanningWorkbench = ({
   const realAccountAvailable = wallets
     .filter((wallet) => wallet.includeInTotal && wallet.type !== 'Tarjeta de Crédito')
     .reduce((sum, wallet) => sum + wallet.balance, 0)
-  const cardDueThisCycle = summary.pendingInstallmentTotal
+  const cardDueThisCycle = summary.pendingCreditCardTotal ?? summary.pendingInstallmentTotal
   const otherObligations = summary.pendingScheduledTotal + summary.pendingDebtTotal
   const projectedAvailable = realAccountAvailable - cardDueThisCycle - otherObligations
 
   const pendingItems = useMemo(() => [
     ...scheduledOccurrences.filter((occurrence) => occurrence.status === 'PENDIENTE').map((occurrence) => ({ kind: 'scheduled' as const, occurrence })),
-    ...installmentOccurrences.filter((occurrence) => occurrence.status === 'PENDIENTE').map((occurrence) => ({ kind: 'installment' as const, occurrence })),
-  ].sort((a, b) => new Date(a.occurrence.dueAt).getTime() - new Date(b.occurrence.dueAt).getTime()), [scheduledOccurrences, installmentOccurrences])
+  ].sort((a, b) => new Date(a.occurrence.dueAt).getTime() - new Date(b.occurrence.dueAt).getTime()), [scheduledOccurrences])
 
   const paidItems = useMemo(() => [
     ...scheduledOccurrences.filter((occurrence) => occurrence.status !== 'PENDIENTE').map((occurrence) => ({ kind: 'scheduled' as const, occurrence })),
@@ -726,11 +739,32 @@ export const PlanningWorkbench = ({
 
       {activeTab === 'pendientes' && (
         <section className='grid gap-3'>
-          {pendingItems.length === 0 ? (
+          {pendingItems.length === 0 && creditCardObligations.filter((obligation) => obligation.pendingAmount > 0).length === 0 ? (
             <div className='glass-panel rounded-[1.75rem] p-8 text-center'>
               <p className='text-sm text-slate-400'>No hay obligaciones pendientes para este ciclo.</p>
             </div>
-          ) : pendingItems.map((item) => {
+          ) : (
+            <>
+              {creditCardObligations.filter((obligation) => obligation.pendingAmount > 0).map((obligation) => (
+                <OccurrenceCard
+                  key={obligation.walletId}
+                  title={`Pago tarjeta: ${obligation.walletName}`}
+                  subtitle={`Corte ${format(parseISO(obligation.statementEndsAt), 'd MMM', { locale: es })} · ${obligation.installmentCount} cuotas · ${formatCurrency(obligation.purchasesTotal)} compras`}
+                  amount={obligation.pendingAmount}
+                  dueAt={obligation.paymentDueAt}
+                  status='PENDIENTE'
+                >
+                  <Button asChild size='sm'>
+                    <Link href='/transacciones/nueva'>Pagar tarjeta</Link>
+                  </Button>
+                  {obligation.paymentsApplied > 0 && (
+                    <span className='rounded-full bg-emerald-400/10 px-3 py-2 text-xs text-emerald-200'>
+                      Abonado {formatCurrency(obligation.paymentsApplied)}
+                    </span>
+                  )}
+                </OccurrenceCard>
+              ))}
+              {pendingItems.map((item) => {
             if (item.kind === 'scheduled') {
               const occurrence = item.occurrence
               return (
@@ -760,33 +794,10 @@ export const PlanningWorkbench = ({
               )
             }
 
-            const occurrence = item.occurrence
-            return (
-              <OccurrenceCard
-                key={occurrence.id}
-                title={occurrence.plan.title}
-                subtitle={`Tarjeta ${walletName(occurrence.plan.chargeWalletId)} · Cuota ${occurrence.installmentNumber} de ${occurrence.plan.totalInstallments} · Pago con ${walletName(occurrence.plan.paymentWalletId)}${occurrence.plan.merchant ? ` · ${occurrence.plan.merchant}` : ''}`}
-                amount={occurrence.expectedAmount}
-                dueAt={occurrence.dueAt}
-                status={occurrence.status}
-              >
-                <PayOccurrenceDialog
-                  title={occurrence.plan.title}
-                  description='Registra la cuota pagada con la cuenta correcta.'
-                  defaultAmount={occurrence.expectedAmount}
-                  amountMode='FIJO'
-                  dueAt={occurrence.dueAt}
-                  wallets={paymentWallets}
-                  defaultWalletId={occurrence.plan.paymentWalletId}
-                  onPay={(values) => payInstallmentOccurrence({ occurrenceId: occurrence.id, ...values })}
-                />
-                <Button variant='outline' size='sm' onClick={() => runAction(() => skipInstallmentOccurrence(occurrence.id))}>
-                  <PauseCircle className='h-4 w-4' />
-                  Omitir
-                </Button>
-              </OccurrenceCard>
-            )
+            return null
           })}
+            </>
+          )}
         </section>
       )}
 

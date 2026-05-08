@@ -56,11 +56,13 @@ model CycleOverride {
 model Wallet {
   id                  String              @id @default(cuid())
   userId              String
+  parentWalletId      String?
   name                String
   balance             BigInt
   type                WalletType
   color               String
   includeInTotal      Boolean
+  isSavingsBox        Boolean             @default(false)
   fareValue           BigInt?
   isActive            Boolean             @default(true)
   creditLimit         BigInt?
@@ -76,7 +78,11 @@ model Wallet {
   transactions        Transaction[]       @relation("TransactionWallet")
   transferFrom        Transaction[]       @relation("TransferFromWallet")
   transferTo          Transaction[]       @relation("TransferToWallet")
+  parentWallet        Wallet?             @relation("WalletSavingsBoxes", fields: [parentWalletId], references: [id], onDelete: SetNull)
+  savingsBoxes        Wallet[]            @relation("WalletSavingsBoxes")
   user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, parentWalletId])
 }
 
 model Category {

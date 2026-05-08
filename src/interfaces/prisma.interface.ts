@@ -61,12 +61,14 @@ export interface PrismaTransaction {
 export interface PrismaWallet {
     id: string
     userId: string
+    parentWalletId?: string | null
     name: string
     balance: MoneyLike
     type: PrismaWalletType
     fareValue: MoneyLike | null
     color: string
     includeInTotal: boolean
+    isSavingsBox?: boolean
     isActive: boolean
     creditLimit?: MoneyLike | null
     availableCredit?: MoneyLike | null
