@@ -456,6 +456,9 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
       wallets: wallets.map(mapToWallet),
       categories: categories.map(mapToCategory),
       transactions: transactions.map(mapToTransaction),
+      cardPaymentsInCycle: transactions
+        .filter((transaction) => transaction.type === 'PAGO_TARJETA')
+        .map(mapToTransaction),
       scheduledOccurrences: mappedScheduledOccurrences,
       installmentOccurrences: mappedInstallmentOccurrences,
       creditCardObligations,

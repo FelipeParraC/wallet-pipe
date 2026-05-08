@@ -22,6 +22,7 @@ export default async function PlaneacionPage({ searchParams }: PlaneacionPagePro
                 scheduledOccurrences={overview.scheduledOccurrences}
                 installmentOccurrences={overview.installmentOccurrences}
                 creditCardObligations={overview.creditCardObligations}
+                cardPaymentsInCycle={overview.cardPaymentsInCycle}
                 scheduledPlans={overview.scheduledPlans}
                 installmentPlans={overview.installmentPlans}
                 debts={overview.debts}

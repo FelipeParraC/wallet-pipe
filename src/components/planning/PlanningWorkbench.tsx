@@ -3,14 +3,15 @@
 import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { CalendarClock, CheckCircle2, PauseCircle, Pencil, RotateCcw, Trash2, WalletCards } from 'lucide-react'
+import { CalendarClock, CheckCircle2, CreditCard, PauseCircle, Pencil, RotateCcw, Trash2, WalletCards } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { Category, Wallet } from '@/interfaces'
+import type { Category, Transaction, Wallet } from '@/interfaces'
 import {
   deleteOrCloseDebt,
   deleteOrDeactivateInstallmentPlan,
   deleteOrDeactivateScheduledPlan,
+  createMovementFromForm,
   payDebt,
   payScheduledOccurrence,
   reopenInstallmentOccurrence,
@@ -26,6 +27,21 @@ import { Alert, AlertDescription, Button, Dialog, DialogContent, DialogDescripti
 import { formatCurrency, getRecurrenceFrequencyLabel, getScheduledPlanKindLabel } from '@/utils'
 
 type OccurrenceStatus = 'PENDIENTE' | 'EJECUTADA' | 'OMITIDA' | 'CANCELADA'
+type CreditCardPaymentMode = 'CYCLE' | 'PARTIAL' | 'TOTAL'
+
+interface CreditCardObligationView {
+  walletId: string
+  walletName: string
+  statementStartsAt: string
+  statementEndsAt: string
+  paymentDueAt: string
+  purchasesTotal: number
+  installmentsTotal: number
+  paymentsApplied: number
+  totalDue: number
+  pendingAmount: number
+  installmentCount: number
+}
 
 interface ScheduledOccurrenceView {
   id: string
@@ -138,19 +154,8 @@ interface PlanningWorkbenchProps {
   categories: Category[]
   scheduledOccurrences: ScheduledOccurrenceView[]
   installmentOccurrences: InstallmentOccurrenceView[]
-  creditCardObligations: Array<{
-    walletId: string
-    walletName: string
-    statementStartsAt: string
-    statementEndsAt: string
-    paymentDueAt: string
-    purchasesTotal: number
-    installmentsTotal: number
-    paymentsApplied: number
-    totalDue: number
-    pendingAmount: number
-    installmentCount: number
-  }>
+  creditCardObligations: CreditCardObligationView[]
+  cardPaymentsInCycle: Transaction[]
   scheduledPlans: ScheduledPlanView[]
   installmentPlans: InstallmentPlanView[]
   debts: DebtView[]
@@ -303,6 +308,213 @@ const PayOccurrenceDialog = ({
     </Dialog>
   )
 }
+
+const PayCreditCardObligationDialog = ({
+  obligation,
+  card,
+  wallets,
+}: {
+  obligation: CreditCardObligationView
+  card?: Wallet
+  wallets: Wallet[]
+}) => {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [walletId, setWalletId] = useState(wallets[0]?.id ?? '')
+  const [mode, setMode] = useState<CreditCardPaymentMode>('CYCLE')
+  const [amount, setAmount] = useState(obligation.pendingAmount > 0 ? String(obligation.pendingAmount) : '')
+  const [occurredAt, setOccurredAt] = useState(toDateTimeLocal(obligation.paymentDueAt))
+  const [note, setNote] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, setIsPending] = useState(false)
+
+  const cardDebt = card?.balance ?? 0
+  const suggestedAmount = mode === 'TOTAL'
+    ? cardDebt
+    : mode === 'CYCLE'
+      ? obligation.pendingAmount
+      : Number(amount || 0)
+  const effectiveAmount = mode === 'TOTAL' ? cardDebt : Number(amount || 0)
+
+  const changeMode = (nextMode: CreditCardPaymentMode) => {
+    setMode(nextMode)
+    setError(null)
+    if (nextMode === 'TOTAL') {
+      setAmount(String(cardDebt))
+      return
+    }
+    if (nextMode === 'CYCLE') {
+      setAmount(String(obligation.pendingAmount))
+    }
+  }
+
+  const submit = async () => {
+    setError(null)
+
+    if (!walletId) {
+      setError('Selecciona la cuenta desde la que vas a pagar')
+      return
+    }
+
+    if (mode !== 'TOTAL' && (!Number.isFinite(effectiveAmount) || effectiveAmount <= 0)) {
+      setError('El monto del pago debe ser mayor a 0')
+      return
+    }
+
+    setIsPending(true)
+    try {
+      const response = await createMovementFromForm({
+        kind: 'CARD_PAYMENT',
+        title: mode === 'CYCLE' ? `Pago corte ${obligation.walletName}` : `Pago tarjeta ${obligation.walletName}`,
+        description: note,
+        occurredAt,
+        paymentMode: mode === 'TOTAL' ? 'TOTAL' : 'PARCIAL',
+        fromWalletId: walletId,
+        cardWalletId: obligation.walletId,
+        amount: mode === 'TOTAL' ? undefined : effectiveAmount,
+      })
+
+      if (!response.ok) {
+        setError(response.message)
+        return
+      }
+
+      setOpen(false)
+      router.refresh()
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button size='sm' disabled={wallets.length === 0 || !card || cardDebt <= 0} onClick={() => setOpen(true)}>
+        <CheckCircle2 className='h-4 w-4' />
+        Pagar
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Pagar {obligation.walletName}</DialogTitle>
+          <DialogDescription>
+            Corte {format(parseISO(obligation.statementStartsAt), 'd MMM', { locale: es })} - {format(parseISO(obligation.statementEndsAt), 'd MMM yyyy', { locale: es })}
+          </DialogDescription>
+        </DialogHeader>
+        <div className='grid gap-4'>
+          <div className='grid gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4'>
+            <div className='flex items-center justify-between gap-3'>
+              <span className='text-sm text-slate-400'>Pendiente del ciclo</span>
+              <CurrencyDisplay amount={obligation.pendingAmount} showDecimals={true} className='font-semibold text-white' />
+            </div>
+            <div className='flex items-center justify-between gap-3'>
+              <span className='text-sm text-slate-400'>Deuda total tarjeta</span>
+              <CurrencyDisplay amount={cardDebt} showDecimals={true} className='font-semibold text-sky-100' />
+            </div>
+          </div>
+
+          <div className='grid gap-2'>
+            <Label>Tipo de pago</Label>
+            <div className='grid gap-2 sm:grid-cols-3'>
+              {[
+                { id: 'CYCLE' as const, label: 'Pagar corte', amount: obligation.pendingAmount },
+                { id: 'PARTIAL' as const, label: 'Otro abono', amount: suggestedAmount },
+                { id: 'TOTAL' as const, label: 'Pago total', amount: cardDebt },
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  type='button'
+                  onClick={() => changeMode(option.id)}
+                  disabled={option.id === 'TOTAL' && cardDebt <= 0}
+                  className={`rounded-2xl border px-3 py-3 text-left transition ${mode === option.id ? 'border-sky-300/70 bg-sky-400/15 text-white' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.07]'} disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  <span className='block text-sm font-semibold'>{option.label}</span>
+                  <span className='mt-1 block text-xs text-slate-500'>{formatCurrency(option.id === 'PARTIAL' ? Number(amount || 0) : option.amount)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className='grid gap-2'>
+            <Label>Cuenta origen</Label>
+            <Select value={walletId} onValueChange={setWalletId}>
+              <SelectTrigger><SelectValue placeholder='Elige una cuenta' /></SelectTrigger>
+              <SelectContent>{wallets.map((wallet) => <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <div className='grid gap-2'>
+              <Label>Monto</Label>
+              <Input type='number' step='0.01' value={amount} onChange={(event) => setAmount(event.target.value)} disabled={mode === 'TOTAL'} />
+            </div>
+            <div className='grid gap-2'>
+              <Label>Fecha y hora</Label>
+              <Input type='datetime-local' step='1' value={occurredAt} onChange={(event) => setOccurredAt(event.target.value)} />
+            </div>
+          </div>
+
+          <div className='grid gap-2'>
+            <Label>Nota</Label>
+            <Textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder='Opcional' />
+          </div>
+
+          <ActionError message={error} />
+        </div>
+        <DialogFooter>
+          <Button variant='outline' onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={submit} disabled={!walletId || isPending || (mode !== 'TOTAL' && effectiveAmount <= 0)}>
+            {isPending ? 'Registrando...' : mode === 'TOTAL' ? 'Pagar todo' : 'Registrar pago'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const CreditCardObligationCard = ({
+  obligation,
+  card,
+  wallets,
+}: {
+  obligation: CreditCardObligationView
+  card?: Wallet
+  wallets: Wallet[]
+}) => (
+  <article className='overflow-hidden rounded-[1.75rem] border border-sky-300/15 bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(15,23,42,0.78)_46%,rgba(2,6,23,0.92))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'>
+    <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
+      <div className='min-w-0'>
+        <div className='flex flex-wrap items-center gap-2'>
+          <span className='rounded-full border border-sky-200/20 bg-sky-300/10 p-2 text-sky-100'>
+            <CreditCard className='h-4 w-4' />
+          </span>
+          <div>
+            <p className='font-semibold text-white'>Pago tarjeta: {obligation.walletName}</p>
+            <p className='text-sm text-slate-400'>
+              Límite {format(parseISO(obligation.paymentDueAt), "d MMM yyyy", { locale: es })}
+            </p>
+          </div>
+        </div>
+        <div className='mt-4 grid gap-2 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-4'>
+          <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>Corte {format(parseISO(obligation.statementStartsAt), 'd MMM', { locale: es })} - {format(parseISO(obligation.statementEndsAt), 'd MMM', { locale: es })}</span>
+          <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>Compras {formatCurrency(obligation.purchasesTotal)}</span>
+          <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>{obligation.installmentCount} cuotas {formatCurrency(obligation.installmentsTotal)}</span>
+          <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>Abonos {formatCurrency(obligation.paymentsApplied)}</span>
+        </div>
+      </div>
+      <div className='shrink-0 rounded-[1.4rem] border border-white/10 bg-black/20 p-4 lg:min-w-56'>
+        <p className='text-[11px] uppercase tracking-[0.22em] text-slate-500'>Pendiente ciclo</p>
+        <CurrencyDisplay amount={obligation.pendingAmount} showDecimals={true} className='mt-1 text-2xl font-bold text-white' />
+        <div className='mt-4 flex flex-wrap gap-2'>
+          <PayCreditCardObligationDialog obligation={obligation} card={card} wallets={wallets} />
+          {card && card.balance > obligation.pendingAmount && (
+            <span className='rounded-full bg-white/[0.06] px-3 py-2 text-xs text-slate-300'>
+              Deuda total {formatCurrency(card.balance)}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  </article>
+)
 
 const OccurrenceCard = ({
   title,
@@ -629,6 +841,7 @@ export const PlanningWorkbench = ({
   scheduledOccurrences,
   installmentOccurrences,
   creditCardObligations,
+  cardPaymentsInCycle,
   scheduledPlans,
   installmentPlans,
   debts,
@@ -639,7 +852,7 @@ export const PlanningWorkbench = ({
   const [error, setError] = useState<string | null>(null)
   const activeDebts = debts.filter((debt) => debt.status === 'ACTIVA')
   const walletById = useMemo(() => new Map(wallets.map((wallet) => [wallet.id, wallet])), [wallets])
-  const paymentWallets = useMemo(() => wallets.filter((wallet) => wallet.type !== 'Tarjeta de Crédito'), [wallets])
+  const paymentWallets = useMemo(() => wallets.filter((wallet) => wallet.isActive && wallet.type !== 'Tarjeta de Crédito' && wallet.type !== 'Transporte'), [wallets])
   const cycleNavDates = useMemo(() => getCycleNavDates(currentCycle.startsAt, currentCycle.endsAt), [currentCycle.startsAt, currentCycle.endsAt])
   const realAccountAvailable = wallets
     .filter((wallet) => wallet.includeInTotal && wallet.type !== 'Tarjeta de Crédito')
@@ -746,23 +959,12 @@ export const PlanningWorkbench = ({
           ) : (
             <>
               {creditCardObligations.filter((obligation) => obligation.pendingAmount > 0).map((obligation) => (
-                <OccurrenceCard
+                <CreditCardObligationCard
                   key={obligation.walletId}
-                  title={`Pago tarjeta: ${obligation.walletName}`}
-                  subtitle={`Corte ${format(parseISO(obligation.statementEndsAt), 'd MMM', { locale: es })} · ${obligation.installmentCount} cuotas · ${formatCurrency(obligation.purchasesTotal)} compras`}
-                  amount={obligation.pendingAmount}
-                  dueAt={obligation.paymentDueAt}
-                  status='PENDIENTE'
-                >
-                  <Button asChild size='sm'>
-                    <Link href='/transacciones/nueva'>Pagar tarjeta</Link>
-                  </Button>
-                  {obligation.paymentsApplied > 0 && (
-                    <span className='rounded-full bg-emerald-400/10 px-3 py-2 text-xs text-emerald-200'>
-                      Abonado {formatCurrency(obligation.paymentsApplied)}
-                    </span>
-                  )}
-                </OccurrenceCard>
+                  obligation={obligation}
+                  card={walletById.get(obligation.walletId)}
+                  wallets={paymentWallets}
+                />
               ))}
               {pendingItems.map((item) => {
             if (item.kind === 'scheduled') {
@@ -803,11 +1005,25 @@ export const PlanningWorkbench = ({
 
       {activeTab === 'pagados' && (
         <section className='grid gap-3'>
-          {paidItems.length === 0 ? (
+          {paidItems.length === 0 && cardPaymentsInCycle.length === 0 ? (
             <div className='glass-panel rounded-[1.75rem] p-8 text-center'>
               <p className='text-sm text-slate-400'>Aún no hay pagos ejecutados u omitidos en este ciclo.</p>
             </div>
-          ) : paidItems.map((item) => {
+          ) : (
+            <>
+              {cardPaymentsInCycle.map((payment) => (
+                <OccurrenceCard
+                  key={payment.id}
+                  title={payment.title}
+                  subtitle={`Abono tarjeta · ${walletName(payment.fromWalletId)} -> ${walletName(payment.toWalletId)}`}
+                  amount={Math.abs(payment.amount)}
+                  dueAt={payment.occurredAt}
+                  status='EJECUTADA'
+                >
+                  <span className='rounded-full bg-emerald-400/10 px-3 py-2 text-xs text-emerald-200'>Pago real</span>
+                </OccurrenceCard>
+              ))}
+              {paidItems.map((item) => {
             const occurrence = item.occurrence
             const isScheduled = item.kind === 'scheduled'
             const subtitle = isScheduled
@@ -827,6 +1043,8 @@ export const PlanningWorkbench = ({
               </OccurrenceCard>
             )
           })}
+            </>
+          )}
         </section>
       )}
 
