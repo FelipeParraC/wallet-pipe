@@ -1,13 +1,15 @@
 export const revalidate = 0
 
 
-import { getWallets } from '@/actions'
+import { getCurrentCycleSummary, getWallets } from '@/actions'
 import { NewWallet, SavingsBoxForm, WalletCard, WalletsTotalBalance } from '@/components'
 
 export default async function BilleterasPage() {
 
     const respWallets = await getWallets()
     const wallets = respWallets.ok ? respWallets.wallets : []
+    const respCycleSummary = await getCurrentCycleSummary()
+    const cycleSummary = respCycleSummary.ok ? respCycleSummary.data : null
 
     if ( !wallets ) {
         return <></>
@@ -29,7 +31,7 @@ export default async function BilleterasPage() {
                 </div>
             </div>
 
-            <WalletsTotalBalance wallets={ wallets } />
+            <WalletsTotalBalance wallets={ wallets } cycleSummary={ cycleSummary } />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {parentWallets.map(( wallet ) => (

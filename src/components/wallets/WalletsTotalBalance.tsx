@@ -4,13 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 
 interface TotalBalanceProps {
     wallets: Wallet[]
+    cycleSummary?: {
+        summary: {
+            totalAvailable: number
+            projectedAvailable: number
+            totalObligations?: number
+            totalCreditDebt?: number
+        }
+    } | null
 }
 
 
-export const WalletsTotalBalance = ({ wallets }: TotalBalanceProps) => {
+export const WalletsTotalBalance = ({ wallets, cycleSummary }: TotalBalanceProps) => {
 
-    const totalBalance = wallets
-        .filter(wallet => wallet.includeInTotal)
+    const totalBalance = cycleSummary?.summary.totalAvailable ?? wallets
+        .filter(wallet => wallet.includeInTotal && wallet.type !== 'Tarjeta de Crédito')
+        .reduce((sum, wallet) => sum + wallet.balance, 0)
+    const obligations = cycleSummary?.summary.totalObligations ?? 0
+    const projectedAvailable = cycleSummary?.summary.projectedAvailable ?? totalBalance
+    const creditDebt = cycleSummary?.summary.totalCreditDebt ?? wallets
+        .filter(wallet => wallet.type === 'Tarjeta de Crédito')
         .reduce((sum, wallet) => sum + wallet.balance, 0)
 
     return (
@@ -18,8 +31,22 @@ export const WalletsTotalBalance = ({ wallets }: TotalBalanceProps) => {
             <CardHeader>
                 <CardTitle className='text-white text-2xl md:text-3xl'>Balance total</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className='space-y-5'>
                 <CurrencyDisplay amount={totalBalance} showDecimals={true} className='text-4xl font-bold text-white md:text-5xl' />
+                <div className='grid gap-3 md:grid-cols-3'>
+                    <div className='rounded-2xl border border-white/10 bg-white/[0.04] p-3'>
+                        <p className='text-[11px] uppercase tracking-[0.22em] text-slate-500'>Obligaciones ciclo</p>
+                        <CurrencyDisplay amount={obligations} showDecimals={true} className='mt-1 text-lg font-semibold text-amber-300' />
+                    </div>
+                    <div className='rounded-2xl border border-white/10 bg-white/[0.04] p-3'>
+                        <p className='text-[11px] uppercase tracking-[0.22em] text-slate-500'>Después de pagar</p>
+                        <CurrencyDisplay amount={projectedAvailable} showDecimals={true} className='mt-1 text-lg font-semibold text-sky-200' />
+                    </div>
+                    <div className='rounded-2xl border border-white/10 bg-white/[0.04] p-3'>
+                        <p className='text-[11px] uppercase tracking-[0.22em] text-slate-500'>Deuda tarjetas</p>
+                        <CurrencyDisplay amount={creditDebt} showDecimals={true} className='mt-1 text-lg font-semibold text-violet-200' />
+                    </div>
+                </div>
             </CardContent>
         </Card>
     )

@@ -74,8 +74,10 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
         .filter((wallet) => wallet.type === 'Tarjeta de Crédito')
         .reduce((sum, wallet) => sum + wallet.balance, 0)
     const pendingObligations = cycleSummary?.summary.totalObligations
-        ?? ((cycleSummary?.summary.pendingScheduledTotal ?? 0) + (cycleSummary?.summary.pendingInstallmentTotal ?? 0))
+        ?? ((cycleSummary?.summary.pendingScheduledTotal ?? 0) + (cycleSummary?.summary.pendingCreditCardTotal ?? cycleSummary?.summary.pendingInstallmentTotal ?? 0) + (cycleSummary?.summary.pendingDebtTotal ?? 0))
     const pendingCreditCardTotal = cycleSummary?.summary.pendingCreditCardTotal ?? cycleSummary?.summary.pendingInstallmentTotal ?? 0
+    const cardSummaryTitle = pendingCreditCardTotal > 0 ? 'Tarjetas a pagar' : 'Deuda total tarjetas'
+    const cardSummaryAmount = pendingCreditCardTotal > 0 ? pendingCreditCardTotal : totalCreditDebt
     const activeWallets = wallets.filter((wallet) => wallet.isActive).slice(0, 4)
 
     return (
@@ -130,7 +132,7 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
                 <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-1'>
                     <StatCard title='Ingresos' amount={totalIncome} icon={ArrowUpCircle} accent='bg-emerald-500/20' />
                     <StatCard title='Gastos' amount={totalExpenses} icon={ArrowDownCircle} accent='bg-rose-500/20' />
-                    <StatCard title='Tarjetas a pagar' amount={pendingCreditCardTotal || totalCreditDebt} icon={CreditCard} accent='bg-violet-500/20' />
+                    <StatCard title={cardSummaryTitle} amount={cardSummaryAmount} icon={CreditCard} accent='bg-violet-500/20' />
                     <StatCard title='Disponible' amount={projectedAvailable} icon={Target} accent='bg-sky-500/20' />
                 </div>
             </section>

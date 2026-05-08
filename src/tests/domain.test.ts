@@ -104,4 +104,23 @@ assert.equal(cardObligations[0].totalDue, 23000)
 assert.equal(cardObligations[0].paymentsApplied, 5000)
 assert.equal(cardObligations[0].pendingAmount, 18000)
 
+const cardDebtFallback = calculateCreditCardCycleObligations({
+  cards: [{
+    id: 'card-2',
+    name: 'Nu Credito',
+    balance: BigInt(33326666),
+    type: 'TARJETA_CREDITO',
+    statementClosingDay: 25,
+    paymentDueDay: 14,
+  }],
+  transactions: [],
+  installmentOccurrences: [],
+  cycleStartsAt: new Date('2026-04-25T00:00:00.000Z'),
+  cycleEndsAt: new Date('2026-05-24T23:59:59.999Z'),
+})
+
+assert.equal(cardDebtFallback.length, 1)
+assert.equal(cardDebtFallback[0].totalDue, 333266.66)
+assert.equal(cardDebtFallback[0].pendingAmount, 333266.66)
+
 console.log('domain.test.ts passed')

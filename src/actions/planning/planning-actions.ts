@@ -224,7 +224,7 @@ const installmentDueDatesForCycle = (
   return dates
 }
 
-const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: string, referenceDate?: Date) => {
+export const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: string, referenceDate?: Date) => {
   const currentCycle = await getCurrentCycle(db, userId, referenceDate)
   const startsAt = new Date(currentCycle.startsAt)
   const endsAt = new Date(currentCycle.endsAt)

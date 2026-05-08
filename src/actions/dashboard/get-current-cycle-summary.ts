@@ -2,27 +2,12 @@
 
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
+import { ensureCurrentCycleOccurrencesForUser } from '@/actions/planning/planning-actions'
 import { calculateCreditCardCycleObligations } from '@/lib/credit-card-obligations'
-import { getCyclePeriodForDate } from '@/lib/cycle'
 import { moneyToNumber, normalizeDateValue } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { mapToTransaction, mapToWallet } from '@/utils'
 import type { PrismaTransaction, PrismaWallet, Transaction, Wallet } from '@/interfaces'
-
-type CycleOverrideRecord = {
-    id: string
-    effectiveFrom: Date
-    startDay: number
-    note?: string | null
-}
-
-type UserCycleSettingsRecord = {
-    id: string
-    userId: string
-    defaultStartDay: number
-    timezone: string
-    overrides: CycleOverrideRecord[]
-}
 
 type OccurrenceRecord = {
     expectedAmount: number
@@ -41,9 +26,6 @@ type InstallmentOccurrenceRecord = {
 }
 
 type DashboardReader = {
-    userCycleSettings: {
-        findUnique: (args: unknown) => Promise<UserCycleSettingsRecord | null>
-    }
     transaction: {
         findMany: (args: unknown) => Promise<PrismaTransaction[]>
     }
@@ -61,35 +43,15 @@ type DashboardReader = {
     }
 }
 
-const defaultCycleSettings = (userId: string) => ({
-    id: 'default',
-    userId,
-    defaultStartDay: 1,
-    timezone: 'America/Bogota',
-    overrides: [],
-})
-
 export const getCurrentCycleSummary = async () => {
     try {
         const user = await requireSessionUser()
         const prismaClient = prisma as unknown as DashboardReader
 
-        const cycleSettings = await prismaClient.userCycleSettings.findUnique({
-            where: { userId: user.id },
-            include: { overrides: true }
-        })
-
-        const safeSettings = cycleSettings ? {
-            ...cycleSettings,
-            overrides: cycleSettings.overrides.map((override) => ({
-                ...override,
-                effectiveFrom: override.effectiveFrom.toISOString()
-            }))
-        } : defaultCycleSettings(user.id)
-
-        const currentCycle = getCyclePeriodForDate(safeSettings)
-        const startsAt = new Date(currentCycle.startsAt)
-        const endsAt = new Date(currentCycle.endsAt)
+        const ensuredCycle = await ensureCurrentCycleOccurrencesForUser(prisma, user.id)
+        const currentCycle = ensuredCycle.currentCycle
+        const startsAt = ensuredCycle.startsAt
+        const endsAt = ensuredCycle.endsAt
 
         const [transactionsDb, walletsDb, scheduledDb, installmentDb, debtsDb, creditCardTransactionsDb] = await Promise.all([
             prismaClient.transaction.findMany({
