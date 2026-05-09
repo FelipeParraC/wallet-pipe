@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Analytics } from '@vercel/analytics/react'
@@ -6,10 +6,20 @@ import { Provider } from '@/components'
 
 const inter = Inter({ subsets: ['latin'] })
 
+export const viewport: Viewport = {
+    themeColor: '#06111f',
+    viewportFit: 'cover',
+}
+
 export const metadata: Metadata = {
     title: 'Wallet Pipe',
     description: 'La aplicación para gestionar tus finanzas personales',
     manifest: '/manifest.json',
+    appleWebApp: {
+        capable: true,
+        title: 'Wallet Pipe',
+        statusBarStyle: 'black-translucent',
+    },
     icons: {
         icon: [
             { url: '/logo.png', sizes: '128x128', type: 'image/png' },

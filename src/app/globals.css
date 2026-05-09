@@ -42,6 +42,7 @@
   }
   html {
     scroll-behavior: smooth;
+    background: #06111f;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -50,7 +51,7 @@
       radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 24%),
       radial-gradient(circle at bottom center, rgba(71, 85, 105, 0.22), transparent 34%),
       linear-gradient(180deg, #06111f 0%, #081222 42%, #09101d 100%);
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 

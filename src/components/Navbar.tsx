@@ -43,7 +43,7 @@ export const Navbar = () => {
 
     return (
         <>
-            <header className='sticky top-0 z-40 px-3 pt-3 sm:px-4'>
+            <header className='sticky top-0 z-40 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-4'>
                 <div className='mx-auto flex max-w-7xl items-center justify-between gap-3'>
                     <Link
                         href='/'
