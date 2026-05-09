@@ -47,18 +47,16 @@ export const Navbar = () => {
                 <div className='mx-auto flex max-w-7xl items-center justify-between gap-3'>
                     <Link
                         href='/'
-                        className='glass-pill flex h-14 items-center gap-3 rounded-[1.75rem] px-4 text-white'
+                        className='glass-pill flex h-14 items-center gap-3 rounded-[1.75rem] px-3 text-white sm:px-4'
                     >
-                        <span className='flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl border border-sky-200/15 bg-slate-950/60 shadow-[0_10px_25px_rgba(14,165,233,0.3)]'>
-                            <Image
-                                src='/logo192.png'
-                                alt='Wallet Pipe'
-                                width={28}
-                                height={28}
-                                priority
-                                className='h-7 w-7'
-                            />
-                        </span>
+                        <Image
+                            src='/logo192.png'
+                            alt='Wallet Pipe'
+                            width={42}
+                            height={42}
+                            priority
+                            className='h-10 w-10 rounded-[1.05rem] shadow-[0_12px_28px_rgba(14,165,233,0.24)]'
+                        />
                         <div className='hidden sm:block'>
                             <p className='text-[11px] uppercase tracking-[0.28em] text-slate-400'>Wallet Pipe</p>
                             <p className='text-sm font-semibold text-slate-100'>{appName}</p>
