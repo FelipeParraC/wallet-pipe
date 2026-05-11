@@ -94,7 +94,17 @@ export const LoginForm = () => {
                                     <AlertDescription>Email o contraseña incorrectos.</AlertDescription>
                                 </Alert>
                             )}
-                            {state && state !== 'Success' && state !== 'Invalid credentials.' && (
+                            {state === 'Google account.' && (
+                                <Alert variant='destructive'>
+                                    <AlertDescription>Esta cuenta entra con Google. Usa el botón de Google.</AlertDescription>
+                                </Alert>
+                            )}
+                            {state === 'Auth callback error.' && (
+                                <Alert variant='destructive'>
+                                    <AlertDescription>No pudimos crear la sesión. Revisa la configuración de Auth.</AlertDescription>
+                                </Alert>
+                            )}
+                            {state && !['Success', 'Invalid credentials.', 'Google account.', 'Auth callback error.'].includes(state) && (
                                 <Alert variant='destructive'>
                                     <AlertDescription>No pudimos iniciar sesión. Inténtalo otra vez.</AlertDescription>
                                 </Alert>
