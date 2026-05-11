@@ -16,8 +16,8 @@ export const WalletCard = ({ wallet }: WalletCardProps) => {
     const isSavingsBox = wallet.isSavingsBox
 
     return (
-        <Link href={`/billeteras/${wallet.id}`}>
-            <Card className='h-full overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(2,6,23,0.24)]'>
+        <Link href={`/billeteras/${wallet.id}`} className='block'>
+            <Card className='overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(2,6,23,0.24)]'>
                 <CardHeader className='relative flex flex-row items-center justify-between space-y-0 pb-2'>
                     <div
                         className='absolute inset-x-5 top-0 h-16 rounded-b-[1.4rem] opacity-80 blur-2xl'

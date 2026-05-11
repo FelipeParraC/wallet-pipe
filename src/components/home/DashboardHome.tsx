@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import type { Category, Transaction, Wallet } from '@/interfaces'
 import { RecentTransactionItem, WalletItem } from '@/components'
 import { CurrencyDisplay } from '@/components/CurrencyDisplay'
+import { isSavingsBoxInternalTransfer } from '@/lib/savings-box'
 
 interface DashboardHomeProps {
     transactions: Transaction[] | null
@@ -57,17 +58,18 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
     }
 
     const visibleTransactions = transactions.filter((transaction) => transaction.isVisible)
-    const recentTransactions = visibleTransactions.slice(0, 4)
+    const dashboardTransactions = visibleTransactions.filter((transaction) => !isSavingsBoxInternalTransfer(transaction, wallets))
+    const recentTransactions = dashboardTransactions.slice(0, 4)
 
     const totalAvailable = cycleSummary?.summary.totalAvailable ?? wallets
         .filter((wallet) => wallet.includeInTotal)
         .reduce((sum, wallet) => sum + wallet.balance, 0)
 
     const projectedAvailable = cycleSummary?.summary.projectedAvailable ?? totalAvailable
-    const totalExpenses = cycleSummary?.summary.periodExpenses ?? visibleTransactions
+    const totalExpenses = cycleSummary?.summary.periodExpenses ?? dashboardTransactions
         .filter((transaction) => transaction.amount < 0 && transaction.type !== 'TRANSFERENCIA')
         .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0)
-    const totalIncome = cycleSummary?.summary.periodIncome ?? visibleTransactions
+    const totalIncome = cycleSummary?.summary.periodIncome ?? dashboardTransactions
         .filter((transaction) => transaction.amount > 0 && transaction.type !== 'TRANSFERENCIA')
         .reduce((sum, transaction) => sum + transaction.amount, 0)
     const totalCreditDebt = cycleSummary?.summary.totalCreditDebt ?? wallets
@@ -79,7 +81,7 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
     const cardSummaryTitle = pendingCreditCardTotal > 0 ? 'Tarjetas a pagar' : 'Deuda total tarjetas'
     const cardSummaryAmount = pendingCreditCardTotal > 0 ? pendingCreditCardTotal : totalCreditDebt
     const activeWallets = wallets
-        .filter((wallet) => wallet.isActive)
+        .filter((wallet) => wallet.isActive && !wallet.isSavingsBox)
         .sort((a, b) => {
             const aIsCredit = a.type === 'Tarjeta de Crédito'
             const bIsCredit = b.type === 'Tarjeta de Crédito'

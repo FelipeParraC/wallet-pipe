@@ -17,9 +17,6 @@ export default async function BilleterasPage() {
 
     const activeWallets = wallets.filter((wallet) => wallet.isActive)
     const parentWallets = activeWallets.filter((wallet) => !wallet.isSavingsBox)
-    const savingsBoxesByParent = new Map(
-        parentWallets.map((wallet) => [wallet.id, activeWallets.filter((item) => item.isSavingsBox && item.parentWalletId === wallet.id)])
-    )
 
     return (
         <div className="space-y-6">
@@ -32,16 +29,9 @@ export default async function BilleterasPage() {
 
             <WalletsTotalBalance wallets={ wallets } cycleSummary={ cycleSummary } />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {parentWallets.map(( wallet ) => (
-                    <div key={ wallet.id } className='space-y-3'>
-                        <WalletCard wallet={ wallet } />
-                        {(savingsBoxesByParent.get(wallet.id) ?? []).map((box) => (
-                            <div key={box.id} className='pl-3'>
-                                <WalletCard wallet={ box } />
-                            </div>
-                        ))}
-                    </div>
+                    <WalletCard key={ wallet.id } wallet={ wallet } />
                 ))}
 
                 <NewWallet />
