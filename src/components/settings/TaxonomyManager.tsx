@@ -188,12 +188,11 @@ const DeleteButton = ({
     )
 }
 
-export const TaxonomyManager = ({ categories, tags }: { categories: Category[]; tags: Tag[] }) => {
+export const CategoryManager = ({ categories }: { categories: Category[] }) => {
     const customCategories = categories.filter((category) => !category.isSystem)
 
     return (
-        <div className='grid gap-4 xl:grid-cols-2'>
-            <section className='glass-panel rounded-[1.75rem] p-5'>
+        <section className='glass-panel rounded-[1.75rem] p-5'>
                 <div className='mb-5'>
                     <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Clasificación</p>
                     <h2 className='mt-2 text-lg font-semibold text-white'>Categorías</h2>
@@ -222,9 +221,12 @@ export const TaxonomyManager = ({ categories, tags }: { categories: Category[]; 
                         </div>
                     ))}
                 </div>
-            </section>
+        </section>
+    )
+}
 
-            <section className='glass-panel rounded-[1.75rem] p-5'>
+export const TagManager = ({ tags }: { tags: Tag[] }) => (
+    <section className='glass-panel rounded-[1.75rem] p-5'>
                 <div className='mb-5'>
                     <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Etiquetas</p>
                     <h2 className='mt-2 text-lg font-semibold text-white'>Tags</h2>
@@ -250,7 +252,14 @@ export const TaxonomyManager = ({ categories, tags }: { categories: Category[]; 
                         </div>
                     ))}
                 </div>
-            </section>
+    </section>
+)
+
+export const TaxonomyManager = ({ categories, tags }: { categories: Category[]; tags: Tag[] }) => {
+    return (
+        <div className='grid gap-4 xl:grid-cols-2'>
+            <CategoryManager categories={categories} />
+            <TagManager tags={tags} />
         </div>
     )
 }

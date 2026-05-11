@@ -14,6 +14,9 @@ export * from './settings/DebtForm'
 export * from './settings/ScheduledPlanForm'
 export * from './settings/TagForm'
 export * from './settings/TaxonomyManager'
+export * from './settings/ProfileSettingsForm'
+export * from './settings/SecuritySettingsPanel'
+export * from './settings/SettingsPrimitives'
 
 
 export * from './auth/LoginForm'
