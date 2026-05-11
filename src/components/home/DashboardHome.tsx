@@ -80,6 +80,16 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
     const pendingCreditCardTotal = cycleSummary?.summary.pendingCreditCardTotal ?? cycleSummary?.summary.pendingInstallmentTotal ?? 0
     const cardSummaryTitle = pendingCreditCardTotal > 0 ? 'Tarjetas a pagar' : 'Deuda total tarjetas'
     const cardSummaryAmount = pendingCreditCardTotal > 0 ? pendingCreditCardTotal : totalCreditDebt
+    const savingsBoxTotalsByParent = new Map(
+        wallets
+            .filter((wallet) => wallet.isActive && !wallet.isSavingsBox)
+            .map((wallet) => [
+                wallet.id,
+                wallets
+                    .filter((item) => item.isActive && item.isSavingsBox && item.parentWalletId === wallet.id)
+                    .reduce((sum, item) => sum + item.balance, 0),
+            ])
+    )
     const activeWallets = wallets
         .filter((wallet) => wallet.isActive && !wallet.isSavingsBox)
         .sort((a, b) => {
@@ -148,7 +158,11 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
                                 Aún no hay cuentas activas.
                             </div>
                         ) : activeWallets.map((wallet) => (
-                            <WalletItem key={wallet.id} wallet={wallet} />
+                            <WalletItem
+                                key={wallet.id}
+                                wallet={wallet}
+                                displayBalance={wallet.balance + (savingsBoxTotalsByParent.get(wallet.id) ?? 0)}
+                            />
                         ))}
                     </CardContent>
                 </Card>

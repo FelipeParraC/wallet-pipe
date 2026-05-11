@@ -7,12 +7,14 @@ import { CreditCard, PiggyBank, WalletCards } from 'lucide-react'
 
 interface WalletItemProps {
     wallet: Wallet
+    displayBalance?: number
 }
 
-export const WalletItem = ({ wallet }: WalletItemProps) => {
+export const WalletItem = ({ wallet, displayBalance }: WalletItemProps) => {
     const isCreditCard = wallet.type === 'Tarjeta de Crédito'
     const Icon = isCreditCard ? CreditCard : wallet.isSavingsBox ? PiggyBank : WalletCards
     const balanceLabel = isCreditCard ? 'Deuda' : wallet.isSavingsBox ? 'Cajita' : 'Saldo'
+    const balance = displayBalance ?? wallet.balance
 
     return (
         <Link
@@ -36,7 +38,7 @@ export const WalletItem = ({ wallet }: WalletItemProps) => {
                 </span>
             </div>
             <CurrencyDisplay
-                amount={ wallet.balance }
+                amount={ balance }
                 showDecimals={ true }
                 className='mt-3 truncate text-lg font-semibold text-white'
             />

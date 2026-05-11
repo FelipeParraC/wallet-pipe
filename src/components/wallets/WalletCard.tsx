@@ -6,14 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 
 interface WalletCardProps {
     wallet: Wallet
+    displayBalance?: number
 }
 
 
-export const WalletCard = ({ wallet }: WalletCardProps) => {
+export const WalletCard = ({ wallet, displayBalance }: WalletCardProps) => {
 
     const Icon = getIcon( wallet.type )
     const isCreditCard = wallet.type === 'Tarjeta de Crédito'
     const isSavingsBox = wallet.isSavingsBox
+    const balance = displayBalance ?? wallet.balance
 
     return (
         <Link href={`/billeteras/${wallet.id}`} className='block'>
@@ -32,7 +34,7 @@ export const WalletCard = ({ wallet }: WalletCardProps) => {
                     </span>
                 </CardHeader>
                 <CardContent className='relative'>
-                    <CurrencyDisplay amount={wallet.balance} showDecimals={true} className='text-2xl font-bold text-white md:text-3xl' />
+                    <CurrencyDisplay amount={balance} showDecimals={true} className='text-2xl font-bold text-white md:text-3xl' />
                     <p className='mt-2 text-xs uppercase tracking-[0.24em] text-slate-500'>
                         {isCreditCard ? 'Deuda actual de la tarjeta' : isSavingsBox ? 'Cajita de ahorro' : wallet.type}
                     </p>

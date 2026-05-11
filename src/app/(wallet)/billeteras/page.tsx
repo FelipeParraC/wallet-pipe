@@ -17,6 +17,14 @@ export default async function BilleterasPage() {
 
     const activeWallets = wallets.filter((wallet) => wallet.isActive)
     const parentWallets = activeWallets.filter((wallet) => !wallet.isSavingsBox)
+    const savingsBoxTotalsByParent = new Map(
+        parentWallets.map((wallet) => [
+            wallet.id,
+            activeWallets
+                .filter((item) => item.isSavingsBox && item.parentWalletId === wallet.id)
+                .reduce((sum, item) => sum + item.balance, 0),
+        ])
+    )
 
     return (
         <div className="space-y-6">
@@ -31,7 +39,11 @@ export default async function BilleterasPage() {
 
             <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {parentWallets.map(( wallet ) => (
-                    <WalletCard key={ wallet.id } wallet={ wallet } />
+                    <WalletCard
+                        key={ wallet.id }
+                        wallet={ wallet }
+                        displayBalance={ wallet.balance + (savingsBoxTotalsByParent.get(wallet.id) ?? 0) }
+                    />
                 ))}
 
                 <NewWallet />
