@@ -2,7 +2,7 @@ export const revalidate = 0
 
 
 import { getCategories, getTransactionsByWalletId, getWalletById, getWallets } from '@/actions'
-import { BackButton, BalanceEvolutionChart, DailyExpensesChart, EditWalletButton, NewTransactionFloatingButton, TransactionsList, TripsAvailable, WalletInfo } from '@/components'
+import { BackButton, BalanceEvolutionChart, DailyExpensesChart, EditWalletButton, NewTransactionFloatingButton, TransactionsList, TripsAvailable, WalletInfo, WalletSavingsBoxesSection } from '@/components'
 import { redirect } from 'next/navigation'
 
 interface Props {
@@ -50,6 +50,8 @@ export default async function BilleteraPage({ params }: Props) {
             </div>
 
             <WalletInfo wallet={ wallet } />
+
+            <WalletSavingsBoxesSection wallet={wallet} wallets={wallets ?? []} />
 
             {wallet.type !== 'Transporte' ? (
                 <>

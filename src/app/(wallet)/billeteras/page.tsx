@@ -2,7 +2,7 @@ export const revalidate = 0
 
 
 import { getCurrentCycleSummary, getWallets } from '@/actions'
-import { NewSavingsBox, NewWallet, SavingsBoxForm, WalletCard, WalletsTotalBalance } from '@/components'
+import { NewWallet, WalletCard, WalletsTotalBalance } from '@/components'
 
 export default async function BilleterasPage() {
 
@@ -27,7 +27,6 @@ export default async function BilleterasPage() {
                 <p className='text-xs uppercase tracking-[0.32em] text-slate-500'>Cuentas</p>
                 <div className='mt-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
                     <h1 className="text-2xl font-semibold text-white md:text-3xl">Billeteras</h1>
-                    <SavingsBoxForm wallets={wallets} />
                 </div>
             </div>
 
@@ -37,19 +36,8 @@ export default async function BilleterasPage() {
                 {parentWallets.map(( wallet ) => (
                     <div key={ wallet.id } className='space-y-3'>
                         <WalletCard wallet={ wallet } />
-                        {!wallet.isSavingsBox && wallet.type !== 'Tarjeta de Crédito' && wallet.type !== 'Transporte' && (
-                            <SavingsBoxForm
-                                wallets={wallets}
-                                defaultParentWalletId={wallet.id}
-                                trigger={(
-                                    <div className='rounded-[1.25rem] border border-dashed border-sky-300/20 bg-sky-300/[0.04] px-4 py-3 text-center text-sm font-medium text-sky-100 transition-colors hover:border-sky-300/40 hover:bg-sky-300/[0.08]'>
-                                        Crear cajita en esta cuenta
-                                    </div>
-                                )}
-                            />
-                        )}
                         {(savingsBoxesByParent.get(wallet.id) ?? []).map((box) => (
-                            <div key={box.id} className='pl-4'>
+                            <div key={box.id} className='pl-3'>
                                 <WalletCard wallet={ box } />
                             </div>
                         ))}
@@ -57,7 +45,6 @@ export default async function BilleterasPage() {
                 ))}
 
                 <NewWallet />
-                <NewSavingsBox wallets={wallets} />
 
             </div>
         </div>

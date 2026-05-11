@@ -13,9 +13,10 @@ interface SavingsBoxFormProps {
   wallets: Wallet[]
   defaultParentWalletId?: string
   trigger?: ReactNode
+  hideParentSelector?: boolean
 }
 
-export const SavingsBoxForm = ({ wallets, defaultParentWalletId, trigger }: SavingsBoxFormProps) => {
+export const SavingsBoxForm = ({ wallets, defaultParentWalletId, trigger, hideParentSelector = false }: SavingsBoxFormProps) => {
   const router = useRouter()
   const parentWallets = useMemo(
     () => wallets.filter((wallet) => wallet.isActive && !wallet.isSavingsBox && wallet.type !== 'Tarjeta de Crédito' && wallet.type !== 'Transporte'),
@@ -93,16 +94,20 @@ export const SavingsBoxForm = ({ wallets, defaultParentWalletId, trigger }: Savi
         ) : (
           <div className='grid gap-4'>
             <div className='grid gap-2'>
-              <Label>Cuenta donde estará la cajita</Label>
-              <Select value={parentWalletId} onValueChange={setParentWalletId}>
-                <SelectTrigger><SelectValue placeholder='Elige una cuenta' /></SelectTrigger>
-                <SelectContent>
-                  {parentWallets.map((wallet) => <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {!hideParentSelector && (
+                <>
+                  <Label>Cuenta donde estará la cajita</Label>
+                  <Select value={parentWalletId} onValueChange={setParentWalletId}>
+                    <SelectTrigger><SelectValue placeholder='Elige una cuenta' /></SelectTrigger>
+                    <SelectContent>
+                      {parentWallets.map((wallet) => <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
               {selectedParentWallet && (
                 <div className='rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-sm text-slate-300'>
-                  Disponible en {selectedParentWallet.name}:{' '}
+                  Disponible {hideParentSelector ? 'en esta cuenta' : `en ${selectedParentWallet.name}`}:{' '}
                   <CurrencyDisplay amount={selectedParentWallet.balance} showDecimals={true} className='inline-block font-semibold text-white' />
                 </div>
               )}
