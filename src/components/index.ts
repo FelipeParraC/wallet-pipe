@@ -1,5 +1,6 @@
 
 export * from './BackButton'
+export * from './AppLogoMark'
 export * from './CurrencyDisplay'
 export * from './DailyTransactionsChart'
 export * from './Navbar'

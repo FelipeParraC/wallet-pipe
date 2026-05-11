@@ -1,12 +1,12 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BarChart3, CreditCard, LayoutDashboard, LogOut, Menu, Plus, Receipt, Settings2, Wallet } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui'
 import { logout } from '@/actions'
 import { useSession } from 'next-auth/react'
+import { AppLogoMark } from './AppLogoMark'
 
 const navItems = [
     { name: 'Inicio', href: '/', icon: LayoutDashboard },
@@ -49,15 +49,7 @@ export const Navbar = () => {
                         href='/'
                         className='glass-pill flex h-14 items-center gap-3 rounded-[1.75rem] px-3 text-white sm:px-4'
                     >
-                        <Image
-                            src='/logo1024.png'
-                            alt='Wallet Pipe'
-                            width={1024}
-                            height={1024}
-                            priority
-                            sizes='40px'
-                            className='h-10 w-10 rounded-[1.05rem] object-cover shadow-[0_12px_28px_rgba(14,165,233,0.24)]'
-                        />
+                        <AppLogoMark />
                         <div className='hidden sm:block'>
                             <p className='text-[11px] uppercase tracking-[0.28em] text-slate-400'>Wallet Pipe</p>
                             <p className='text-sm font-semibold text-slate-100'>{appName}</p>
