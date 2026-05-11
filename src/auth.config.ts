@@ -25,6 +25,10 @@ const toAuthUser = (user: {
 })
 
 export const authConfig: NextAuthConfig = {
+    trustHost: true,
+    session: {
+        strategy: 'jwt',
+    },
     pages: {
         signIn: '/auth/login',
         newUser: '/auth/register'
@@ -76,10 +80,20 @@ export const authConfig: NextAuthConfig = {
             return true
         },
         async jwt({ token, user }) {
+            if (user?.id) {
+                token.sub = user.id
+            }
+
             const email = user?.email?.toLowerCase() ?? token.email?.toLowerCase() ?? (token.data as AuthUser | undefined)?.email?.toLowerCase()
+            const userId = user?.id ?? token.sub ?? (token.data as AuthUser | undefined)?.id
 
             if (email) {
                 const userDB = await prisma.user.findUnique({ where: { email } })
+                if (userDB) {
+                    token.data = toAuthUser(userDB)
+                }
+            } else if (userId) {
+                const userDB = await prisma.user.findUnique({ where: { id: userId } })
                 if (userDB) {
                     token.data = toAuthUser(userDB)
                 }
@@ -90,7 +104,9 @@ export const authConfig: NextAuthConfig = {
             return token
         },
         session({ token, session }) {
-            session.user = token.data as AuthUser
+            if (token.data) {
+                session.user = token.data as AuthUser
+            }
             return session
         },
     },

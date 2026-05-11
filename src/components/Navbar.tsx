@@ -5,8 +5,14 @@ import { usePathname } from 'next/navigation'
 import { BarChart3, CreditCard, LayoutDashboard, LogOut, Menu, Plus, Receipt, Settings2, Wallet } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui'
 import { logout } from '@/actions'
-import { useSession } from 'next-auth/react'
 import { AppLogoMark } from './AppLogoMark'
+
+interface NavbarUser {
+    email: string
+    name: string
+    nickname: string
+    image?: string | null
+}
 
 const navItems = [
     { name: 'Inicio', href: '/', icon: LayoutDashboard },
@@ -24,15 +30,9 @@ const mobileDockItems = [
     { name: 'Planeación', href: '/planeacion', icon: CreditCard },
 ]
 
-export const Navbar = () => {
+export const Navbar = ({ user }: { user: NavbarUser }) => {
     const pathname = usePathname()
-    const { data: session } = useSession()
-    const user = session?.user
     const hideMobileNewAction = pathname === '/movimientos/nueva' || pathname.startsWith('/movimientos/editar')
-
-    if (!user) {
-        return null
-    }
 
     const onClickLogout = async () => {
         await logout()

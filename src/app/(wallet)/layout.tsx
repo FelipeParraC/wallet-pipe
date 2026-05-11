@@ -26,7 +26,12 @@ export default async function WalletLayout({
                 <div className='absolute right-[-6rem] top-20 h-64 w-64 rounded-full bg-blue-500/14 blur-3xl' />
                 <div className='absolute bottom-[-8rem] left-1/3 h-72 w-72 rounded-full bg-slate-500/12 blur-3xl' />
             </div>
-            <Navbar />
+            <Navbar user={{
+                email: session.user.email,
+                name: session.user.name,
+                nickname: session.user.nickname,
+                image: session.user.image,
+            }} />
 
             <main className="mx-auto max-w-7xl px-3 py-6 pb-36 sm:px-4 sm:py-8 lg:px-6 lg:pb-10">
                 {children}
