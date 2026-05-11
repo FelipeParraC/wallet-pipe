@@ -2,7 +2,7 @@ export const revalidate = 0
 
 
 import { getCurrentCycleSummary, getWallets } from '@/actions'
-import { NewWallet, SavingsBoxForm, WalletCard, WalletsTotalBalance } from '@/components'
+import { NewSavingsBox, NewWallet, SavingsBoxForm, WalletCard, WalletsTotalBalance } from '@/components'
 
 export default async function BilleterasPage() {
 
@@ -37,6 +37,17 @@ export default async function BilleterasPage() {
                 {parentWallets.map(( wallet ) => (
                     <div key={ wallet.id } className='space-y-3'>
                         <WalletCard wallet={ wallet } />
+                        {!wallet.isSavingsBox && wallet.type !== 'Tarjeta de Crédito' && wallet.type !== 'Transporte' && (
+                            <SavingsBoxForm
+                                wallets={wallets}
+                                defaultParentWalletId={wallet.id}
+                                trigger={(
+                                    <div className='rounded-[1.25rem] border border-dashed border-sky-300/20 bg-sky-300/[0.04] px-4 py-3 text-center text-sm font-medium text-sky-100 transition-colors hover:border-sky-300/40 hover:bg-sky-300/[0.08]'>
+                                        Crear cajita en esta cuenta
+                                    </div>
+                                )}
+                            />
+                        )}
                         {(savingsBoxesByParent.get(wallet.id) ?? []).map((box) => (
                             <div key={box.id} className='pl-4'>
                                 <WalletCard wallet={ box } />
@@ -46,6 +57,7 @@ export default async function BilleterasPage() {
                 ))}
 
                 <NewWallet />
+                <NewSavingsBox wallets={wallets} />
 
             </div>
         </div>
