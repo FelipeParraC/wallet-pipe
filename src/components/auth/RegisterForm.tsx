@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
-import { Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
-import { login, loginWithGoogle, register } from '@/actions'
+import { Alert, AlertDescription, Button, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
+import { login, register } from '@/actions'
+import { AuthDivider, AuthShell, BackToOptionsButton, EmailButton, GoogleButton } from './AuthPrimitives'
 
 const formSchema = z.object({
     name: z.string().min(2, {
@@ -29,6 +30,9 @@ const formSchema = z.object({
 
 export function RegisterForm() {
     const [error, setError] = useState<string | null>(null)
+    const [mode, setMode] = useState<'options' | 'email'>('options')
+    const [step, setStep] = useState<1 | 2>(1)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -41,121 +45,155 @@ export function RegisterForm() {
         },
     })
 
+    const goToProfileStep = async () => {
+        setError(null)
+        const isValid = await form.trigger(['email', 'password', 'confirmPassword'])
+        if (isValid) setStep(2)
+    }
+
+    const backToOptions = () => {
+        setMode('options')
+        setStep(1)
+        setError(null)
+        form.clearErrors()
+    }
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setError(null)
+        setIsSubmitting(true)
 
         const { name, nickname, email, password } = values
-        const resp = await register({ name, nickname, email, password })
+        try {
+            const resp = await register({ name, nickname, email, password })
 
-        // Si el registro falla
-        if ( !resp.ok ) {
-            setError( resp.message )
-            return
+            if ( !resp.ok ) {
+                setError( resp.message )
+                return
+            }
+
+            await login( email.toLowerCase(), password )
+            window.location.replace('/')
+        } finally {
+            setIsSubmitting(false)
         }
-
-        await login( email.toLowerCase(), password )
-        window.location.replace('/')
     }
 
     return (
-        <Card className='w-full max-w-md mx-auto'>
-            <CardHeader className='space-y-1'>
-                <CardTitle className='text-2xl text-center'>Regístrate</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
-                        <FormField
-                            control={form.control}
-                            name='name'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Nombre</FormLabel>
-                                    <FormControl>
-                                        <Input autoFocus placeholder='Tu nombre' {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='nickname'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Apodo</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='Tu apodo' {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='email'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='tu@email.com' {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='password'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Contraseña</FormLabel>
-                                    <FormControl>
-                                        <Input type='password' placeholder='••••••' {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='confirmPassword'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Confirmar Contraseña</FormLabel>
-                                    <FormControl>
-                                        <Input type='password' placeholder='••••••' {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        {error && (
-                            <Alert variant='destructive'>
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        )}
-                        <Button type='submit' className='w-full'>
-                            Registrarse
-                        </Button>
-                    </form>
-                </Form>
-                <div className='relative py-3 text-center text-xs uppercase tracking-[0.22em] text-slate-500'>
-                    o
-                </div>
-                <form action={loginWithGoogle}>
-                    <Button variant='outline' className='w-full' type='submit'>
-                        Continuar con Google
-                    </Button>
-                </form>
-                <div className='mt-4 text-center text-sm'>
+        <AuthShell
+            title='Crea tu cuenta'
+            subtitle='Elige cómo quieres empezar.'
+            footer={(
+                <>
                     ¿Ya tienes una cuenta?{' '}
-                    <Link href='/auth/login' className='text-primary hover:underline'>
+                    <Link href='/auth/login' className='text-sky-300 hover:underline'>
                         Inicia sesión
                     </Link>
+                </>
+            )}
+        >
+            {mode === 'options' ? (
+                <div className='space-y-3'>
+                    <GoogleButton />
+                    <AuthDivider />
+                    <EmailButton label='Continuar con correo' onClick={() => setMode('email')} />
                 </div>
-            </CardContent>
-        </Card>
+            ) : (
+                <div className='space-y-4'>
+                    <div className='flex items-center justify-between gap-3'>
+                        <BackToOptionsButton onClick={step === 1 ? backToOptions : () => setStep(1)} />
+                        <span className='text-xs font-medium text-slate-500'>Paso {step} de 2</span>
+                    </div>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+                            {step === 1 ? (
+                                <>
+                                    <FormField
+                                        control={form.control}
+                                        name='email'
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Email</FormLabel>
+                                                <FormControl>
+                                                    <Input autoFocus inputMode='email' autoComplete='email' placeholder='tu@email.com' {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name='password'
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Contraseña</FormLabel>
+                                                <FormControl>
+                                                    <Input type='password' autoComplete='new-password' placeholder='••••••' {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name='confirmPassword'
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Confirmar contraseña</FormLabel>
+                                                <FormControl>
+                                                    <Input type='password' autoComplete='new-password' placeholder='••••••' {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button type='button' className='w-full' onClick={goToProfileStep}>
+                                        Continuar
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <FormField
+                                        control={form.control}
+                                        name='name'
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Nombre</FormLabel>
+                                                <FormControl>
+                                                    <Input autoFocus autoComplete='name' placeholder='Tu nombre' {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name='nickname'
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Apodo</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder='Ej. Pipe' {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <p className='text-xs text-slate-500'>Usaremos tu apodo para saludarte en el dashboard.</p>
+                                    {error && (
+                                        <Alert variant='destructive'>
+                                            <AlertDescription>{error}</AlertDescription>
+                                        </Alert>
+                                    )}
+                                    <Button type='submit' className='w-full' disabled={isSubmitting}>
+                                        {isSubmitting ? 'Creando...' : 'Crear cuenta'}
+                                    </Button>
+                                </>
+                            )}
+                        </form>
+                    </Form>
+                </div>
+            )}
+        </AuthShell>
     )
 }
 

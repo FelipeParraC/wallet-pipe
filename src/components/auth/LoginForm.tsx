@@ -1,13 +1,14 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
-import { Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
+import { Alert, AlertDescription, Button, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
 import Link from 'next/link'
 import { useFormState, useFormStatus } from 'react-dom'
-import { authenticate, loginWithGoogle } from '@/actions'
-import { useEffect } from 'react'
+import { authenticate } from '@/actions'
+import { AuthDivider, AuthShell, BackToOptionsButton, EmailButton, GoogleButton } from './AuthPrimitives'
 
 const formSchema = z.object({
     email: z.string().email({
@@ -21,6 +22,7 @@ const formSchema = z.object({
 export const LoginForm = () => {
 
     const [state, dispatch] = useFormState(authenticate, undefined)
+    const [showEmailForm, setShowEmailForm] = useState(false)
 
     useEffect(() => {
         if ( state === 'Success' ) {
@@ -38,63 +40,71 @@ export const LoginForm = () => {
     })
 
     return (
-        <Card className='w-full max-w-md mx-auto'>
-            <CardHeader className='space-y-1'>
-                <CardTitle className='text-2xl text-center'>Ingresar</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Form {...form}>
-                    <form action={ dispatch } className='space-y-4'>
-                        <FormField
-                            control={form.control}
-                            name='email'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input autoFocus placeholder='tu@email.com' {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='password'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Contraseña</FormLabel>
-                                    <FormControl>
-                                        <Input type='password' placeholder='••••••' {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        {state === 'Invalid credentials.' && (
-                            <Alert variant='destructive'>
-                                <AlertDescription>Las credenciales no son correctas</AlertDescription>
-                            </Alert>
-                        )}
-                        <LoginButton />
-                    </form>
-                </Form>
-                <div className='relative py-3 text-center text-xs uppercase tracking-[0.22em] text-slate-500'>
-                    o
-                </div>
-                <form action={loginWithGoogle}>
-                    <Button variant='outline' className='w-full' type='submit'>
-                        Continuar con Google
-                    </Button>
-                </form>
-                <div className='mt-4 text-center text-sm'>
+        <AuthShell
+            title='Entra a Wallet Pipe'
+            subtitle='Elige cómo quieres entrar.'
+            footer={(
+                <>
                     ¿No tienes una cuenta?{' '}
-                    <Link href='/auth/register' className='text-primary hover:underline'>
+                    <Link href='/auth/register' className='text-sky-300 hover:underline'>
                         Regístrate
                     </Link>
+                </>
+            )}
+        >
+            {!showEmailForm ? (
+                <div className='space-y-3'>
+                    <GoogleButton />
+                    <AuthDivider />
+                    <EmailButton label='Ingresar con correo' onClick={() => setShowEmailForm(true)} />
                 </div>
-            </CardContent>
-        </Card>
+            ) : (
+                <div className='space-y-4'>
+                    <BackToOptionsButton onClick={() => setShowEmailForm(false)} />
+                    <Form {...form}>
+                        <form action={ dispatch } className='space-y-4'>
+                            <FormField
+                                control={form.control}
+                                name='email'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input autoFocus inputMode='email' autoComplete='email' placeholder='tu@email.com' {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='password'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Contraseña</FormLabel>
+                                        <FormControl>
+                                            <Input type='password' autoComplete='current-password' placeholder='••••••' {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            {state === 'Invalid credentials.' && (
+                                <Alert variant='destructive'>
+                                    <AlertDescription>Email o contraseña incorrectos.</AlertDescription>
+                                </Alert>
+                            )}
+                            {state && state !== 'Success' && state !== 'Invalid credentials.' && (
+                                <Alert variant='destructive'>
+                                    <AlertDescription>No pudimos iniciar sesión. Inténtalo otra vez.</AlertDescription>
+                                </Alert>
+                            )}
+                            <LoginButton />
+                        </form>
+                    </Form>
+                </div>
+            )}
+        </AuthShell>
     )
 }
 
@@ -107,7 +117,7 @@ const LoginButton = () => {
             className='w-full text-white transition-all'
             disabled={ pending }
         >
-            Ingresar
+            {pending ? 'Entrando...' : 'Ingresar'}
         </Button>
     )
 }

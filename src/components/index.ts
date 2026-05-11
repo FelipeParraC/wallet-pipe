@@ -18,6 +18,7 @@ export * from './settings/TaxonomyManager'
 export * from './auth/LoginForm'
 export * from './auth/CompleteProfileForm'
 export * from './auth/RegisterForm'
+export * from './auth/AuthPrimitives'
 
 
 export * from './home/DashboardHome'

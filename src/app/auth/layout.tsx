@@ -18,8 +18,8 @@ export default async function WalletLayout({
     }
 
     return (
-        <main className="container mx-auto flex min-h-screen items-center justify-center px-4 py-10">
-                {children}
+        <main className="mx-auto flex min-h-screen w-full items-center justify-center px-4 py-8">
+            {children}
         </main>
     )
 }

@@ -15,7 +15,7 @@ export default async function CompletarPerfilPage() {
 
   return (
     <main className='container mx-auto flex min-h-screen items-center justify-center px-4 py-10'>
-      <CompleteProfileForm defaultName={session.user.name} />
+      <CompleteProfileForm defaultName={session.user.name} image={session.user.image} />
     </main>
   )
 }
