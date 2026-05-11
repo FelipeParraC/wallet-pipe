@@ -28,7 +28,7 @@ export const AuthShell = ({
 }) => (
   <Card className='mx-auto w-full max-w-[23rem] overflow-hidden rounded-[1.75rem] border-white/10 bg-slate-950/62 shadow-[0_24px_70px_rgba(2,6,23,0.34)] backdrop-blur-2xl'>
     <CardHeader className='items-center px-5 pb-3 pt-6 text-center'>
-      <AppLogoMark className='mb-3 h-14 w-14 rounded-[1.25rem]' />
+      <AppLogoMark className='mb-3 h-14 w-14' />
       <CardTitle className='text-2xl text-white'>{title}</CardTitle>
       <p className='max-w-xs text-sm leading-5 text-slate-400'>{subtitle}</p>
     </CardHeader>
