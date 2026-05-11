@@ -50,12 +50,13 @@ export const Navbar = () => {
                         className='glass-pill flex h-14 items-center gap-3 rounded-[1.75rem] px-3 text-white sm:px-4'
                     >
                         <Image
-                            src='/logo192.png'
+                            src='/logo1024.png'
                             alt='Wallet Pipe'
-                            width={42}
-                            height={42}
+                            width={1024}
+                            height={1024}
                             priority
-                            className='h-10 w-10 rounded-[1.05rem] shadow-[0_12px_28px_rgba(14,165,233,0.24)]'
+                            sizes='40px'
+                            className='h-10 w-10 rounded-[1.05rem] object-cover shadow-[0_12px_28px_rgba(14,165,233,0.24)]'
                         />
                         <div className='hidden sm:block'>
                             <p className='text-[11px] uppercase tracking-[0.28em] text-slate-400'>Wallet Pipe</p>

@@ -26,15 +26,16 @@ export const AuthShell = ({
   children: ReactNode
   footer?: ReactNode
 }) => (
-  <Card className='w-full max-w-[23rem] overflow-hidden rounded-[1.75rem] border-white/10 bg-slate-950/62 shadow-[0_24px_70px_rgba(2,6,23,0.34)] backdrop-blur-2xl'>
+  <Card className='mx-auto w-full max-w-[23rem] overflow-hidden rounded-[1.75rem] border-white/10 bg-slate-950/62 shadow-[0_24px_70px_rgba(2,6,23,0.34)] backdrop-blur-2xl'>
     <CardHeader className='items-center px-5 pb-3 pt-6 text-center'>
       <Image
-        src='/logo192.png'
+        src='/logo1024.png'
         alt='Wallet Pipe'
-        width={56}
-        height={56}
+        width={1024}
+        height={1024}
         priority
-        className='mb-3 h-14 w-14 rounded-[1.25rem] shadow-[0_16px_32px_rgba(14,165,233,0.25)]'
+        sizes='56px'
+        className='mb-3 h-14 w-14 rounded-[1.25rem] object-cover shadow-[0_16px_32px_rgba(14,165,233,0.25)]'
       />
       <CardTitle className='text-2xl text-white'>{title}</CardTitle>
       <p className='max-w-xs text-sm leading-5 text-slate-400'>{subtitle}</p>
