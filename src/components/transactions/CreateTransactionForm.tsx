@@ -94,7 +94,7 @@ const movementMeta: Record<MovementKind, { label: string; description: string; i
 export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: CreateTransactionFormProps) => {
     const router = useRouter()
     const activeWallets = wallets.filter((item) => item.isActive)
-    const normalWallets = activeWallets.filter((item) => item.type !== 'Tarjeta de Crédito' && item.type !== 'Transporte')
+    const normalWallets = activeWallets.filter((item) => !item.isSavingsBox && item.type !== 'Tarjeta de Crédito' && item.type !== 'Transporte')
     const creditCards = activeWallets.filter((item) => item.type === 'Tarjeta de Crédito')
     const transportWallets = activeWallets.filter((item) => item.type === 'Transporte')
     const defaultKind: MovementKind = wallet?.type === 'Tarjeta de Crédito'

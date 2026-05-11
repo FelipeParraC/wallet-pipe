@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { moneyInputToMinorUnits } from '@/lib/finance'
@@ -65,6 +66,10 @@ export const createSavingsBox = async (data: CreateSavingsBoxInput) => {
 
       return savingsBox
     })
+
+    revalidatePath('/billeteras')
+    revalidatePath(`/billeteras/${data.parentWalletId}`)
+    revalidatePath(`/billeteras/${data.parentWalletId}/cajitas`)
 
     return actionSuccess({ wallet }, 'Cajita creada')
   } catch (error) {

@@ -6,6 +6,7 @@ import type { Category, Transaction, Wallet } from "@/interfaces"
 import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 import { CurrencyDisplay } from '../CurrencyDisplay'
 import { getAmountColor, getTransactionTypeLabel } from '@/utils'
+import { isSavingsBoxInternalTransfer } from '@/lib/savings-box'
 
 interface TransactionCardProps {
     transaction: Transaction
@@ -19,6 +20,7 @@ export const TransactionCard = ({ transaction, categories, wallets, onClick }: T
     const walletName = wallets.find((wallet) => wallet.id === transaction.walletId)?.name
     const fromWalletName = wallets.find((wallet) => wallet.id === transaction.fromWalletId)?.name
     const toWalletName = wallets.find((wallet) => wallet.id === transaction.toWalletId)?.name
+    const isInternalSavingsBoxMovement = isSavingsBoxInternalTransfer(transaction, wallets)
     const accountLabel = transaction.fromWalletId && transaction.toWalletId
         ? `${fromWalletName ?? 'Origen'} → ${toWalletName ?? 'Destino'}`
         : walletName
@@ -41,7 +43,7 @@ export const TransactionCard = ({ transaction, categories, wallets, onClick }: T
             <CardContent>
                 <div className="card-content space-y-2">
                     <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-                        {getTransactionTypeLabel(transaction.type)}
+                        {isInternalSavingsBoxMovement ? 'Movimiento interno' : getTransactionTypeLabel(transaction.type)}
                         {transaction.categoryId ? ` · ${categories.find( c => c.id === transaction.categoryId )?.name ?? 'Sin categoría'}` : ''}
                     </p>
                     {accountLabel && (

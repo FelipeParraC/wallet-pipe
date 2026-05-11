@@ -7,6 +7,7 @@ import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogH
 import { CurrencyDisplay } from '../CurrencyDisplay'
 import { getAmountColor, getTransactionTypeLabel } from '@/utils'
 import { TransactionActions } from './TransactionActions'
+import { isSavingsBoxInternalTransfer } from '@/lib/savings-box'
 
 interface TransactionDetailsModalProps {
     isOpen: boolean
@@ -18,7 +19,8 @@ interface TransactionDetailsModalProps {
     onDelete?: (transaction: Transaction) => void
 }
 
-const relationLabel = (transaction: Transaction) => {
+const relationLabel = (transaction: Transaction, wallets: Wallet[]) => {
+    if (isSavingsBoxInternalTransfer(transaction, wallets)) return 'Movimiento interno'
     if (transaction.scheduledOccurrenceId) return 'Pago programado'
     if (transaction.installmentOccurrenceId) return 'Cuota de tarjeta'
     if (transaction.installmentPlanId) return 'Compra a cuotas'
@@ -27,10 +29,11 @@ const relationLabel = (transaction: Transaction) => {
     return null
 }
 
-const impactLabel = (transaction: Transaction) => {
+const impactLabel = (transaction: Transaction, wallets: Wallet[]) => {
     if (transaction.type === 'INGRESO') return 'Aumenta el saldo de la cuenta.'
     if (transaction.type === 'GASTO') return 'Reduce el saldo de la cuenta.'
     if (transaction.type === 'TRANSPORTE') return 'Reduce el saldo de transporte.'
+    if (isSavingsBoxInternalTransfer(transaction, wallets)) return 'Mueve dinero dentro de la cuenta padre y su cajita.'
     if (transaction.type === 'TRANSFERENCIA') return 'Mueve dinero entre cuentas propias.'
     if (transaction.type === 'TARJETA_CONSUMO') return 'Aumenta la deuda de la tarjeta y reduce el cupo.'
     if (transaction.type === 'PAGO_TARJETA') return 'Reduce saldo de la cuenta origen y deuda de la tarjeta.'
@@ -52,7 +55,8 @@ export const TransactionDetailsModal = ({ isOpen, onClose, transaction, categori
     const walletName = wallets.find((wallet) => wallet.id === transaction.walletId)?.name ?? 'Cuenta no disponible'
     const fromWalletName = wallets.find((wallet) => wallet.id === transaction.fromWalletId)?.name
     const toWalletName = wallets.find((wallet) => wallet.id === transaction.toWalletId)?.name
-    const relation = relationLabel(transaction)
+    const relation = relationLabel(transaction, wallets)
+    const isInternalSavingsBoxMovement = isSavingsBoxInternalTransfer(transaction, wallets)
     const isTransfer = Boolean(transaction.fromWalletId && transaction.toWalletId)
 
     return (
@@ -63,7 +67,7 @@ export const TransactionDetailsModal = ({ isOpen, onClose, transaction, categori
                 <DialogHeader>
                     <DialogTitle className="pr-8 text-2xl">{ transaction.title }</DialogTitle>
                     <DialogDescription>
-                        {getTransactionTypeLabel(transaction.type)} · {categoryName}
+                        {isInternalSavingsBoxMovement ? 'Movimiento interno' : getTransactionTypeLabel(transaction.type)} · {categoryName}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -77,12 +81,12 @@ export const TransactionDetailsModal = ({ isOpen, onClose, transaction, categori
                                         showDecimals={ true }
                                     />
                             </div>
-                            <p className='mt-2 text-sm text-slate-400'>{impactLabel(transaction)}</p>
+                            <p className='mt-2 text-sm text-slate-400'>{impactLabel(transaction, wallets)}</p>
                         </div>
                         <div className='flex flex-wrap gap-2 sm:justify-end'>
                             <span className='inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-slate-200'>
                                 <ReceiptText className='h-3.5 w-3.5' />
-                                {getTransactionTypeLabel(transaction.type)}
+                                {isInternalSavingsBoxMovement ? 'Movimiento interno' : getTransactionTypeLabel(transaction.type)}
                             </span>
                             {relation && (
                                 <span className="inline-flex items-center gap-2 rounded-full bg-sky-400/10 px-3 py-1.5 text-xs font-medium text-sky-200">
