@@ -53,7 +53,7 @@ export const updateCategory = async (data: UpdateCategoryActionInput) => {
         })
 
         revalidatePath('/configuracion')
-        revalidatePath('/transacciones')
+        revalidatePath('/movimientos')
         revalidatePath('/reportes')
         return actionSuccess({ category: updated }, 'Categoría actualizada')
     } catch (error) {

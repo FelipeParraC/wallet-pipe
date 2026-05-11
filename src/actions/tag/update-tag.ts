@@ -40,7 +40,7 @@ export const updateTag = async (data: UpdateTagActionInput) => {
         })
 
         revalidatePath('/configuracion')
-        revalidatePath('/transacciones')
+        revalidatePath('/movimientos')
         return actionSuccess({ tag: updated }, 'Tag actualizado')
     } catch (error) {
         console.error('updateTag', error)

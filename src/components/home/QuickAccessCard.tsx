@@ -3,7 +3,7 @@ import { CreditCard, PieChart, Receipt, Settings, Wallet } from 'lucide-react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '../ui'
 
 const quickLinks = [
-    { name: 'Movimientos', href: '/transacciones', icon: Receipt },
+    { name: 'Movimientos', href: '/movimientos', icon: Receipt },
     { name: 'Cuentas', href: '/billeteras', icon: Wallet },
     { name: 'Planeación', href: '/planeacion', icon: CreditCard },
     { name: 'Reportes', href: '/reportes', icon: PieChart },

@@ -446,7 +446,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
     })
 
     revalidatePath('/')
-    revalidatePath('/transacciones')
+    revalidatePath('/movimientos')
     revalidatePath('/billeteras')
     revalidatePath('/planeacion')
     revalidatePath('/reportes')

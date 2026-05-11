@@ -1221,7 +1221,7 @@ export const PlanningWorkbench = ({
                 <p className='mt-1 text-sm text-slate-400'>Las cuotas nacen desde una compra real con tarjeta para que la deuda y el cupo queden correctos.</p>
               </div>
               <Button asChild>
-                <Link href='/transacciones/nueva'>Crear desde Nuevo movimiento</Link>
+                <Link href='/movimientos/nueva'>Crear desde Nuevo movimiento</Link>
               </Button>
             </div>
           </div>

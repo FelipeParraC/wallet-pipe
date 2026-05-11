@@ -11,6 +11,7 @@ import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, Select
 import { getTransactionTypeLabel } from '@/utils'
 import { DeleteTransactionDialog } from './DeleteTransactionDialog'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { isSavingsBoxInternalTransfer } from '@/lib/savings-box'
 
 interface TransactionsGridProps {
     transactions: Transaction[] | null
@@ -38,7 +39,10 @@ export const TransactionsGrid = ({ transactions, categories, wallets, contextWal
     const safeTransactions = transactions ?? []
     const safeCategories = categories ?? []
     const safeWallets = wallets ?? []
-    const visibleTransactions = safeTransactions.filter((transaction) => transaction.isVisible)
+    const visibleTransactions = safeTransactions.filter((transaction) => (
+        transaction.isVisible
+        && (contextWalletId || !isSavingsBoxInternalTransfer(transaction, safeWallets))
+    ))
 
     const availableTags = useMemo(() => {
         const map = new Map<string, { id: string; name: string; color?: string | null }>()
@@ -120,7 +124,7 @@ export const TransactionsGrid = ({ transactions, categories, wallets, contextWal
 
     const handleEdit = (transaction: Transaction) => {
         const suffix = contextWalletId ? `?walletId=${contextWalletId}` : ''
-        router.push(`/transacciones/editar/${transaction.id}${suffix}`)
+        router.push(`/movimientos/editar/${transaction.id}${suffix}`)
     }
 
     const requestDelete = (transaction: Transaction) => {
@@ -234,7 +238,7 @@ export const TransactionsGrid = ({ transactions, categories, wallets, contextWal
                     <p className='mx-auto mt-2 max-w-md text-sm text-slate-400'>{emptyCopy}</p>
                     {visibleTransactions.length === 0 ? (
                         <Button asChild className='mt-5'>
-                            <a href='/transacciones/nueva'>Crear movimiento</a>
+                            <a href='/movimientos/nueva'>Crear movimiento</a>
                         </Button>
                     ) : (
                         <Button variant='outline' className='mt-5' onClick={clearFilters}>Quitar filtros</Button>

@@ -659,7 +659,7 @@ export const payScheduledOccurrence = async (data: PayOccurrenceInput) => {
     })
 
     revalidatePath('/planeacion')
-    revalidatePath('/transacciones')
+    revalidatePath('/movimientos')
     revalidatePath('/reportes')
     revalidatePath('/')
     return actionSuccess({ transactionId: result.id }, 'Pago registrado')
@@ -730,7 +730,7 @@ export const payInstallmentOccurrence = async (data: PayOccurrenceInput) => {
     })
 
     revalidatePath('/planeacion')
-    revalidatePath('/transacciones')
+    revalidatePath('/movimientos')
     revalidatePath('/reportes')
     revalidatePath('/')
     return actionSuccess({ transactionId: result.id }, 'Cuota registrada')
@@ -902,7 +902,7 @@ export const payDebt = async (data: PayDebtInput) => {
     })
 
     revalidatePath('/planeacion')
-    revalidatePath('/transacciones')
+    revalidatePath('/movimientos')
     revalidatePath('/reportes')
     revalidatePath('/')
     return actionSuccess({ transactionId: result.id }, 'Abono registrado')

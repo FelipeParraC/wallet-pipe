@@ -11,7 +11,7 @@ import { useSession } from 'next-auth/react'
 const navItems = [
     { name: 'Inicio', href: '/', icon: LayoutDashboard },
     { name: 'Cuentas', href: '/billeteras', icon: Wallet },
-    { name: 'Movimientos', href: '/transacciones', icon: Receipt },
+    { name: 'Movimientos', href: '/movimientos', icon: Receipt },
     { name: 'Planeación', href: '/planeacion', icon: CreditCard },
     { name: 'Reportes', href: '/reportes', icon: BarChart3 },
     { name: 'Ajustes', href: '/configuracion', icon: Settings2 },
@@ -20,7 +20,7 @@ const navItems = [
 const mobileDockItems = [
     { name: 'Inicio', href: '/', icon: LayoutDashboard },
     { name: 'Cuentas', href: '/billeteras', icon: Wallet },
-    { name: 'Movimientos', href: '/transacciones', icon: Receipt },
+    { name: 'Movimientos', href: '/movimientos', icon: Receipt },
     { name: 'Planeación', href: '/planeacion', icon: CreditCard },
 ]
 
@@ -28,7 +28,7 @@ export const Navbar = () => {
     const pathname = usePathname()
     const { data: session } = useSession()
     const user = session?.user
-    const hideMobileNewAction = pathname === '/transacciones/nueva' || pathname.startsWith('/transacciones/editar')
+    const hideMobileNewAction = pathname === '/movimientos/nueva' || pathname.startsWith('/movimientos/editar')
 
     if (!user) {
         return null
@@ -192,7 +192,7 @@ export const Navbar = () => {
 
                     {!hideMobileNewAction && (
                         <Link
-                            href='/transacciones/nueva'
+                            href='/movimientos/nueva'
                             className='flex h-[4.5rem] w-[4.5rem] shrink-0 flex-col items-center justify-center gap-1 rounded-[1.6rem] border border-sky-200/20 bg-gradient-to-b from-sky-400 to-blue-600 text-[11px] font-medium text-white shadow-[0_18px_36px_rgba(14,165,233,0.32)] transition-all duration-200 hover:brightness-110'
                         >
                             <Plus className='h-5 w-5' />

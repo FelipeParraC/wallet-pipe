@@ -9,8 +9,8 @@ interface NewTransactionFloatingButtonProps {
 export const NewTransactionFloatingButton = ({ walletId }: NewTransactionFloatingButtonProps) => {
 
     const href = walletId
-        ? `/transacciones/nueva?walletId=${walletId}`
-        : '/transacciones/nueva'
+        ? `/movimientos/nueva?walletId=${walletId}`
+        : '/movimientos/nueva'
 
     return (
         <Button

@@ -127,7 +127,7 @@ export const deleteTransactionById = async (id: string) => {
         })
 
         revalidatePath('/')
-        revalidatePath('/transacciones')
+        revalidatePath('/movimientos')
         revalidatePath('/billeteras')
         revalidatePath('/planeacion')
         revalidatePath('/reportes')

@@ -32,7 +32,7 @@ export const deleteCategory = async (categoryId: string) => {
         await prisma.category.delete({ where: { id: categoryId } })
 
         revalidatePath('/configuracion')
-        revalidatePath('/transacciones')
+        revalidatePath('/movimientos')
         revalidatePath('/reportes')
         return actionSuccess(undefined, 'Categoría eliminada')
     } catch (error) {

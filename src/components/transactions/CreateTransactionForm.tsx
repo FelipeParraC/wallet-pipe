@@ -299,7 +299,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
                 return
             }
 
-            router.push(wallet ? `/billeteras/${wallet.id}` : '/transacciones')
+            router.push(wallet ? `/billeteras/${wallet.id}` : '/movimientos')
             router.refresh()
         } finally {
             setIsPending(false)

@@ -107,7 +107,7 @@ export const EditTransactionForm = ({ transaction, categories, tags, walletId }:
                 return
             }
 
-            router.push(walletId ? `/billeteras/${walletId}` : '/transacciones')
+            router.push(walletId ? `/billeteras/${walletId}` : '/movimientos')
             router.refresh()
         } finally {
             setIsPending(false)

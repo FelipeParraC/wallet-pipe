@@ -14,7 +14,7 @@ export const deleteTag = async (tagId: string) => {
         await prisma.tag.delete({ where: { id: tagId } })
 
         revalidatePath('/configuracion')
-        revalidatePath('/transacciones')
+        revalidatePath('/movimientos')
         return actionSuccess(undefined, 'Tag eliminado')
     } catch (error) {
         console.error('deleteTag', error)
