@@ -5,6 +5,8 @@ export interface User {
     nickname: string
     email: string
     emailVerified?: Date
+    image?: string | null
+    googleId?: string | null
 }
 
 export interface AuthUser {
@@ -13,6 +15,8 @@ export interface AuthUser {
     nickname: string
     email: string
     emailVerified: Date
+    image?: string | null
+    googleId?: string | null
 }
 
 export interface CreateUserInput {

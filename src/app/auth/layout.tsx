@@ -9,6 +9,10 @@ export default async function WalletLayout({
 
     const session = await auth()
 
+    if ( session?.user && !session.user.nickname?.trim() ) {
+        redirect('/completar-perfil')
+    }
+
     if ( session?.user ) {
         redirect('/')
     }

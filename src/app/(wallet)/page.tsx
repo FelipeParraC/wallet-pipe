@@ -27,7 +27,7 @@ export default async function HomePage() {
                 <div>
                     <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Panel principal</p>
                     <h1 className='mt-1 text-2xl font-semibold tracking-tight text-white md:text-3xl'>
-                        {session ? `Hola, ${session.user.name}` : 'Bienvenido a Wallet Pipe'}
+                        {session ? `Hola, ${session.user.nickname}` : 'Bienvenido a Wallet Pipe'}
                     </h1>
                 </div>
             </div>

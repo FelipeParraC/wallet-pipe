@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BarChart3, CreditCard, LayoutDashboard, LogOut, Menu, Plus, Receipt, Settings2, Wallet } from 'lucide-react'
-import { Avatar, AvatarFallback, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui'
+import { Avatar, AvatarFallback, AvatarImage, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui'
 import { logout } from '@/actions'
 import { useSession } from 'next-auth/react'
 
@@ -90,6 +90,7 @@ export const Navbar = () => {
                             <DropdownMenuTrigger asChild>
                                 <Button variant='outline' className='h-14 rounded-[1.75rem] px-3.5'>
                                     <Avatar className='h-8 w-8'>
+                                        {user.image && <AvatarImage src={user.image} alt={user.name ?? user.email ?? 'Usuario'} />}
                                         <AvatarFallback className='bg-sky-500/20 text-sky-100'>
                                             {user.name?.[0] || user.email?.[0] || 'W'}
                                         </AvatarFallback>

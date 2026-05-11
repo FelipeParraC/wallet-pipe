@@ -37,3 +37,7 @@ export const login = async (email: string, password: string) => {
         return { ok: false, message: 'No se pudo iniciar sesión' }
     }
 }
+
+export const loginWithGoogle = async () => {
+    await signIn('google', { redirectTo: '/' })
+}

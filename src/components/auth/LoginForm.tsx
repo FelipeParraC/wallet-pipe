@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
 import Link from 'next/link'
 import { useFormState, useFormStatus } from 'react-dom'
-import { authenticate } from '@/actions'
+import { authenticate, loginWithGoogle } from '@/actions'
 import { useEffect } from 'react'
 
 const formSchema = z.object({
@@ -77,14 +77,22 @@ export const LoginForm = () => {
                             </Alert>
                         )}
                         <LoginButton />
-                        <div className='text-center text-sm'>
-                            ¿No tienes una cuenta?{' '}
-                            <Link href='/auth/register' className='text-primary hover:underline'>
-                                Regístrate
-                            </Link>
-                        </div>
                     </form>
                 </Form>
+                <div className='relative py-3 text-center text-xs uppercase tracking-[0.22em] text-slate-500'>
+                    o
+                </div>
+                <form action={loginWithGoogle}>
+                    <Button variant='outline' className='w-full' type='submit'>
+                        Continuar con Google
+                    </Button>
+                </form>
+                <div className='mt-4 text-center text-sm'>
+                    ¿No tienes una cuenta?{' '}
+                    <Link href='/auth/register' className='text-primary hover:underline'>
+                        Regístrate
+                    </Link>
+                </div>
             </CardContent>
         </Card>
     )

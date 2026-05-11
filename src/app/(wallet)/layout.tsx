@@ -14,6 +14,10 @@ export default async function WalletLayout({
         redirect('/auth/login')
     }
 
+    if (!session.user.nickname?.trim()) {
+        redirect('/completar-perfil')
+    }
+
     return (
         <div className='relative min-h-screen overflow-x-hidden'>
             <div className='pointer-events-none fixed inset-0 -z-10'>

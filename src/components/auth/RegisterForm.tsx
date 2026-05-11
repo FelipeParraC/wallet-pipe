@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input } from '../ui'
-import { login, register } from '@/actions'
+import { login, loginWithGoogle, register } from '@/actions'
 
 const formSchema = z.object({
     name: z.string().min(2, {
@@ -138,14 +138,22 @@ export function RegisterForm() {
                         <Button type='submit' className='w-full'>
                             Registrarse
                         </Button>
-                        <div className='text-center text-sm'>
-                            ¿Ya tienes una cuenta?{' '}
-                            <Link href='/auth/login' className='text-primary hover:underline'>
-                                Inicia sesión
-                            </Link>
-                        </div>
                     </form>
                 </Form>
+                <div className='relative py-3 text-center text-xs uppercase tracking-[0.22em] text-slate-500'>
+                    o
+                </div>
+                <form action={loginWithGoogle}>
+                    <Button variant='outline' className='w-full' type='submit'>
+                        Continuar con Google
+                    </Button>
+                </form>
+                <div className='mt-4 text-center text-sm'>
+                    ¿Ya tienes una cuenta?{' '}
+                    <Link href='/auth/login' className='text-primary hover:underline'>
+                        Inicia sesión
+                    </Link>
+                </div>
             </CardContent>
         </Card>
     )

@@ -1,4 +1,5 @@
-export { authenticate, login } from './auth/login'
+export { authenticate, login, loginWithGoogle } from './auth/login'
+export { completeProfile } from './auth/complete-profile'
 export { logout } from './auth/logout'
 export { register } from './auth/register'
 
