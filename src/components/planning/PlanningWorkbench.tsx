@@ -22,7 +22,7 @@ import {
   updateScheduledPlan,
 } from '@/actions'
 import { CurrencyDisplay } from '@/components/CurrencyDisplay'
-import { DebtForm, ScheduledPlanForm } from '@/components'
+import { PlanningCreateFlow } from './PlanningCreateFlow'
 import { Alert, AlertDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '@/components/ui'
 import { formatCurrency, getRecurrenceFrequencyLabel, getScheduledPlanKindLabel } from '@/utils'
 
@@ -1306,36 +1306,7 @@ export const PlanningWorkbench = ({
       )}
 
       {activeTab === 'crear' && (
-        <section className='grid gap-4 xl:grid-cols-2'>
-          <div className='glass-panel rounded-[1.75rem] p-5'>
-            <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Programado</p>
-            <h2 className='mt-2 text-lg font-semibold text-white'>Nuevo pago programado</h2>
-            <div className='mt-5'>
-              <ScheduledPlanForm categories={categories} wallets={paymentWallets} />
-            </div>
-          </div>
-
-          <div className='glass-panel rounded-[1.75rem] p-5'>
-            <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Persona</p>
-            <h2 className='mt-2 text-lg font-semibold text-white'>Nueva deuda</h2>
-            <div className='mt-5'>
-              <DebtForm />
-            </div>
-          </div>
-
-          <div className='glass-panel rounded-[1.75rem] p-5 xl:col-span-2'>
-            <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
-              <div>
-                <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Tarjeta</p>
-                <h2 className='mt-2 text-lg font-semibold text-white'>Compra a cuotas</h2>
-                <p className='mt-1 text-sm text-slate-400'>Las cuotas nacen desde una compra real con tarjeta para que la deuda y el cupo queden correctos.</p>
-              </div>
-              <Button asChild>
-                <Link href='/movimientos/nueva'>Crear desde Nuevo movimiento</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
+        <PlanningCreateFlow categories={categories} wallets={paymentWallets} />
       )}
     </div>
   )
