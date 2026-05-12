@@ -3,11 +3,16 @@ export const revalidate = 0
 import { getCategories, getCurrentCycleSummary, getTransactions, getWallets } from '@/actions'
 import { auth } from '@/auth.config'
 import { DashboardHome } from '@/components'
+import { redirect } from 'next/navigation'
 
 
 export default async function HomePage() {
 
     const session = await auth()
+
+    if (!session?.user) {
+        redirect('/auth/login')
+    }
 
     const [respTransactions, respWallets, respCategories, respCycleSummary] = await Promise.all([
         getTransactions(),
@@ -30,7 +35,7 @@ export default async function HomePage() {
                 <div>
                     <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Panel principal</p>
                     <h1 className='mt-1 text-2xl font-semibold tracking-tight text-white md:text-3xl'>
-                        {session ? `Hola, ${session.user.nickname}` : 'Bienvenido a Wallet Pipe'}
+                        Hola, {session.user.nickname}
                     </h1>
                 </div>
             </div>
