@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BarChart3, CreditCard, LayoutDashboard, LogOut, Menu, Plus, Receipt, Settings2, Wallet } from 'lucide-react'
@@ -32,14 +33,17 @@ const mobileDockItems = [
 
 export const Navbar = ({ user }: { user: NavbarUser }) => {
     const pathname = usePathname()
+    const [isMenuOpen, setIsMenuOpen] = useState(false)
     const hideMobileNewAction = pathname === '/movimientos/nueva' || pathname.startsWith('/movimientos/editar')
 
     const onClickLogout = async () => {
+        setIsMenuOpen(false)
         await logout()
         window.location.replace('/auth/login')
     }
 
     const appName = `Wallet ${user.nickname}`
+    const isNavActive = (href: string) => href === '/' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
 
     return (
         <>
@@ -58,7 +62,7 @@ export const Navbar = ({ user }: { user: NavbarUser }) => {
 
                     <nav className='glass-pill hidden items-center gap-1 rounded-[1.75rem] px-2 py-2 lg:flex'>
                         {navItems.map((item) => {
-                            const isActive = pathname === item.href
+                            const isActive = isNavActive(item.href)
 
                             return (
                                 <Link
@@ -117,7 +121,7 @@ export const Navbar = ({ user }: { user: NavbarUser }) => {
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <Sheet>
+                        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                             <SheetTrigger asChild>
                                 <Button variant='outline' size='icon' className='h-14 w-14 rounded-[1.75rem] lg:hidden'>
                                     <Menu className='h-5 w-5' />
@@ -130,12 +134,13 @@ export const Navbar = ({ user }: { user: NavbarUser }) => {
                                 </SheetHeader>
                                 <div className='mt-6 grid gap-3'>
                                     {navItems.map((item) => {
-                                        const isActive = pathname === item.href
+                                        const isActive = isNavActive(item.href)
 
                                         return (
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
+                                                onClick={() => setIsMenuOpen(false)}
                                                 className={[
                                                     'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200',
                                                     isActive
@@ -164,7 +169,7 @@ export const Navbar = ({ user }: { user: NavbarUser }) => {
                 <div className='pointer-events-auto mx-auto flex max-w-md items-center justify-center gap-2'>
                     <div className='grid min-w-0 flex-1 grid-cols-4 gap-1.5 rounded-[1.8rem] border border-white/10 bg-slate-950/72 p-2 shadow-[0_20px_60px_rgba(2,6,23,0.35)] backdrop-blur-2xl'>
                         {mobileDockItems.map((item) => {
-                            const isActive = pathname === item.href
+                            const isActive = isNavActive(item.href)
 
                             return (
                                 <Link

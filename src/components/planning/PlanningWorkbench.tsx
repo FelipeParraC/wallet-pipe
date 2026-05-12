@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { CalendarClock, CheckCircle2, CreditCard, PauseCircle, Pencil, RotateCcw, Trash2, WalletCards } from 'lucide-react'
+import { ArrowLeft, CalendarClock, CheckCircle2, CreditCard, PauseCircle, Pencil, PlusCircle, RotateCcw, Trash2, WalletCards } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Category, Transaction, Wallet } from '@/interfaces'
@@ -169,17 +169,42 @@ interface PlanningWorkbenchProps {
     pendingCount: number
     paidCount: number
   }
+  mode?: 'hub' | 'section'
+  initialTab?: Tab
 }
 
 type Tab = 'pendientes' | 'pagados' | 'planes' | 'deudas' | 'crear'
 
-const tabs: Array<{ id: Tab; label: string }> = [
-  { id: 'pendientes', label: 'Por pagar' },
-  { id: 'pagados', label: 'Pagado' },
-  { id: 'planes', label: 'Planes' },
-  { id: 'deudas', label: 'Deudas' },
-  { id: 'crear', label: 'Crear' },
-]
+const tabRoutes: Record<Tab, string> = {
+  pendientes: '/planeacion/por-pagar',
+  pagados: '/planeacion/pagado',
+  planes: '/planeacion/planes',
+  deudas: '/planeacion/deudas',
+  crear: '/planeacion/crear',
+}
+
+const tabTitles: Record<Tab, { title: string; description: string }> = {
+  pendientes: {
+    title: 'Por pagar',
+    description: 'Obligaciones pendientes de este ciclo.',
+  },
+  pagados: {
+    title: 'Pagado',
+    description: 'Pagos ejecutados, omitidos o cerrados en el ciclo.',
+  },
+  planes: {
+    title: 'Planes',
+    description: 'Pagos programados y compras a cuotas creadas.',
+  },
+  deudas: {
+    title: 'Deudas',
+    description: 'Deudas activas, saldos y abonos.',
+  },
+  crear: {
+    title: 'Crear',
+    description: 'Agrega pagos programados, deudas o compras a cuotas.',
+  },
+}
 
 const toDateTimeLocal = (value?: string) => {
   const date = value ? new Date(value) : new Date()
@@ -846,9 +871,11 @@ export const PlanningWorkbench = ({
   installmentPlans,
   debts,
   summary,
+  mode = 'section',
+  initialTab = 'pendientes',
 }: PlanningWorkbenchProps) => {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<Tab>('pendientes')
+  const [activeTab] = useState<Tab>(initialTab)
   const [error, setError] = useState<string | null>(null)
   const activeDebts = debts.filter((debt) => debt.status === 'ACTIVA')
   const walletById = useMemo(() => new Map(wallets.map((wallet) => [wallet.id, wallet])), [wallets])
@@ -860,6 +887,11 @@ export const PlanningWorkbench = ({
   const cardDueThisCycle = summary.pendingCreditCardTotal ?? summary.pendingInstallmentTotal
   const otherObligations = summary.pendingScheduledTotal + summary.pendingDebtTotal
   const projectedAvailable = realAccountAvailable - cardDueThisCycle - otherObligations
+  const cycleQuery = toCycleQueryDate(new Date(currentCycle.startsAt))
+  const withCycle = (path: string, cycle = cycleQuery) => `${path}?cycle=${cycle}`
+  const currentRoute = mode === 'hub' ? '/planeacion' : tabRoutes[activeTab]
+  const pendingCreditCardCount = creditCardObligations.filter((obligation) => obligation.pendingAmount > 0).length
+  const pendingTotalCount = summary.pendingCount + pendingCreditCardCount
 
   const pendingItems = useMemo(() => [
     ...scheduledOccurrences.filter((occurrence) => occurrence.status === 'PENDIENTE').map((occurrence) => ({ kind: 'scheduled' as const, occurrence })),
@@ -882,61 +914,139 @@ export const PlanningWorkbench = ({
 
   const walletName = (walletId?: string) => walletId ? walletById.get(walletId)?.name ?? 'Cuenta no disponible' : 'Sin cuenta sugerida'
 
-  return (
-    <div className='space-y-6'>
-      <section className='glass-panel rounded-[2rem] p-5 sm:p-6'>
+  const CycleHeader = (
+    <section className='glass-panel rounded-[2rem] p-5 sm:p-6'>
         <p className='text-xs uppercase tracking-[0.32em] text-slate-500'>Planeación</p>
-        <div className='mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
+        <div className='mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between'>
           <div>
             <h1 className='text-2xl font-semibold text-white md:text-3xl'>Centro del ciclo</h1>
             <p className='mt-1 text-sm text-slate-400'>{currentCycle.label}</p>
           </div>
-          <div className='flex flex-col gap-3 md:items-end'>
-            <div className='flex flex-wrap gap-2'>
-              <Button variant='outline' size='sm' asChild>
-                <Link href={`/planeacion?cycle=${cycleNavDates.previous}`}>Anterior</Link>
-              </Button>
-              <Button variant='outline' size='sm' asChild>
-                <Link href='/planeacion'>Hoy</Link>
-              </Button>
-              <Button variant='outline' size='sm' asChild>
-                <Link href={`/planeacion?cycle=${cycleNavDates.next}`}>Siguiente</Link>
-              </Button>
-            </div>
-            <div className='flex flex-wrap gap-2'>
-              {tabs.map((tab) => (
-                <Button
-                  key={tab.id}
-                  variant={activeTab === tab.id ? 'default' : 'outline'}
-                  size='sm'
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label}
-                </Button>
-              ))}
-            </div>
+          <div className='grid grid-cols-3 gap-2 sm:flex sm:flex-wrap'>
+            <Button variant='outline' size='sm' asChild>
+              <Link href={withCycle(currentRoute, cycleNavDates.previous)}>Anterior</Link>
+            </Button>
+            <Button variant='outline' size='sm' asChild>
+              <Link href={currentRoute}>Hoy</Link>
+            </Button>
+            <Button variant='outline' size='sm' asChild>
+              <Link href={withCycle(currentRoute, cycleNavDates.next)}>Siguiente</Link>
+            </Button>
           </div>
         </div>
       </section>
+  )
 
-      <div className='grid gap-4 md:grid-cols-4'>
-        <div className='glass-panel rounded-[1.5rem] p-4'>
-          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Cuentas reales</p>
-          <CurrencyDisplay amount={realAccountAvailable} showDecimals={true} className='mt-2 text-xl font-bold text-white' />
+  if (mode === 'hub') {
+    const navCards = [
+      {
+        tab: 'pendientes' as const,
+        title: 'Por pagar',
+        description: `${pendingTotalCount} pendientes del ciclo`,
+        value: formatCurrency(summary.totalObligations),
+        icon: <CalendarClock className='h-5 w-5' />,
+        tone: 'text-amber-100 bg-amber-400/12 border-amber-200/20',
+      },
+      {
+        tab: 'pagados' as const,
+        title: 'Pagado',
+        description: `${summary.paidCount + cardPaymentsInCycle.length} registros del ciclo`,
+        value: formatCurrency(summary.paidInCycle),
+        icon: <CheckCircle2 className='h-5 w-5' />,
+        tone: 'text-emerald-100 bg-emerald-400/12 border-emerald-200/20',
+      },
+      {
+        tab: 'planes' as const,
+        title: 'Planes',
+        description: 'Programados y cuotas',
+        value: `${scheduledPlans.length + installmentPlans.length}`,
+        icon: <WalletCards className='h-5 w-5' />,
+        tone: 'text-sky-100 bg-sky-400/12 border-sky-200/20',
+      },
+      {
+        tab: 'deudas' as const,
+        title: 'Deudas',
+        description: 'Saldos y abonos',
+        value: `${activeDebts.length}`,
+        icon: <CreditCard className='h-5 w-5' />,
+        tone: 'text-rose-100 bg-rose-400/12 border-rose-200/20',
+      },
+      {
+        tab: 'crear' as const,
+        title: 'Crear',
+        description: 'Pago, deuda o compra a cuotas',
+        value: 'Nuevo',
+        icon: <PlusCircle className='h-5 w-5' />,
+        tone: 'text-white bg-sky-500/20 border-sky-200/25',
+      },
+    ]
+
+    return (
+      <div className='space-y-5'>
+        {CycleHeader}
+
+        <section className='rounded-[1.75rem] border border-sky-200/15 bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(15,23,42,0.8)_48%,rgba(2,6,23,0.94))] p-5'>
+          <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Para decidir</p>
+          <div className='mt-3 grid gap-4 sm:grid-cols-2'>
+            <div>
+              <p className='text-sm text-slate-400'>Por pagar</p>
+              <CurrencyDisplay amount={summary.totalObligations} showDecimals={true} className='mt-1 text-3xl font-bold text-white' />
+            </div>
+            <div>
+              <p className='text-sm text-slate-400'>Después de pagar</p>
+              <CurrencyDisplay amount={projectedAvailable} showDecimals={true} className='mt-1 text-3xl font-bold text-emerald-200' />
+            </div>
+          </div>
+        </section>
+
+        <div className='grid gap-3 lg:grid-cols-5'>
+          {navCards.map((card) => (
+            <Link
+              key={card.tab}
+              href={withCycle(tabRoutes[card.tab])}
+              className='group rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 transition hover:border-sky-200/25 hover:bg-white/[0.07]'
+            >
+              <span className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${card.tone}`}>
+                {card.icon}
+              </span>
+              <p className='mt-4 font-semibold text-white'>{card.title}</p>
+              <p className='mt-1 min-h-10 text-sm text-slate-400'>{card.description}</p>
+              <p className='mt-3 text-sm font-semibold text-sky-100'>{card.value}</p>
+            </Link>
+          ))}
         </div>
-        <div className='glass-panel rounded-[1.5rem] p-4'>
-          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Tarjeta mes</p>
-          <CurrencyDisplay amount={cardDueThisCycle} showDecimals={true} className='mt-2 text-xl font-bold text-sky-200' />
-        </div>
-        <div className='glass-panel rounded-[1.5rem] p-4'>
-          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Otros deberes</p>
-          <CurrencyDisplay amount={otherObligations} showDecimals={true} className='mt-2 text-xl font-bold text-amber-300' />
-        </div>
-        <div className='glass-panel rounded-[1.5rem] p-4'>
-          <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Disponible ciclo</p>
-          <CurrencyDisplay amount={projectedAvailable} showDecimals={true} className='mt-2 text-xl font-bold text-emerald-300' />
+
+        <div className='grid gap-3 sm:grid-cols-3'>
+          <div className='glass-panel rounded-[1.4rem] p-4'>
+            <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Cuentas reales</p>
+            <CurrencyDisplay amount={realAccountAvailable} showDecimals={true} className='mt-2 text-lg font-bold text-white' />
+          </div>
+          <div className='glass-panel rounded-[1.4rem] p-4'>
+            <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Tarjeta mes</p>
+            <CurrencyDisplay amount={cardDueThisCycle} showDecimals={true} className='mt-2 text-lg font-bold text-sky-200' />
+          </div>
+          <div className='glass-panel rounded-[1.4rem] p-4'>
+            <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Otros deberes</p>
+            <CurrencyDisplay amount={otherObligations} showDecimals={true} className='mt-2 text-lg font-bold text-amber-300' />
+          </div>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className='space-y-6'>
+      {CycleHeader}
+
+      <section className='glass-panel rounded-[1.75rem] p-5'>
+        <Link href={withCycle('/planeacion')} className='mb-4 inline-flex items-center gap-2 text-sm font-medium text-sky-300 hover:text-sky-200'>
+          <ArrowLeft className='h-4 w-4' />
+          Volver a Planeación
+        </Link>
+        <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Planeación</p>
+        <h2 className='mt-2 text-xl font-semibold text-white'>{tabTitles[activeTab].title}</h2>
+        <p className='mt-1 text-sm text-slate-400'>{tabTitles[activeTab].description}</p>
+      </section>
 
       <div className='rounded-[1.5rem] border border-sky-300/10 bg-sky-400/[0.06] p-4 text-sm text-sky-100'>
         Planeación cruza tus cuentas reales con pagos programados, deudas y cuotas de tarjeta que vencen en este ciclo. El cupo de la tarjeta no se suma como dinero disponible.
@@ -1056,7 +1166,7 @@ export const PlanningWorkbench = ({
                 <h2 className='text-lg font-semibold text-white'>Planes activos e históricos</h2>
                 <p className='mt-1 text-sm text-slate-400'>Pagos programados y compras a cuotas ya creadas.</p>
               </div>
-              <Button type='button' onClick={() => setActiveTab('crear')}>Crear plan</Button>
+              <Button type='button' asChild><Link href={withCycle('/planeacion/crear')}>Crear plan</Link></Button>
             </div>
           </div>
 
@@ -1131,7 +1241,7 @@ export const PlanningWorkbench = ({
                 <h2 className='text-lg font-semibold text-white'>Deudas y abonos</h2>
                 <p className='mt-1 text-sm text-slate-400'>Registra abonos parciales sin mezclarlo con pagos programados.</p>
               </div>
-              <Button type='button' onClick={() => setActiveTab('crear')}>Nueva deuda</Button>
+              <Button type='button' asChild><Link href={withCycle('/planeacion/crear')}>Nueva deuda</Link></Button>
             </div>
           </div>
           <div className='grid gap-3'>

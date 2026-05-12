@@ -16,6 +16,7 @@ export default async function PlaneacionPage({ searchParams }: PlaneacionPagePro
     return (
         overview ? (
             <PlanningWorkbench
+                mode='hub'
                 currentCycle={overview.currentCycle}
                 wallets={overview.wallets}
                 categories={overview.categories}
