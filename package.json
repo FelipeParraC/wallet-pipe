@@ -13,6 +13,7 @@
     "db:generate": "prisma generate --no-engine",
     "db:reset": "prisma db push --force-reset && npm run db:generate && npm run seed",
     "prisma:deploy": "prisma migrate deploy && prisma generate",
+    "prisma:deploy:session": "powershell -ExecutionPolicy Bypass -File scripts/prisma-deploy-session.ps1",
     "seed": "ts-node src/seed/seed-database.ts",
     "seed:existing-user": "ts-node src/seed/seed-existing-user-cycle.ts"
   },
