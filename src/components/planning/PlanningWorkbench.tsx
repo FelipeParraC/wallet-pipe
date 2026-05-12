@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ArrowLeft, CalendarClock, CheckCircle2, CreditCard, PauseCircle, Pencil, PlusCircle, RotateCcw, Trash2, WalletCards } from 'lucide-react'
+import { CalendarClock, CheckCircle2, CreditCard, PauseCircle, Pencil, PlusCircle, RotateCcw, Trash2, WalletCards } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Category, Transaction, Wallet } from '@/interfaces'
@@ -23,6 +23,8 @@ import {
 } from '@/actions'
 import { CurrencyDisplay } from '@/components/CurrencyDisplay'
 import { PlanningCreateFlow } from './PlanningCreateFlow'
+import { PlanningCycleHeader, PlanningDecisionSummary, PlanningMetricGrid, PlanningNavGrid, PlanningSectionHeader } from './PlanningPageSections'
+import { EmptyState } from '@/components/layout/PagePrimitives'
 import { Alert, AlertDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '@/components/ui'
 import { formatCurrency, getRecurrenceFrequencyLabel, getScheduledPlanKindLabel } from '@/utils'
 
@@ -915,26 +917,12 @@ export const PlanningWorkbench = ({
   const walletName = (walletId?: string) => walletId ? walletById.get(walletId)?.name ?? 'Cuenta no disponible' : 'Sin cuenta sugerida'
 
   const CycleHeader = (
-    <section className='glass-panel rounded-[2rem] p-5 sm:p-6'>
-        <p className='text-xs uppercase tracking-[0.32em] text-slate-500'>Planeación</p>
-        <div className='mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between'>
-          <div>
-            <h1 className='text-2xl font-semibold text-white md:text-3xl'>Centro del ciclo</h1>
-            <p className='mt-1 text-sm text-slate-400'>{currentCycle.label}</p>
-          </div>
-          <div className='grid grid-cols-3 gap-2 sm:flex sm:flex-wrap'>
-            <Button variant='outline' size='sm' asChild>
-              <Link href={withCycle(currentRoute, cycleNavDates.previous)}>Anterior</Link>
-            </Button>
-            <Button variant='outline' size='sm' asChild>
-              <Link href={currentRoute}>Hoy</Link>
-            </Button>
-            <Button variant='outline' size='sm' asChild>
-              <Link href={withCycle(currentRoute, cycleNavDates.next)}>Siguiente</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+    <PlanningCycleHeader
+      label={currentCycle.label}
+      previousHref={withCycle(currentRoute, cycleNavDates.previous)}
+      todayHref={currentRoute}
+      nextHref={withCycle(currentRoute, cycleNavDates.next)}
+    />
   )
 
   if (mode === 'hub') {
@@ -979,57 +967,31 @@ export const PlanningWorkbench = ({
         icon: <PlusCircle className='h-5 w-5' />,
         tone: 'text-white bg-sky-500/20 border-sky-200/25',
       },
-    ]
+    ].map((card) => ({
+      key: card.tab,
+      href: withCycle(tabRoutes[card.tab]),
+      title: card.title,
+      description: card.description,
+      value: card.value,
+      icon: card.icon,
+      tone: card.tone,
+    }))
 
     return (
       <div className='space-y-5'>
         {CycleHeader}
 
-        <section className='rounded-[1.75rem] border border-sky-200/15 bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(15,23,42,0.8)_48%,rgba(2,6,23,0.94))] p-5'>
-          <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Para decidir</p>
-          <div className='mt-3 grid gap-4 sm:grid-cols-2'>
-            <div>
-              <p className='text-sm text-slate-400'>Por pagar</p>
-              <CurrencyDisplay amount={summary.totalObligations} showDecimals={true} className='mt-1 text-3xl font-bold text-white' />
-            </div>
-            <div>
-              <p className='text-sm text-slate-400'>Después de pagar</p>
-              <CurrencyDisplay amount={projectedAvailable} showDecimals={true} className='mt-1 text-3xl font-bold text-emerald-200' />
-            </div>
-          </div>
-        </section>
+        <PlanningDecisionSummary totalObligations={summary.totalObligations} projectedAvailable={projectedAvailable} />
 
-        <div className='grid gap-3 lg:grid-cols-5'>
-          {navCards.map((card) => (
-            <Link
-              key={card.tab}
-              href={withCycle(tabRoutes[card.tab])}
-              className='group rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 transition hover:border-sky-200/25 hover:bg-white/[0.07]'
-            >
-              <span className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${card.tone}`}>
-                {card.icon}
-              </span>
-              <p className='mt-4 font-semibold text-white'>{card.title}</p>
-              <p className='mt-1 min-h-10 text-sm text-slate-400'>{card.description}</p>
-              <p className='mt-3 text-sm font-semibold text-sky-100'>{card.value}</p>
-            </Link>
-          ))}
-        </div>
+        <PlanningNavGrid cards={navCards} />
 
-        <div className='grid gap-3 sm:grid-cols-3'>
-          <div className='glass-panel rounded-[1.4rem] p-4'>
-            <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Cuentas reales</p>
-            <CurrencyDisplay amount={realAccountAvailable} showDecimals={true} className='mt-2 text-lg font-bold text-white' />
-          </div>
-          <div className='glass-panel rounded-[1.4rem] p-4'>
-            <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Tarjeta mes</p>
-            <CurrencyDisplay amount={cardDueThisCycle} showDecimals={true} className='mt-2 text-lg font-bold text-sky-200' />
-          </div>
-          <div className='glass-panel rounded-[1.4rem] p-4'>
-            <p className='text-[11px] uppercase tracking-[0.24em] text-slate-500'>Otros deberes</p>
-            <CurrencyDisplay amount={otherObligations} showDecimals={true} className='mt-2 text-lg font-bold text-amber-300' />
-          </div>
-        </div>
+        <PlanningMetricGrid
+          metrics={[
+            { label: 'Cuentas reales', amount: realAccountAvailable, className: 'text-white' },
+            { label: 'Tarjeta mes', amount: cardDueThisCycle, className: 'text-sky-200' },
+            { label: 'Otros deberes', amount: otherObligations, className: 'text-amber-300' },
+          ]}
+        />
       </div>
     )
   }
@@ -1038,15 +1000,11 @@ export const PlanningWorkbench = ({
     <div className='space-y-6'>
       {CycleHeader}
 
-      <section className='glass-panel rounded-[1.75rem] p-5'>
-        <Link href={withCycle('/planeacion')} className='mb-4 inline-flex items-center gap-2 text-sm font-medium text-sky-300 hover:text-sky-200'>
-          <ArrowLeft className='h-4 w-4' />
-          Volver a Planeación
-        </Link>
-        <p className='text-xs uppercase tracking-[0.28em] text-slate-500'>Planeación</p>
-        <h2 className='mt-2 text-xl font-semibold text-white'>{tabTitles[activeTab].title}</h2>
-        <p className='mt-1 text-sm text-slate-400'>{tabTitles[activeTab].description}</p>
-      </section>
+      <PlanningSectionHeader
+        backHref={withCycle('/planeacion')}
+        title={tabTitles[activeTab].title}
+        description={tabTitles[activeTab].description}
+      />
 
       <div className='rounded-[1.5rem] border border-sky-300/10 bg-sky-400/[0.06] p-4 text-sm text-sky-100'>
         Planeación cruza tus cuentas reales con pagos programados, deudas y cuotas de tarjeta que vencen en este ciclo. El cupo de la tarjeta no se suma como dinero disponible.
@@ -1063,9 +1021,7 @@ export const PlanningWorkbench = ({
       {activeTab === 'pendientes' && (
         <section className='grid gap-3'>
           {pendingItems.length === 0 && creditCardObligations.filter((obligation) => obligation.pendingAmount > 0).length === 0 ? (
-            <div className='glass-panel rounded-[1.75rem] p-8 text-center'>
-              <p className='text-sm text-slate-400'>No hay obligaciones pendientes para este ciclo.</p>
-            </div>
+            <EmptyState title='Sin obligaciones pendientes' description='No hay obligaciones pendientes para este ciclo.' />
           ) : (
             <>
               {creditCardObligations.filter((obligation) => obligation.pendingAmount > 0).map((obligation) => (

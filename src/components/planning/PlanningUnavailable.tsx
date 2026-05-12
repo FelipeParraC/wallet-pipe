@@ -1,13 +1,12 @@
 import { DataUnavailableNotice } from '@/components/RouteState'
+import { DataState, PageStack } from '@/components/layout/PagePrimitives'
 
 export const PlanningUnavailable = ({ message }: { message?: string }) => (
-  <div className='space-y-4'>
+  <PageStack>
     {message && <DataUnavailableNotice message={message} />}
-    <div className='glass-panel rounded-[1.75rem] p-8 text-center'>
-      <h1 className='text-xl font-semibold text-white'>No se pudo cargar Planeación</h1>
-      <p className='mx-auto mt-2 max-w-md text-sm text-slate-400'>
-        Si la conexión con la base de datos está intermitente, esta pantalla se recuperará al reintentar.
-      </p>
-    </div>
-  </div>
+    <DataState
+      title='No se pudo cargar Planeación'
+      description='Si la conexión con la base de datos está intermitente, esta pantalla se recuperará al reintentar.'
+    />
+  </PageStack>
 )

@@ -12,6 +12,7 @@ import { getTransactionTypeLabel } from '@/utils'
 import { DeleteTransactionDialog } from './DeleteTransactionDialog'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { isSavingsBoxInternalTransfer } from '@/lib/savings-box'
+import { EmptyState } from '@/components/layout/PagePrimitives'
 
 interface TransactionsGridProps {
     transactions: Transaction[] | null
@@ -159,7 +160,7 @@ export const TransactionsGrid = ({ transactions, categories, wallets, contextWal
 
     return (
         <>
-            <section className='glass-panel rounded-[1.75rem] p-4'>
+            <section className='glass-panel rounded-[1.75rem] p-4 sm:p-5'>
                 <div className='flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
                     <div>
                         <p className='inline-flex items-center gap-2 text-xs uppercase tracking-[0.26em] text-slate-500'>
@@ -176,7 +177,7 @@ export const TransactionsGrid = ({ transactions, categories, wallets, contextWal
                     )}
                 </div>
 
-                <div className='mt-4 grid gap-3 xl:grid-cols-[1.4fr_repeat(5,minmax(0,1fr))]'>
+                <div className='mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-[1.5fr_repeat(5,minmax(0,1fr))]'>
                     <div className='relative'>
                         <Search className='pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500' />
                         <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder='Buscar título, cuenta, categoría o tag' className='pl-10' />
@@ -233,17 +234,17 @@ export const TransactionsGrid = ({ transactions, categories, wallets, contextWal
             </section>
 
             {filteredTransactions.length === 0 ? (
-                <div className='glass-panel rounded-[1.75rem] p-8 text-center'>
-                    <h2 className='text-lg font-semibold text-white'>{emptyTitle}</h2>
-                    <p className='mx-auto mt-2 max-w-md text-sm text-slate-400'>{emptyCopy}</p>
-                    {visibleTransactions.length === 0 ? (
-                        <Button asChild className='mt-5'>
+                <EmptyState
+                    title={emptyTitle}
+                    description={emptyCopy}
+                    action={visibleTransactions.length === 0 ? (
+                        <Button asChild>
                             <a href='/movimientos/nueva'>Crear movimiento</a>
                         </Button>
                     ) : (
-                        <Button variant='outline' className='mt-5' onClick={clearFilters}>Quitar filtros</Button>
+                        <Button variant='outline' onClick={clearFilters}>Quitar filtros</Button>
                     )}
-                </div>
+                />
             ) : (
                 <TransactionList
                     transactions={ filteredTransactions }
