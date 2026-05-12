@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { auth } from '@/auth.config'
+import { auth, updateSession } from '@/auth.config'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure } from '@/lib/server-validation'
@@ -14,10 +14,18 @@ export const completeProfile = async (nickname: string) => {
 
     const trimmedNickname = nickname.trim()
     if (trimmedNickname.length < 2) throw new Error('El apodo debe tener al menos 2 caracteres')
+    const nextNickname = capitalizar(trimmedNickname)
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { nickname: capitalizar(trimmedNickname) },
+      data: { nickname: nextNickname },
+    })
+
+    await updateSession({
+      user: {
+        ...session.user,
+        nickname: nextNickname,
+      },
     })
 
     revalidatePath('/')

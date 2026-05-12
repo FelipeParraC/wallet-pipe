@@ -88,7 +88,15 @@ export const authConfig: NextAuthConfig = {
                     : '/auth/login?error=AccessDenied'
             }
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
+            if (trigger === 'update' && token.data && session?.user) {
+                token.data = {
+                    ...(token.data as AuthUser),
+                    ...session.user,
+                }
+                return token
+            }
+
             if (user?.id) {
                 token.sub = user.id
             }
@@ -171,4 +179,4 @@ export const authConfig: NextAuthConfig = {
     ]
 }
 
-export const { signIn, signOut, auth, handlers } = NextAuth( authConfig )
+export const { signIn, signOut, auth, handlers, unstable_update: updateSession } = NextAuth( authConfig )
