@@ -5,6 +5,7 @@ import { AuthError } from 'next-auth'
 import bcryptjs from 'bcryptjs'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 // ...
 
@@ -49,7 +50,7 @@ const validateCredentials = async (email: string, password: string) => {
             password: parsedCredentials.data.password,
         }
     } catch (error) {
-        console.error('validateCredentials', error)
+        logServerActionError('validateCredentials', error)
         return { ok: false as const, message: 'Database unavailable.' }
     }
 }
@@ -74,7 +75,7 @@ export const authenticate = async (
         })
         return 'Success'
     } catch (error) {
-        console.error('authenticate', error)
+        logServerActionError('authenticate', error)
         if (error instanceof AuthError) {
             switch (error.type) {
                 case 'CredentialsSignin':
@@ -107,7 +108,7 @@ export const login = async (email: string, password: string) => {
         return { ok: true }
 
     } catch ( error ) {
-        console.log( error )
+        logServerActionError('login', error)
         return { ok: false, message: 'No se pudo iniciar sesión' }
     }
 }

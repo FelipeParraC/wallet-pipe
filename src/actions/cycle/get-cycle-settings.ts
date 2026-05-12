@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 const defaultCycleSettings = (userId: string) => ({
     id: 'default',
@@ -34,7 +35,7 @@ export const getCycleSettings = async () => {
 
         return actionSuccess({ cycleSettings: data })
     } catch (error) {
-        console.error('getCycleSettings', error)
+        logServerActionError('getCycleSettings', error)
         return asFailure(error)
     }
 }

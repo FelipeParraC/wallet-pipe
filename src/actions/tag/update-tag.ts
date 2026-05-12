@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface UpdateTagActionInput {
     id: string
@@ -43,7 +44,7 @@ export const updateTag = async (data: UpdateTagActionInput) => {
         revalidatePath('/movimientos')
         return actionSuccess({ tag: updated }, 'Tag actualizado')
     } catch (error) {
-        console.error('updateTag', error)
+        logServerActionError('updateTag', error)
         return asFailure(error)
     }
 }

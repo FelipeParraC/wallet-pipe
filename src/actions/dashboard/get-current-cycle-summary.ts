@@ -9,6 +9,7 @@ import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { mapToTransaction, mapToWallet } from '@/utils'
 import type { PrismaTransaction, PrismaWallet, Transaction, Wallet } from '@/interfaces'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 type OccurrenceRecord = {
     expectedAmount: number
@@ -151,7 +152,7 @@ export const getCurrentCycleSummary = async () => {
             })
         }, 'getCurrentCycleSummary', 3500)
     } catch (error) {
-        console.error('getCurrentCycleSummary', error)
+        logServerActionError('getCurrentCycleSummary', error)
         return asFailure(error)
     }
 }

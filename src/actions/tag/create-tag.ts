@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { revalidatePath } from 'next/cache'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const createTag = async (data: CreateTagInput) => {
     try {
@@ -39,7 +40,7 @@ export const createTag = async (data: CreateTagInput) => {
             tag,
         }
     } catch (error) {
-        console.error('createTag', error)
+        logServerActionError('createTag', error)
         return asFailure(error)
     }
 }

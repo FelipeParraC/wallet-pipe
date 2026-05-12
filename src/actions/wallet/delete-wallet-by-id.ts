@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, ensureOwnedWallet, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const deleteWalletById = async (id: string) => {
     try {
@@ -101,7 +102,7 @@ export const deleteWalletById = async (id: string) => {
 
         return actionSuccess(undefined, wasArchived ? 'Tarjeta archivada y cuotas pendientes canceladas' : 'Billetera eliminada')
     } catch (error) {
-        console.error('deleteWalletById', error)
+        logServerActionError('deleteWalletById', error)
         return asFailure(error)
     }
 }

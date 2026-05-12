@@ -6,6 +6,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { moneyInputToMinorUnits } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { createTransactionInTx } from '@/lib/transaction-service'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface CreateSavingsBoxInput {
   parentWalletId: string
@@ -73,7 +74,7 @@ export const createSavingsBox = async (data: CreateSavingsBoxInput) => {
 
     return actionSuccess({ wallet }, 'Cajita creada')
   } catch (error) {
-    console.error('createSavingsBox', error)
+    logServerActionError('createSavingsBox', error)
     return asFailure(error)
   }
 }

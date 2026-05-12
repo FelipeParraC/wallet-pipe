@@ -5,6 +5,7 @@ import { signOut } from '@/auth.config'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface DeleteAccountInput {
   emailConfirmation: string
@@ -39,7 +40,7 @@ export const deleteAccount = async (data: DeleteAccountInput) => {
 
     await prisma.user.delete({ where: { id: user.id } })
   } catch (error) {
-    console.error('deleteAccount', error)
+    logServerActionError('deleteAccount', error)
     return asFailure(error)
   }
 

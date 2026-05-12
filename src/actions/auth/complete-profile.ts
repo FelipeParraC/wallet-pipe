@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure } from '@/lib/server-validation'
 import { capitalizar } from '@/utils'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const completeProfile = async (nickname: string) => {
   try {
@@ -33,7 +34,7 @@ export const completeProfile = async (nickname: string) => {
 
     return actionSuccess({}, 'Perfil completado')
   } catch (error) {
-    console.error('completeProfile', error)
+    logServerActionError('completeProfile', error)
     return asFailure(error)
   }
 }

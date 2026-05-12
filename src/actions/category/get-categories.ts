@@ -6,6 +6,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import type { PrismaCategory } from '@/interfaces'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 type CategoryReader = {
     category: {
@@ -37,7 +38,7 @@ export const getCategories = async () => {
         return { ...actionSuccess({ categories }), categories }
 
     } catch ( error ) {
-        console.error('getCategories', error)
+        logServerActionError('getCategories', error)
         return {
             ...asFailure(error),
             categories: null

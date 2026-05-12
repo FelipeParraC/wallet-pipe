@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { buildExpectedWalletBalances, calculateRealAvailable, getWalletDisplayBalance, reconcileWalletBalances } from '../lib/accounting-reconciliation'
 import { calculateCreditCardCycleObligations } from '../lib/credit-card-obligations'
 import { combineDateAndTime, getWalletTransferDelta, roundMoney, toSignedAmount, toTransferAmount } from '../lib/finance'
+import { PrismaOperationTimeoutError } from '../lib/prisma-timeout'
+import { classifyServerError, getSafeErrorMessage } from '../lib/server-action-logging'
 import { isSavingsBoxInternalTransfer } from '../lib/savings-box'
 import { isTransferTransaction, isTransportTransaction, type Transaction } from '../interfaces/transaction.interface'
 
@@ -213,5 +215,16 @@ assert.deepEqual(
 )
 assert.equal(getWalletDisplayBalance(reconciledWallets[0], reconciledWallets), 2400000)
 assert.equal(calculateRealAvailable(reconciledWallets), 2350000)
+
+assert.equal(classifyServerError(new PrismaOperationTimeoutError('test', 10)), 'infrastructure')
+assert.equal(getSafeErrorMessage(new PrismaOperationTimeoutError('test', 10)), 'No pudimos conectar con la base de datos. Inténtalo de nuevo en un momento.')
+assert.equal(classifyServerError(new Error("Can't reach database server at `example:5432`")), 'infrastructure')
+assert.equal(getSafeErrorMessage(new Error("Can't reach database server at `example:5432`")), 'No pudimos conectar con la base de datos. Inténtalo de nuevo en un momento.')
+assert.equal(classifyServerError(new Error('No hay sesión de usuario')), 'session')
+assert.equal(getSafeErrorMessage(new Error('No hay sesión de usuario')), 'Debes iniciar sesión de nuevo.')
+assert.equal(classifyServerError(new Error('El monto debe ser mayor a 0')), 'domain')
+assert.equal(getSafeErrorMessage(new Error('El monto debe ser mayor a 0')), 'El monto debe ser mayor a 0')
+assert.equal(classifyServerError('boom'), 'unknown')
+assert.equal(getSafeErrorMessage('boom'), 'Ocurrió un error inesperado')
 
 console.log('domain.test.ts passed')

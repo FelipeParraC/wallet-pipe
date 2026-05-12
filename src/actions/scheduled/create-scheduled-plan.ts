@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { moneyInputToMinorUnits } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface CreateScheduledPlanInput {
     title: string
@@ -67,7 +68,7 @@ export const createScheduledPlan = async (data: CreateScheduledPlanInput) => {
             plan,
         }
     } catch (error) {
-        console.error('createScheduledPlan', error)
+        logServerActionError('createScheduledPlan', error)
         return asFailure(error)
     }
 }

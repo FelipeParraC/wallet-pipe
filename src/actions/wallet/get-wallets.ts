@@ -5,6 +5,7 @@ import { mapToWallet } from '@/utils'
 import { actionSuccess } from '@/lib/action-response'
 import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const getWallets = async () => {
     try {
@@ -24,7 +25,7 @@ export const getWallets = async () => {
             wallets,
         }
     } catch ( error ) {
-        console.error('getWallets', error)
+        logServerActionError('getWallets', error)
         return {
             ...asFailure(error),
             wallets: null

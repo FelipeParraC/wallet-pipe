@@ -4,6 +4,7 @@ import bcryptjs from 'bcryptjs'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface ChangePasswordInput {
   currentPassword: string
@@ -35,7 +36,7 @@ export const changePassword = async (data: ChangePasswordInput) => {
 
     return actionSuccess(undefined, 'Contraseña actualizada')
   } catch (error) {
-    console.error('changePassword', error)
+    logServerActionError('changePassword', error)
     return asFailure(error)
   }
 }

@@ -6,6 +6,7 @@ import prisma from './lib/prisma'
 import bcryptjs from 'bcryptjs'
 import { AuthUser, User } from '@/interfaces'
 import { isPrismaConnectionIssue } from '@/lib/prisma-timeout'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 const toAuthUser = (user: {
     id: string
@@ -82,7 +83,7 @@ export const authConfig: NextAuthConfig = {
 
                 return true
             } catch (error) {
-                console.error('auth.google.signIn', error)
+                logServerActionError('auth.google.signIn', error)
                 return isPrismaConnectionIssue(error)
                     ? '/auth/login?error=DatabaseUnavailable'
                     : '/auth/login?error=AccessDenied'
@@ -121,7 +122,7 @@ export const authConfig: NextAuthConfig = {
                     }
                 }
             } catch (error) {
-                console.error('auth.jwt.user-sync', error)
+                logServerActionError('auth.jwt.user-sync', error)
             }
 
             if (!token.data && user) {
@@ -171,7 +172,7 @@ export const authConfig: NextAuthConfig = {
 
                     return user
                 } catch (error) {
-                    console.error('auth.credentials.authorize', error)
+                    logServerActionError('auth.credentials.authorize', error)
                     return null
                 }
             },

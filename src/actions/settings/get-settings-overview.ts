@@ -6,6 +6,7 @@ import { moneyToNumber } from '@/lib/finance'
 import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { mapToCategory, mapToWallet } from '@/utils'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const getSettingsOverview = async () => {
     try {
@@ -85,7 +86,7 @@ export const getSettingsOverview = async () => {
             })),
         })
     } catch (error) {
-        console.error('getSettingsOverview', error)
+        logServerActionError('getSettingsOverview', error)
         return asFailure(error)
     }
 }

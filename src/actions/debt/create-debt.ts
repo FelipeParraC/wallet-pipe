@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { moneyInputToMinorUnits } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface CreateDebtInput {
     personName: string
@@ -59,7 +60,7 @@ export const createDebt = async (data: CreateDebtInput) => {
             debt,
         }
     } catch (error) {
-        console.error('createDebt', error)
+        logServerActionError('createDebt', error)
         return asFailure(error)
     }
 }

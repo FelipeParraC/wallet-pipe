@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { capitalizar } from '@/utils'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface UpdateProfileInput {
   name: string
@@ -33,7 +34,7 @@ export const updateProfile = async (data: UpdateProfileInput) => {
 
     return actionSuccess(undefined, 'Perfil actualizado')
   } catch (error) {
-    console.error('updateProfile', error)
+    logServerActionError('updateProfile', error)
     return asFailure(error)
   }
 }

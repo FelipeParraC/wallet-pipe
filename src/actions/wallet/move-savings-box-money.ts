@@ -6,6 +6,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { moneyInputToMinorUnits } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { createTransactionInTx } from '@/lib/transaction-service'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface MoveSavingsBoxMoneyInput {
   savingsBoxId: string
@@ -76,7 +77,7 @@ export const moveSavingsBoxMoney = async (data: MoveSavingsBoxMoneyInput) => {
 
     return actionSuccess({ transaction }, 'Movimiento interno registrado')
   } catch (error) {
-    console.error('moveSavingsBoxMoney', error)
+    logServerActionError('moveSavingsBoxMoney', error)
     return asFailure(error)
   }
 }

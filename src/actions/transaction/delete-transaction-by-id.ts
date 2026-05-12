@@ -7,6 +7,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { deleteTransactionInTx } from '@/lib/transaction-service'
 import { absMinorUnits, addMinorUnits, moneyToMinorUnits } from '@/lib/finance'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 const updateCreditCardState = async (
     tx: Prisma.TransactionClient,
@@ -134,7 +135,7 @@ export const deleteTransactionById = async (id: string) => {
 
         return actionSuccess(undefined, 'Transacción eliminada')
     } catch (error) {
-        console.error('deleteTransactionById', error)
+        logServerActionError('deleteTransactionById', error)
         return asFailure(error)
     }
 }

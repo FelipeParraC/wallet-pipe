@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface UpdateCategoryActionInput {
     id: string
@@ -57,7 +58,7 @@ export const updateCategory = async (data: UpdateCategoryActionInput) => {
         revalidatePath('/reportes')
         return actionSuccess({ category: updated }, 'Categoría actualizada')
     } catch (error) {
-        console.error('updateCategory', error)
+        logServerActionError('updateCategory', error)
         return asFailure(error)
     }
 }

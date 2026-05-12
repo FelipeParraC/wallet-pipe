@@ -6,6 +6,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { canUseFareValue, ensurePositiveMoney, isCreditCardWallet, roundMoney } from '@/lib/finance'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { createWalletInTx } from '@/lib/wallet-service'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const createWallet = async (data: CreateWalletInput) => {
     try {
@@ -45,7 +46,7 @@ export const createWallet = async (data: CreateWalletInput) => {
             wallet
         }
     } catch (error) {
-        console.error('createWallet', error)
+        logServerActionError('createWallet', error)
         return asFailure(error)
     }
 

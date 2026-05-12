@@ -28,6 +28,7 @@ export const withPrismaTimeout = async <T>(
 
 export const isPrismaConnectionIssue = (error: unknown) => {
   if (error instanceof PrismaOperationTimeoutError) return true
+  if (error instanceof Error && error.name === 'PrismaOperationTimeoutError') return true
 
   const code = typeof error === 'object' && error !== null && 'code' in error
     ? (error as { code?: string }).code

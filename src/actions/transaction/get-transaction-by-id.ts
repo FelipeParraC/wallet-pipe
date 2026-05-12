@@ -5,6 +5,7 @@ import { mapToTransaction } from '@/utils'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import type { PrismaTransaction } from '@/interfaces'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 
 export const getTransactionById = async ( id: string ) => {
@@ -35,7 +36,7 @@ export const getTransactionById = async ( id: string ) => {
         return { ...actionSuccess({ transaction }), transaction }
 
     } catch ( error ) {
-        console.error('getTransactionById', error)
+        logServerActionError('getTransactionById', error)
         return {
             ...asFailure(error),
             transaction: null

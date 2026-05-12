@@ -6,6 +6,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { syncTransactionTagsInTx } from '@/lib/tag-service'
 import { updateTransactionInTx } from '@/lib/transaction-service'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const updateTransactionById = async (data: UpdateTransactionInput, id: string) => {
     try {
@@ -22,7 +23,7 @@ export const updateTransactionById = async (data: UpdateTransactionInput, id: st
             transaction
         }
     } catch (error) {
-        console.error('updateTransactionById', error)
+        logServerActionError('updateTransactionById', error)
         return asFailure(error)
     }
 }

@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 interface UpdateCycleSettingsInput {
     defaultStartDay: number
@@ -39,7 +40,7 @@ export const updateCycleSettings = async (data: UpdateCycleSettingsInput) => {
             cycleSettings,
         }
     } catch (error) {
-        console.error('updateCycleSettings', error)
+        logServerActionError('updateCycleSettings', error)
         return asFailure(error)
     }
 }

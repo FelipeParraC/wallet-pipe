@@ -11,6 +11,7 @@ import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { createTransactionInTx } from '@/lib/transaction-service'
 import { mapToCategory, mapToTransaction, mapToWallet } from '@/utils'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 type Db = typeof prisma | Prisma.TransactionClient
 type OccurrenceStatusInput = 'PENDIENTE' | 'EJECUTADA' | 'OMITIDA' | 'CANCELADA'
@@ -356,7 +357,7 @@ export const ensureCurrentCycleOccurrences = async () => {
     revalidatePath('/')
     return actionSuccess({ currentCycle: result.currentCycle }, 'Ocurrencias del ciclo listas')
   } catch (error) {
-    console.error('ensureCurrentCycleOccurrences', error)
+    logServerActionError('ensureCurrentCycleOccurrences', error)
     return asFailure(error)
   }
 }
@@ -532,7 +533,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
       },
     })
   } catch (error) {
-    console.error('getPlanningCycleOverview', error)
+    logServerActionError('getPlanningCycleOverview', error)
     return asFailure(error)
   }
 }
@@ -570,7 +571,7 @@ export const skipScheduledOccurrence = async (occurrenceId: string) => {
     revalidatePath('/reportes')
     return actionSuccess(undefined, 'Pago omitido')
   } catch (error) {
-    console.error('skipScheduledOccurrence', error)
+    logServerActionError('skipScheduledOccurrence', error)
     return asFailure(error)
   }
 }
@@ -583,7 +584,7 @@ export const reopenScheduledOccurrence = async (occurrenceId: string) => {
     revalidatePath('/reportes')
     return actionSuccess(undefined, 'Pago reabierto')
   } catch (error) {
-    console.error('reopenScheduledOccurrence', error)
+    logServerActionError('reopenScheduledOccurrence', error)
     return asFailure(error)
   }
 }
@@ -596,7 +597,7 @@ export const skipInstallmentOccurrence = async (occurrenceId: string) => {
     revalidatePath('/reportes')
     return actionSuccess(undefined, 'Cuota omitida')
   } catch (error) {
-    console.error('skipInstallmentOccurrence', error)
+    logServerActionError('skipInstallmentOccurrence', error)
     return asFailure(error)
   }
 }
@@ -609,7 +610,7 @@ export const reopenInstallmentOccurrence = async (occurrenceId: string) => {
     revalidatePath('/reportes')
     return actionSuccess(undefined, 'Cuota reabierta')
   } catch (error) {
-    console.error('reopenInstallmentOccurrence', error)
+    logServerActionError('reopenInstallmentOccurrence', error)
     return asFailure(error)
   }
 }
@@ -665,7 +666,7 @@ export const payScheduledOccurrence = async (data: PayOccurrenceInput) => {
     revalidatePath('/')
     return actionSuccess({ transactionId: result.id }, 'Pago registrado')
   } catch (error) {
-    console.error('payScheduledOccurrence', error)
+    logServerActionError('payScheduledOccurrence', error)
     return asFailure(error)
   }
 }
@@ -736,7 +737,7 @@ export const payInstallmentOccurrence = async (data: PayOccurrenceInput) => {
     revalidatePath('/')
     return actionSuccess({ transactionId: result.id }, 'Cuota registrada')
   } catch (error) {
-    console.error('payInstallmentOccurrence', error)
+    logServerActionError('payInstallmentOccurrence', error)
     return asFailure(error)
   }
 }
@@ -766,7 +767,7 @@ export const updateScheduledPlan = async (data: UpdateScheduledPlanInput) => {
     revalidatePath('/planeacion')
     return actionSuccess(undefined, 'Plan actualizado')
   } catch (error) {
-    console.error('updateScheduledPlan', error)
+    logServerActionError('updateScheduledPlan', error)
     return asFailure(error)
   }
 }
@@ -792,7 +793,7 @@ export const updateInstallmentPlan = async (data: UpdateInstallmentPlanInput) =>
     revalidatePath('/planeacion')
     return actionSuccess(undefined, 'Plan de cuotas actualizado')
   } catch (error) {
-    console.error('updateInstallmentPlan', error)
+    logServerActionError('updateInstallmentPlan', error)
     return asFailure(error)
   }
 }
@@ -822,7 +823,7 @@ export const deleteOrDeactivateScheduledPlan = async (planId: string) => {
     revalidatePath('/planeacion')
     return actionSuccess(undefined, 'Plan eliminado')
   } catch (error) {
-    console.error('deleteOrDeactivateScheduledPlan', error)
+    logServerActionError('deleteOrDeactivateScheduledPlan', error)
     return asFailure(error)
   }
 }
@@ -852,7 +853,7 @@ export const deleteOrDeactivateInstallmentPlan = async (planId: string) => {
     revalidatePath('/planeacion')
     return actionSuccess(undefined, 'Plan de cuotas eliminado')
   } catch (error) {
-    console.error('deleteOrDeactivateInstallmentPlan', error)
+    logServerActionError('deleteOrDeactivateInstallmentPlan', error)
     return asFailure(error)
   }
 }
@@ -908,7 +909,7 @@ export const payDebt = async (data: PayDebtInput) => {
     revalidatePath('/')
     return actionSuccess({ transactionId: result.id }, 'Abono registrado')
   } catch (error) {
-    console.error('payDebt', error)
+    logServerActionError('payDebt', error)
     return asFailure(error)
   }
 }
@@ -946,7 +947,7 @@ export const updateDebt = async (data: UpdateDebtInput) => {
     revalidatePath('/planeacion')
     return actionSuccess(undefined, 'Deuda actualizada')
   } catch (error) {
-    console.error('updateDebt', error)
+    logServerActionError('updateDebt', error)
     return asFailure(error)
   }
 }
@@ -974,7 +975,7 @@ export const deleteOrCloseDebt = async (debtId: string) => {
     revalidatePath('/planeacion')
     return actionSuccess(undefined, 'Deuda eliminada')
   } catch (error) {
-    console.error('deleteOrCloseDebt', error)
+    logServerActionError('deleteOrCloseDebt', error)
     return asFailure(error)
   }
 }

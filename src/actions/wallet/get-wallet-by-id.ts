@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { mapToWallet } from '@/utils'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 
 export const getWalletById = async ( id: string ) => {
@@ -31,7 +32,7 @@ export const getWalletById = async ( id: string ) => {
         return { ...actionSuccess({ wallet }), wallet }
 
     } catch ( error ) {
-        console.error('getWalletById', error)
+        logServerActionError('getWalletById', error)
         return {
             ...asFailure(error),
             wallet: null

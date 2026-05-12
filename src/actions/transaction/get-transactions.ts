@@ -6,6 +6,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import type { PrismaTransaction } from '@/interfaces'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 type TransactionReader = {
     transaction: {
@@ -30,7 +31,7 @@ export const getTransactions = async () => {
         return { ...actionSuccess({ transactions }), transactions }
 
     } catch (error) {
-        console.error('getTransactions', error)
+        logServerActionError('getTransactions', error)
         return {
             ...asFailure(error),
             transactions: null

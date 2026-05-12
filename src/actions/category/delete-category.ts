@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const deleteCategory = async (categoryId: string) => {
     try {
@@ -36,7 +37,7 @@ export const deleteCategory = async (categoryId: string) => {
         revalidatePath('/reportes')
         return actionSuccess(undefined, 'Categoría eliminada')
     } catch (error) {
-        console.error('deleteCategory', error)
+        logServerActionError('deleteCategory', error)
         return asFailure(error)
     }
 }

@@ -9,6 +9,7 @@ import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { syncTransactionTagsInTx } from '@/lib/tag-service'
 import { createTransactionInTx } from '@/lib/transaction-service'
 import type { CreateTransactionInput, TransactionType } from '@/interfaces'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 type BaseMovementInput = {
   title: string
@@ -453,7 +454,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
 
     return actionSuccess({ result }, 'Movimiento creado')
   } catch (error) {
-    console.error('createMovementFromForm', error)
+    logServerActionError('createMovementFromForm', error)
     return asFailure(error)
   }
 }

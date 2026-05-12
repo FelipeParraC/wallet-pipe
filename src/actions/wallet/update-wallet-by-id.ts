@@ -6,6 +6,7 @@ import { mapToUpdatePrismaWallet } from '@/utils'
 import { actionSuccess } from '@/lib/action-response'
 import { canUseFareValue, ensurePositiveMoney, isCreditCardWallet, roundMoney } from '@/lib/finance'
 import { asFailure, ensureOwnedWallet, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const updateWalletById = async (data: UpdateWalletInput, id: string) => {
     try {
@@ -56,7 +57,7 @@ export const updateWalletById = async (data: UpdateWalletInput, id: string) => {
             wallet
         }
     } catch (error) {
-        console.error('updateWalletById', error)
+        logServerActionError('updateWalletById', error)
         return asFailure(error)
     }
 }

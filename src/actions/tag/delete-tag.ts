@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
+import { logServerActionError } from '@/lib/server-action-logging'
 
 export const deleteTag = async (tagId: string) => {
     try {
@@ -17,7 +18,7 @@ export const deleteTag = async (tagId: string) => {
         revalidatePath('/movimientos')
         return actionSuccess(undefined, 'Tag eliminado')
     } catch (error) {
-        console.error('deleteTag', error)
+        logServerActionError('deleteTag', error)
         return asFailure(error)
     }
 }
