@@ -12,8 +12,10 @@ const percent = (value: number, total: number) => {
 }
 
 export default async function ReportesPage() {
-    const planningResponse = await getPlanningCycleOverview()
-    const summaryResponse = await getCurrentCycleSummary()
+    const [planningResponse, summaryResponse] = await Promise.all([
+        getPlanningCycleOverview(),
+        getCurrentCycleSummary(),
+    ])
 
     const planning = planningResponse.ok ? planningResponse.data : null
     const cycleSummary = summaryResponse.ok ? summaryResponse.data : null

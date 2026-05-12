@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { auth } from '@/auth.config'
 import { ActionResponse, actionFailure } from './action-response'
+import { isPrismaConnectionIssue } from './prisma-timeout'
 
 export const requireSessionUser = async () => {
   const session = await auth()
@@ -42,6 +43,10 @@ export const ensureCategoryExists = async (tx: Prisma.TransactionClient, categor
 }
 
 export const asFailure = (error: unknown): ActionResponse => {
+  if (isPrismaConnectionIssue(error)) {
+    return actionFailure('No pudimos conectar con la base de datos. Inténtalo de nuevo en un momento.')
+  }
+
   if (error instanceof Error) {
     return actionFailure(error.message)
   }

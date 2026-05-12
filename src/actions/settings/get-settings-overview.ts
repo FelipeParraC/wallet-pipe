@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
 import { moneyToNumber } from '@/lib/finance'
+import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { mapToCategory, mapToWallet } from '@/utils'
 
@@ -10,7 +11,7 @@ export const getSettingsOverview = async () => {
     try {
         const user = await requireSessionUser()
 
-        const [categories, tags, wallets, scheduledPlans, installmentPlans, debts] = await Promise.all([
+        const [categories, tags, wallets, scheduledPlans, installmentPlans, debts] = await withPrismaTimeout(() => Promise.all([
             prisma.category.findMany({
                 where: {
                     OR: [
@@ -41,7 +42,7 @@ export const getSettingsOverview = async () => {
                 include: { person: true },
                 orderBy: { createdAt: 'desc' }
             }),
-        ])
+        ]), 'getSettingsOverview', 3500)
 
         return actionSuccess({
             categories: categories.map(mapToCategory),

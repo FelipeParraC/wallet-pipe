@@ -9,16 +9,19 @@ export default async function HomePage() {
 
     const session = await auth()
 
-    const respTransactions = await getTransactions()
+    const [respTransactions, respWallets, respCategories, respCycleSummary] = await Promise.all([
+        getTransactions(),
+        getWallets(),
+        getCategories(),
+        getCurrentCycleSummary(),
+    ])
+
     const transactions = respTransactions.ok ? respTransactions.transactions : []
 
-    const respWallets = await getWallets()
     const wallets = respWallets.ok ? respWallets.wallets : []
 
-    const respCategories = await getCategories()
     const categories = respCategories.ok ? respCategories.categories : []
 
-    const respCycleSummary = await getCurrentCycleSummary()
     const cycleSummary = respCycleSummary.ok ? respCycleSummary.data : null
 
     return (

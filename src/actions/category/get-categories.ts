@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import { mapToCategory } from '@/utils'
 import { actionSuccess } from '@/lib/action-response'
+import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import type { PrismaCategory } from '@/interfaces'
 
@@ -18,7 +19,7 @@ export const getCategories = async () => {
         const user = await requireSessionUser()
         const prismaClient = prisma as unknown as CategoryReader
         
-        const prismaCategories = await prismaClient.category.findMany({
+        const prismaCategories = await withPrismaTimeout(() => prismaClient.category.findMany({
             where: {
                 OR: [
                     { userId: user.id },
@@ -29,7 +30,7 @@ export const getCategories = async () => {
                 { parentId: 'asc' },
                 { name: 'asc' }
             ]
-        })
+        }), 'getCategories')
 
         const categories = prismaCategories.map((c: Parameters<typeof mapToCategory>[0]) => mapToCategory(c))
 

@@ -6,9 +6,12 @@ import { NewWallet, WalletCard, WalletsTotalBalance } from '@/components'
 
 export default async function BilleterasPage() {
 
-    const respWallets = await getWallets()
+    const [respWallets, respCycleSummary] = await Promise.all([
+        getWallets(),
+        getCurrentCycleSummary(),
+    ])
+
     const wallets = respWallets.ok ? respWallets.wallets : []
-    const respCycleSummary = await getCurrentCycleSummary()
     const cycleSummary = respCycleSummary.ok ? respCycleSummary.data : null
 
     if ( !wallets ) {

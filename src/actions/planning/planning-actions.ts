@@ -7,6 +7,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { calculateCreditCardCycleObligations } from '@/lib/credit-card-obligations'
 import { getCyclePeriodForDate } from '@/lib/cycle'
 import { absMinorUnits, ensurePositiveMoney, moneyInputToMinorUnits, moneyToNumber, moneyToMinorUnits } from '@/lib/finance'
+import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { createTransactionInTx } from '@/lib/transaction-service'
 import { mapToCategory, mapToTransaction, mapToWallet } from '@/utils'
@@ -79,12 +80,12 @@ const isTransientPrismaConnectionError = (error: unknown) => (
 )
 
 const withPrismaConnectionRetry = async <T>(operation: () => Promise<T>) => {
-  const delays = [250, 750, 1500]
+  const delays = [150, 350]
   let lastError: unknown
 
   for (let attempt = 0; attempt <= delays.length; attempt += 1) {
     try {
-      return await operation()
+      return await withPrismaTimeout(operation, 'planning-prisma-operation', 2500)
     } catch (error) {
       lastError = error
 

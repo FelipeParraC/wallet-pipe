@@ -5,15 +5,19 @@ import { NewTransactionFloatingButton, TransactionsGrid } from '@/components'
 import { getCategories, getCurrentCycleSummary, getTransactions, getWallets } from '@/actions'
 
 export default async function MovimientosPage() {
-    const walletsResponse = await getWallets()
+    const [walletsResponse, respTransactions, respCategories, respSummary] = await Promise.all([
+        getWallets(),
+        getTransactions(),
+        getCategories(),
+        getCurrentCycleSummary(),
+    ])
+
     const wallets = walletsResponse.ok ? walletsResponse.wallets : []
 
-    const respTransactions = await getTransactions()
     const transactions = respTransactions.ok ? respTransactions.transactions : []
 
-    const respCategories = await getCategories()
     const categories = respCategories.ok ? respCategories.categories : []
-    const respSummary = await getCurrentCycleSummary()
+
     const cycleSummary = respSummary.ok ? respSummary.data : null
 
     return (

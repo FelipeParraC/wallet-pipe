@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { actionSuccess } from '@/lib/action-response'
+import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 
 const defaultCycleSettings = (userId: string) => ({
@@ -16,10 +17,10 @@ export const getCycleSettings = async () => {
     try {
         const user = await requireSessionUser()
 
-        const cycleSettings = await prisma.userCycleSettings.findUnique({
+        const cycleSettings = await withPrismaTimeout(() => prisma.userCycleSettings.findUnique({
             where: { userId: user.id },
             include: { overrides: { orderBy: { effectiveFrom: 'desc' } } }
-        })
+        }), 'getCycleSettings')
 
         const data = cycleSettings
             ? {
