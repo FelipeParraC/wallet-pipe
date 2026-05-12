@@ -143,6 +143,22 @@ export const createTransactionInTx = async (tx: TransactionServiceTx, userId: st
     })
   }
 
+  if (data.type === 'TARJETA_DEVOLUCION') {
+    if (!isCreditCardWallet(wallet.type ?? '')) {
+      throw new Error('Las devoluciones de tarjeta deben registrarse sobre una tarjeta de crédito')
+    }
+
+    await updateCreditCardState(tx, wallet, updateWalletBalance(wallet, -absMinorUnits(normalizedAmountInMinorUnits)))
+
+    return tx.transaction.create({
+      data: mapToCreatePrismaTransaction({
+        ...data,
+        amount: Math.abs(normalizedAmount),
+        walletId: wallet.id,
+      }, userId)
+    })
+  }
+
   if (data.type === 'PAGO_TARJETA') {
     if (!data.fromWalletId || !data.toWalletId) {
       throw new Error('El pago de tarjeta requiere cuenta de origen y tarjeta de destino')
@@ -252,6 +268,24 @@ export const updateTransactionInTx = async (tx: TransactionServiceTx, userId: st
     })
   }
 
+  if (transactionToUpdate.type === 'TARJETA_DEVOLUCION') {
+    if (!isCreditCardWallet(wallet.type ?? '')) {
+      throw new Error('La devolución existente no está asociada a una tarjeta de crédito')
+    }
+
+    const nextDebt = updateWalletBalance(wallet, addMinorUnits(-absMinorUnits(moneyInputToMinorUnits(previousAmount)), absMinorUnits(moneyInputToMinorUnits(nextAmount))))
+    await updateCreditCardState(tx, wallet, nextDebt)
+
+    return tx.transaction.update({
+      where: { id },
+      data: mapToUpdatePrismaTransaction({
+        ...data,
+        amount: previousAmount,
+        newAmount: Math.abs(nextAmount),
+      })
+    })
+  }
+
   if (transactionToUpdate.type === 'PAGO_TARJETA') {
     if (!transactionToUpdate.fromWalletId || !transactionToUpdate.toWalletId) {
       throw new Error('El pago de tarjeta está incompleto')
@@ -307,6 +341,12 @@ export const deleteTransactionInTx = async (tx: TransactionServiceTx, userId: st
   if (transactionToDelete.type === 'TARJETA_CONSUMO') {
     const creditWallet = await ensureOwnedWalletInTx(tx, transactionToDelete.walletId, userId, { allowInactive: true })
     await updateCreditCardState(tx, creditWallet, updateWalletBalance(creditWallet, -absMinorUnits(moneyToMinorUnits(transactionToDelete.amount))))
+    return tx.transaction.delete({ where: { id } })
+  }
+
+  if (transactionToDelete.type === 'TARJETA_DEVOLUCION') {
+    const creditWallet = await ensureOwnedWalletInTx(tx, transactionToDelete.walletId, userId, { allowInactive: true })
+    await updateCreditCardState(tx, creditWallet, updateWalletBalance(creditWallet, absMinorUnits(moneyToMinorUnits(transactionToDelete.amount))))
     return tx.transaction.delete({ where: { id } })
   }
 

@@ -12,6 +12,7 @@ type LinkedTransactionGuardInput = {
 
 export const isAmountProtectedTransaction = (transaction: LinkedTransactionGuardInput) => (
   transaction.type === 'PAGO_TARJETA'
+  || transaction.type === 'TARJETA_DEVOLUCION'
   || Boolean(transaction.scheduledPlanId)
   || Boolean(transaction.scheduledOccurrenceId)
   || Boolean(transaction.installmentPlanId)

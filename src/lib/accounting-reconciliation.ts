@@ -65,6 +65,11 @@ export const buildExpectedWalletBalances = (transactions: ReconciliationTransact
         return
       }
 
+      if (transaction.type === 'TARJETA_DEVOLUCION') {
+        addToWalletBalance(balances, transaction.walletId, -absMinorUnits(amount))
+        return
+      }
+
       if (transaction.type === 'PAGO_TARJETA') {
         addToWalletBalance(balances, transaction.fromWalletId ?? transaction.walletId, amount)
         addToWalletBalance(balances, transaction.toWalletId, -absMinorUnits(amount))

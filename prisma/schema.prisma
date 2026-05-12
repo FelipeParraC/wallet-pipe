@@ -273,6 +273,7 @@ model Transaction {
   installmentOccurrenceId String?               @unique
   debtId                 String?
   personId               String?
+  refundedTransactionId  String?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   category               Category?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -280,6 +281,8 @@ model Transaction {
   installmentOccurrence  InstallmentOccurrence? @relation("InstallmentOccurrenceTransaction")
   installmentPlan        InstallmentPlan?       @relation(fields: [installmentPlanId], references: [id], onDelete: SetNull)
   person                 Person?                @relation(fields: [personId], references: [id], onDelete: SetNull)
+  refundedTransaction    Transaction?           @relation("TransactionRefund", fields: [refundedTransactionId], references: [id], onDelete: SetNull)
+  refundTransactions     Transaction[]          @relation("TransactionRefund")
   scheduledOccurrence    ScheduledOccurrence?   @relation("ScheduledOccurrenceTransaction")
   scheduledPlan          ScheduledPlan?         @relation(fields: [scheduledPlanId], references: [id], onDelete: SetNull)
   tags                   TransactionTag[]
@@ -289,6 +292,7 @@ model Transaction {
   wallet                 Wallet                 @relation("TransactionWallet", fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([userId, occurredAt])
+  @@index([refundedTransactionId])
 }
 
 enum WalletType {
@@ -305,6 +309,7 @@ enum TransactionType {
   TRANSPORTE
   TRANSFERENCIA
   TARJETA_CONSUMO
+  TARJETA_DEVOLUCION
   PAGO_TARJETA
   DEUDA_PRESTAMO
   DEUDA_ABONO

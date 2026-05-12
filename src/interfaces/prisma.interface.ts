@@ -10,6 +10,7 @@ export type PrismaTransactionType =
     | 'TRANSPORTE'
     | 'TRANSFERENCIA'
     | 'TARJETA_CONSUMO'
+    | 'TARJETA_DEVOLUCION'
     | 'PAGO_TARJETA'
     | 'DEUDA_PRESTAMO'
     | 'DEUDA_ABONO'
@@ -44,6 +45,7 @@ export interface PrismaTransaction {
     scheduledOccurrenceId?: string | null
     installmentPlanId?: string | null
     installmentOccurrenceId?: string | null
+    refundedTransactionId?: string | null
     personId?: string | null
     debtId?: string | null
     createdAt: Date

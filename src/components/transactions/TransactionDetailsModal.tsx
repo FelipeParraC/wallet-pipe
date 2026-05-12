@@ -23,8 +23,10 @@ const relationLabel = (transaction: Transaction, wallets: Wallet[]) => {
     if (isSavingsBoxInternalTransfer(transaction, wallets)) return 'Movimiento interno'
     if (transaction.scheduledOccurrenceId) return 'Pago programado'
     if (transaction.installmentOccurrenceId) return 'Cuota de tarjeta'
+    if (transaction.type === 'TARJETA_DEVOLUCION' && transaction.installmentPlanId) return 'Devolución de compra a cuotas'
     if (transaction.installmentPlanId) return 'Compra a cuotas'
     if (transaction.debtId) return 'Deuda'
+    if (transaction.type === 'TARJETA_DEVOLUCION') return 'Devolución de tarjeta'
     if (transaction.type === 'PAGO_TARJETA') return 'Pago de tarjeta'
     return null
 }
@@ -36,6 +38,7 @@ const impactLabel = (transaction: Transaction, wallets: Wallet[]) => {
     if (isSavingsBoxInternalTransfer(transaction, wallets)) return 'Mueve dinero dentro de la cuenta padre y su cajita.'
     if (transaction.type === 'TRANSFERENCIA') return 'Mueve dinero entre cuentas propias.'
     if (transaction.type === 'TARJETA_CONSUMO') return 'Aumenta la deuda de la tarjeta y reduce el cupo.'
+    if (transaction.type === 'TARJETA_DEVOLUCION') return 'Reduce la deuda de la tarjeta y libera cupo.'
     if (transaction.type === 'PAGO_TARJETA') return 'Reduce saldo de la cuenta origen y deuda de la tarjeta.'
     if (transaction.type === 'DEUDA_ABONO') return 'Actualiza el saldo pendiente de una deuda.'
     return 'Movimiento financiero registrado.'
@@ -90,7 +93,7 @@ export const TransactionDetailsModal = ({ isOpen, onClose, transaction, categori
                             </span>
                             {relation && (
                                 <span className="inline-flex items-center gap-2 rounded-full bg-sky-400/10 px-3 py-1.5 text-xs font-medium text-sky-200">
-                                    {transaction.type === 'PAGO_TARJETA' || transaction.type === 'TARJETA_CONSUMO' ? <CreditCard className='h-3.5 w-3.5' /> : <WalletCards className='h-3.5 w-3.5' />}
+                                    {transaction.type === 'PAGO_TARJETA' || transaction.type === 'TARJETA_CONSUMO' || transaction.type === 'TARJETA_DEVOLUCION' ? <CreditCard className='h-3.5 w-3.5' /> : <WalletCards className='h-3.5 w-3.5' />}
                                     {relation}
                                 </span>
                             )}

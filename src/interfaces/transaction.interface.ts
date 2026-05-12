@@ -6,6 +6,7 @@ export type TransactionType =
     | 'TRANSPORTE'
     | 'TRANSFERENCIA'
     | 'TARJETA_CONSUMO'
+    | 'TARJETA_DEVOLUCION'
     | 'PAGO_TARJETA'
     | 'DEUDA_PRESTAMO'
     | 'DEUDA_ABONO'
@@ -34,6 +35,7 @@ export interface Transaction {
     scheduledOccurrenceId?: string
     installmentPlanId?: string
     installmentOccurrenceId?: string
+    refundedTransactionId?: string
     personId?: string
     debtId?: string
     tags?: Tag[]
@@ -80,6 +82,7 @@ export interface CreateTransactionInput {
     scheduledOccurrenceId?: string
     installmentPlanId?: string
     installmentOccurrenceId?: string
+    refundedTransactionId?: string
     personId?: string
     debtId?: string
     tagIds?: string[]
@@ -104,6 +107,7 @@ export interface UpdateTransactionInput {
     scheduledOccurrenceId?: string
     installmentPlanId?: string
     installmentOccurrenceId?: string
+    refundedTransactionId?: string
     personId?: string
     debtId?: string
     tagIds?: string[]

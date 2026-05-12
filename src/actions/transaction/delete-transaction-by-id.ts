@@ -37,6 +37,7 @@ export const deleteTransactionById = async (id: string) => {
             const transaction = await tx.transaction.findFirst({
                 where: { id, userId: user.id },
                 include: {
+                    refundTransactions: { where: { type: 'TARJETA_DEVOLUCION', status: { not: 'CANCELADA' } } },
                     installmentPlan: {
                         include: {
                             occurrences: true,
@@ -50,6 +51,10 @@ export const deleteTransactionById = async (id: string) => {
             }
 
             if (transaction.type === 'TARJETA_CONSUMO' && transaction.installmentPlan) {
+                if (transaction.refundTransactions.length > 0) {
+                    throw new Error('No puedes borrar una compra que ya tiene devolución. Borra primero la devolución para mantener la contabilidad.')
+                }
+
                 const { hasRealInstallmentPayments, importedPaidAmount } = getInstallmentPurchaseDeletionImpact(transaction.installmentPlan.occurrences)
 
                 if (hasRealInstallmentPayments) {
@@ -115,6 +120,33 @@ export const deleteTransactionById = async (id: string) => {
                         },
                     })
                 }
+            }
+
+            if (transaction.type === 'TARJETA_CONSUMO' && !transaction.installmentPlan && transaction.refundTransactions.length > 0) {
+                throw new Error('No puedes borrar una compra que ya tiene devolución. Borra primero la devolución para mantener la contabilidad.')
+            }
+
+            if (transaction.type === 'TARJETA_DEVOLUCION' && transaction.installmentPlanId) {
+                await tx.installmentOccurrence.updateMany({
+                    where: {
+                        userId: user.id,
+                        installmentPlanId: transaction.installmentPlanId,
+                        status: 'CANCELADA',
+                    },
+                    data: { status: 'PENDIENTE' },
+                })
+
+                const pendingCount = await tx.installmentOccurrence.count({
+                    where: { installmentPlanId: transaction.installmentPlanId, status: 'PENDIENTE' },
+                })
+
+                await tx.installmentPlan.update({
+                    where: { id: transaction.installmentPlanId },
+                    data: {
+                        remainingInstallments: pendingCount,
+                        isActive: pendingCount > 0,
+                    },
+                })
             }
 
             if (transaction.type === 'TARJETA_CONSUMO' && transaction.installmentPlan) {

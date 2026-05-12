@@ -414,7 +414,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
       const creditCardTransactions = await prisma.transaction.findMany({
         where: {
           userId: user.id,
-          type: { in: ['TARJETA_CONSUMO', 'PAGO_TARJETA'] },
+          type: { in: ['TARJETA_CONSUMO', 'TARJETA_DEVOLUCION', 'PAGO_TARJETA'] },
         },
         orderBy: { occurredAt: 'desc' },
       })

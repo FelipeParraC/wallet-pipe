@@ -28,6 +28,7 @@ const linkedMovementLabel = (transaction: Transaction) => {
     if (transaction.scheduledOccurrenceId || transaction.scheduledPlanId) return 'Está ligado a un pago programado.'
     if (transaction.debtId) return 'Está ligado a una deuda.'
     if (transaction.type === 'PAGO_TARJETA') return 'Es un pago de tarjeta.'
+    if (transaction.type === 'TARJETA_DEVOLUCION') return 'Es una devolución de tarjeta.'
     return null
 }
 
@@ -84,6 +85,8 @@ export const EditTransactionForm = ({ transaction, categories, tags, walletId }:
                 categoryId: categoryId === 'none' ? undefined : categoryId,
                 newAmount: isTransferTransaction(transaction) || transaction.type === 'PAGO_TARJETA'
                     ? toTransferAmount(nextAmount)
+                    : transaction.type === 'TARJETA_DEVOLUCION'
+                        ? Math.abs(nextAmount)
                     : toSignedAmount(transaction.type, nextAmount),
                 numberOfTrips: isTransportTransaction(transaction) ? Number(numberOfTrips) : undefined,
                 fareValue: isTransportTransaction(transaction) ? transaction.fareValue : undefined,
@@ -96,6 +99,7 @@ export const EditTransactionForm = ({ transaction, categories, tags, walletId }:
                 scheduledOccurrenceId: transaction.scheduledOccurrenceId,
                 installmentPlanId: transaction.installmentPlanId,
                 installmentOccurrenceId: transaction.installmentOccurrenceId,
+                refundedTransactionId: transaction.refundedTransactionId,
                 debtId: transaction.debtId,
                 personId: transaction.personId,
                 tagIds,

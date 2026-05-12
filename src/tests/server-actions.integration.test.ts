@@ -30,6 +30,7 @@ type TransactionRecord = {
   toWalletId?: string | null
   fareValue?: bigint | null
   numberOfTrips?: number | null
+  refundedTransactionId?: string | null
 }
 
 const cents = (value: number) => BigInt(Math.round(value * 100))
@@ -389,6 +390,43 @@ const testUpdateCreditCardPayment = async () => {
   assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(880))
 }
 
+const testCreditCardRefund = async () => {
+  const tx = createMemoryTx()
+
+  const charge = await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-credit',
+    type: 'TARJETA_CONSUMO',
+    title: 'Compra cancelada',
+    description: '',
+    date: Date.parse('2025-01-02T08:00:00.000Z'),
+    categoryId: '10',
+    amount: -300,
+  }) as TransactionRecord
+
+  assert.equal(tx.state.wallets.get('wallet-credit')?.balance, cents(300))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(700))
+
+  const refund = await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-credit',
+    type: 'TARJETA_DEVOLUCION',
+    title: 'Devolución',
+    description: '',
+    date: Date.parse('2025-01-04T08:00:00.000Z'),
+    categoryId: '10',
+    amount: 300,
+    refundedTransactionId: charge.id,
+  }) as TransactionRecord
+
+  assert.equal(tx.state.wallets.get('wallet-credit')?.balance, cents(0))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(1000))
+  assert.equal(refund.amount, cents(300))
+
+  await deleteTransactionInTx(tx, 'user-1', refund.id)
+
+  assert.equal(tx.state.wallets.get('wallet-credit')?.balance, cents(300))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(700))
+}
+
 const testSavingsBoxTransferReconciliation = async () => {
   const tx = createMemoryTx()
   tx.state.wallets.set('wallet-box', {
@@ -456,6 +494,7 @@ const testSavingsBoxTransferReconciliation = async () => {
   await testOwnershipValidation()
   await testCreditCardChargeAndPayment()
   await testUpdateCreditCardPayment()
+  await testCreditCardRefund()
   await testSavingsBoxTransferReconciliation()
 
   console.log('server-actions.integration.test.ts passed')

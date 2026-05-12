@@ -59,12 +59,19 @@ export type CreateCardPaymentInput = BaseMovementInput & {
   amount?: number
 }
 
+export type CreateCardRefundInput = BaseMovementInput & {
+  kind: 'CARD_REFUND'
+  cardWalletId: string
+  refundedTransactionId: string
+}
+
 export type CreateMovementFromFormInput =
   | StandardMovementInput
   | TransportMovementInput
   | TransferMovementInput
   | CreateCardPurchaseInput
   | CreateCardPaymentInput
+  | CreateCardRefundInput
 
 const parseRequiredDate = (value: string, fieldName: string) => {
   const date = new Date(value)
@@ -350,6 +357,65 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
           walletId: creditCard.id,
           categoryId: data.categoryId,
         }), data.tagIds)
+      }
+
+      if (data.kind === 'CARD_REFUND') {
+        const creditCard = await ensureWalletKind(tx, data.cardWalletId, user.id, 'CREDIT')
+        const purchase = await tx.transaction.findFirst({
+          where: {
+            id: data.refundedTransactionId,
+            userId: user.id,
+            walletId: creditCard.id,
+            type: 'TARJETA_CONSUMO',
+          },
+          include: {
+            refundTransactions: { where: { type: 'TARJETA_DEVOLUCION', status: { not: 'CANCELADA' } } },
+            installmentPlan: { include: { occurrences: true } },
+          },
+        })
+
+        if (!purchase) throw new Error('La compra seleccionada no existe o no pertenece a esta tarjeta')
+        if (purchase.refundTransactions.length > 0) throw new Error('Esta compra ya tiene una devolución registrada')
+
+        const refundAmount = absMinorUnits(moneyToMinorUnits(purchase.amount))
+        const currentDebt = moneyToMinorUnits(creditCard.balance)
+
+        if (refundAmount > currentDebt) {
+          throw new Error('La deuda actual de la tarjeta es menor al valor de la compra. Esta versión solo permite devoluciones que no dejan saldo a favor.')
+        }
+
+        const transaction = await createTaggedTransaction(tx, user.id, createBaseTransaction({
+          type: 'TARJETA_DEVOLUCION',
+          title,
+          description: description || `Devolución de ${purchase.title}`,
+          occurredAt,
+          amount: moneyToNumber(refundAmount),
+          walletId: creditCard.id,
+          categoryId: purchase.categoryId ?? data.categoryId,
+          installmentPlanId: purchase.installmentPlanId ?? undefined,
+          refundedTransactionId: purchase.id,
+        }), data.tagIds)
+
+        if (purchase.installmentPlanId) {
+          await tx.installmentOccurrence.updateMany({
+            where: {
+              userId: user.id,
+              installmentPlanId: purchase.installmentPlanId,
+              status: { in: ['PENDIENTE', 'OMITIDA'] },
+            },
+            data: { status: 'CANCELADA' },
+          })
+
+          await tx.installmentPlan.update({
+            where: { id: purchase.installmentPlanId },
+            data: {
+              remainingInstallments: 0,
+              isActive: false,
+            },
+          })
+        }
+
+        return transaction
       }
 
       const sourceWallet = await ensureWalletKind(tx, data.fromWalletId, user.id, 'NORMAL')

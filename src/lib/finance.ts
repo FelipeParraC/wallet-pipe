@@ -54,7 +54,7 @@ export const isTransferType = (type: TransactionType | string) => type === 'TRAN
 
 export const isTransportType = (type: TransactionType | string) => type === 'TRANSPORTE'
 
-export const isCreditCardType = (type: TransactionType | string) => type === 'TARJETA_CONSUMO' || type === 'PAGO_TARJETA'
+export const isCreditCardType = (type: TransactionType | string) => type === 'TARJETA_CONSUMO' || type === 'TARJETA_DEVOLUCION' || type === 'PAGO_TARJETA'
 
 export const canUseFareValue = (walletType: WalletType | string) => walletType === 'TRANSPORTE' || walletType === 'Transporte'
 
@@ -64,6 +64,7 @@ export const toSignedAmount = (type: TransactionType | string, amount: number) =
   const absoluteAmount = roundMoney(Math.abs(amount))
 
   if (type === 'INGRESO') return absoluteAmount
+  if (type === 'TARJETA_DEVOLUCION') return absoluteAmount
   return -absoluteAmount
 }
 

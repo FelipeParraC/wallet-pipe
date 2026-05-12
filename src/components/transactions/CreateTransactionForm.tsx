@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { format } from 'date-fns'
-import { ArrowRightLeft, Banknote, Bus, CheckCircle2, CreditCard, ReceiptText, WalletCards } from 'lucide-react'
+import { ArrowRightLeft, Banknote, Bus, CheckCircle2, CreditCard, ReceiptText, RotateCcw, WalletCards } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import type { Category, Tag, Wallet } from '@/interfaces'
+import type { Category, Tag, Transaction, Wallet } from '@/interfaces'
 import { createMovementFromForm } from '@/actions'
 import { Alert, AlertDescription, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '../ui'
 import { formatCurrency } from '@/utils'
 
-type MovementKind = 'INGRESO' | 'GASTO' | 'CARD_PURCHASE' | 'TRANSFER' | 'CARD_PAYMENT' | 'TRANSPORT'
+type MovementKind = 'INGRESO' | 'GASTO' | 'CARD_PURCHASE' | 'CARD_REFUND' | 'TRANSFER' | 'CARD_PAYMENT' | 'TRANSPORT'
 type InstallmentMode = 'SINGLE' | 'INSTALLMENTS'
 type InstallmentEntryMode = 'NEW' | 'IN_PROGRESS'
 type PaymentMode = 'PARCIAL' | 'TOTAL'
@@ -20,6 +20,7 @@ interface CreateTransactionFormProps {
     categories: Category[] | null
     tags?: Tag[] | null
     wallet?: Wallet
+    transactions?: Transaction[]
 }
 
 const nowDate = () => format(new Date(), 'yyyy-MM-dd')
@@ -86,12 +87,13 @@ const movementMeta: Record<MovementKind, { label: string; description: string; i
     INGRESO: { label: 'Ingreso', description: 'Dinero que entra a una cuenta normal.', icon: Banknote },
     GASTO: { label: 'Gasto', description: 'Compra o salida desde una cuenta normal.', icon: ReceiptText },
     CARD_PURCHASE: { label: 'Compra con tarjeta', description: 'Consumo a una cuota o diferido.', icon: CreditCard },
+    CARD_REFUND: { label: 'Devolución de tarjeta', description: 'Cancela una compra y evita cuotas futuras.', icon: RotateCcw },
     TRANSFER: { label: 'Transferencia', description: 'Movimiento entre cuentas propias.', icon: ArrowRightLeft },
     CARD_PAYMENT: { label: 'Pago de tarjeta', description: 'Abono parcial o total a una tarjeta.', icon: WalletCards },
     TRANSPORT: { label: 'Transporte', description: 'Viajes calculados por valor de pasaje.', icon: Bus },
 }
 
-export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: CreateTransactionFormProps) => {
+export const CreateTransactionForm = ({ wallets, categories, tags, wallet, transactions = [] }: CreateTransactionFormProps) => {
     const router = useRouter()
     const activeWallets = wallets.filter((item) => item.isActive)
     const normalWallets = activeWallets.filter((item) => !item.isSavingsBox && item.type !== 'Tarjeta de Crédito' && item.type !== 'Transporte')
@@ -126,6 +128,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
     const [paidInstallments, setPaidInstallments] = useState('0')
     const [firstDueAt, setFirstDueAt] = useState('')
     const [paymentMode, setPaymentMode] = useState<PaymentMode>('PARCIAL')
+    const [refundedTransactionId, setRefundedTransactionId] = useState('')
     const [date, setDate] = useState(nowDate())
     const [time, setTime] = useState(nowTime())
     const [error, setError] = useState<string | null>(null)
@@ -144,16 +147,27 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
         ? Math.max(0, Math.trunc(Number(paidInstallments || 0)))
         : 0
     const remainingInstallments = Math.max(0, normalizedTotalInstallments - normalizedPaidInstallments)
+    const refundedPurchaseIds = useMemo(() => new Set(transactions
+        .filter((transaction) => transaction.type === 'TARJETA_DEVOLUCION' && transaction.refundedTransactionId)
+        .map((transaction) => transaction.refundedTransactionId as string)), [transactions])
+    const refundablePurchases = useMemo(() => transactions
+        .filter((transaction) => (
+            transaction.type === 'TARJETA_CONSUMO'
+            && transaction.walletId === cardWalletId
+            && !refundedPurchaseIds.has(transaction.id)
+        )), [transactions, cardWalletId, refundedPurchaseIds])
+    const selectedRefundPurchase = refundablePurchases.find((transaction) => transaction.id === refundedTransactionId)
 
     const availableKinds = useMemo(() => {
         const kinds: MovementKind[] = []
         if (normalWallets.length > 0) kinds.push('GASTO', 'INGRESO')
         if (creditCards.length > 0) kinds.push('CARD_PURCHASE')
+        if (creditCards.length > 0 && transactions.some((transaction) => transaction.type === 'TARJETA_CONSUMO')) kinds.push('CARD_REFUND')
         if (normalWallets.length >= 2) kinds.push('TRANSFER')
         if (normalWallets.length > 0 && creditCards.length > 0) kinds.push('CARD_PAYMENT')
         if (transportWallets.length > 0) kinds.push('TRANSPORT')
         return kinds
-    }, [normalWallets.length, creditCards.length, transportWallets.length])
+    }, [normalWallets.length, creditCards.length, transportWallets.length, transactions])
 
     useEffect(() => {
         if (!availableKinds.includes(kind) && availableKinds[0]) {
@@ -172,6 +186,12 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
         }
     }, [kind, paymentMode, selectedCard])
 
+    useEffect(() => {
+        if (kind !== 'CARD_REFUND' || !selectedRefundPurchase) return
+        setTitle((current) => current || `Devolución: ${selectedRefundPurchase.title}`)
+        setAmount(String(Math.abs(selectedRefundPurchase.amount)))
+    }, [kind, selectedRefundPurchase])
+
     const resetForKind = (nextKind: MovementKind) => {
         setKind(nextKind)
         setStep(2)
@@ -184,6 +204,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
         setPaidInstallments('0')
         setPaymentMode('PARCIAL')
         setFirstDueAt('')
+        setRefundedTransactionId('')
     }
 
     const validate = () => {
@@ -192,6 +213,8 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
         if ((kind === 'GASTO' || kind === 'INGRESO' || kind === 'CARD_PURCHASE') && !categoryId) return 'Selecciona una categoría'
         if ((kind === 'GASTO' || kind === 'INGRESO') && !walletId) return 'Selecciona una cuenta'
         if (kind === 'CARD_PURCHASE' && !cardWalletId) return 'Selecciona una tarjeta'
+        if (kind === 'CARD_REFUND' && !cardWalletId) return 'Selecciona una tarjeta'
+        if (kind === 'CARD_REFUND' && !refundedTransactionId) return 'Selecciona la compra que estás devolviendo'
         if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && Number(totalInstallments) < 2) return 'Las cuotas deben ser mínimo 2'
         if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && installmentEntryMode === 'IN_PROGRESS' && normalizedPaidInstallments >= normalizedTotalInstallments) return 'Las cuotas pagadas deben ser menores al total de cuotas'
         if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && !firstDueAt) return 'Selecciona el primer corte de la tarjeta'
@@ -272,6 +295,15 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
             }
         }
 
+        if (kind === 'CARD_REFUND') {
+            return {
+                ...base,
+                kind: 'CARD_REFUND' as const,
+                cardWalletId,
+                refundedTransactionId,
+            }
+        }
+
         return {
             ...base,
             kind: 'CARD_PAYMENT' as const,
@@ -308,6 +340,8 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
 
     const ctaLabel = kind === 'CARD_PURCHASE'
         ? 'Registrar compra'
+        : kind === 'CARD_REFUND'
+            ? 'Registrar devolución'
         : kind === 'CARD_PAYMENT'
             ? 'Pagar tarjeta'
             : 'Guardar movimiento'
@@ -384,6 +418,16 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
                             </Field>
                         )}
 
+                        {kind === 'CARD_REFUND' && (
+                            <Field label='Tarjeta'>
+                                <WalletSelect wallets={creditCards} value={cardWalletId} onChange={(value) => {
+                                    setCardWalletId(value)
+                                    setRefundedTransactionId('')
+                                    setAmount('')
+                                }} />
+                            </Field>
+                        )}
+
                         {kind === 'TRANSPORT' && (
                             <Field label='Billetera transporte'>
                                 <WalletSelect wallets={transportWallets} value={transportWalletId} onChange={setTransportWalletId} />
@@ -429,6 +473,41 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
                                 </p>
                             )}
                         </>
+                    )}
+
+                    {kind === 'CARD_REFUND' && (
+                        <div className='space-y-4 rounded-[1.5rem] border border-emerald-300/15 bg-emerald-400/[0.07] p-4'>
+                            <div>
+                                <p className='text-xs uppercase tracking-[0.24em] text-emerald-200/70'>Devolución</p>
+                                <h3 className='mt-1 text-base font-semibold text-white'>¿Qué compra cancelaste?</h3>
+                                <p className='mt-1 text-sm text-emerald-50/80'>La devolución reduce la deuda de la tarjeta y evita cuotas futuras.</p>
+                            </div>
+                            <Field label='Compra original'>
+                                <Select value={refundedTransactionId} onValueChange={(value) => {
+                                    setRefundedTransactionId(value)
+                                    const purchase = refundablePurchases.find((transaction) => transaction.id === value)
+                                    if (purchase) {
+                                        setTitle(`Devolución: ${purchase.title}`)
+                                        setAmount(String(Math.abs(purchase.amount)))
+                                    }
+                                }}>
+                                    <SelectTrigger className='h-12'><SelectValue placeholder={refundablePurchases.length > 0 ? 'Selecciona una compra' : 'No hay compras disponibles'} /></SelectTrigger>
+                                    <SelectContent>
+                                        {refundablePurchases.map((purchase) => (
+                                            <SelectItem key={purchase.id} value={purchase.id}>
+                                                {purchase.title} · {formatCurrency(Math.abs(purchase.amount))}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            {selectedRefundPurchase && (
+                                <div className='grid gap-2 text-sm text-emerald-50/90 sm:grid-cols-2'>
+                                    <span className='rounded-2xl border border-white/10 bg-white/[0.05] p-3'>Monto: <strong>{formatCurrency(Math.abs(selectedRefundPurchase.amount))}</strong></span>
+                                    <span className='rounded-2xl border border-white/10 bg-white/[0.05] p-3'>{selectedRefundPurchase.installmentPlanId ? 'Cancela cuotas futuras' : 'Compra a una cuota'}</span>
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {kind === 'CARD_PURCHASE' && (
@@ -490,6 +569,15 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
                     {kind === 'TRANSPORT' ? (
                         <Field label='Número de viajes'>
                             <Input className='h-14 text-center text-2xl font-bold' type='number' min='1' value={numberOfTrips} onChange={(event) => setNumberOfTrips(event.target.value)} />
+                        </Field>
+                    ) : kind === 'CARD_REFUND' ? (
+                        <Field label='Monto devuelto'>
+                            <Input
+                                className='h-14 text-center text-2xl font-bold'
+                                type='number'
+                                value={selectedRefundPurchase ? String(Math.abs(selectedRefundPurchase.amount)) : amount}
+                                disabled
+                            />
                         </Field>
                     ) : (
                         <Field label={kind === 'CARD_PAYMENT' && paymentMode === 'TOTAL' ? 'Monto total a pagar' : 'Monto'}>
@@ -562,7 +650,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
                         <h2 className='mt-2 text-2xl font-semibold text-white'>{movementMeta[kind].label}</h2>
                     </div>
                     <SummaryRow label='Título' value={title || 'Sin título'} />
-                    <SummaryRow label='Monto' value={formatCurrency(kind === 'TRANSPORT' ? transportAmount : paymentAmount || Number(amount || 0))} />
+                    <SummaryRow label='Monto' value={formatCurrency(kind === 'TRANSPORT' ? transportAmount : kind === 'CARD_REFUND' ? Math.abs(selectedRefundPurchase?.amount ?? 0) : paymentAmount || Number(amount || 0))} />
                     {kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && (
                         <SummaryRow label='Cuotas' value={`${totalInstallments} cuotas de aprox. ${formatCurrency(estimatedInstallment)}`} />
                     )}
@@ -577,6 +665,12 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet }: Cre
                     )}
                     {kind === 'CARD_PAYMENT' && paymentMode === 'TOTAL' && (
                         <SummaryRow label='Efecto' value='Saldará la tarjeta y cerrará cuotas pendientes' />
+                    )}
+                    {kind === 'CARD_REFUND' && selectedRefundPurchase && (
+                        <>
+                            <SummaryRow label='Compra devuelta' value={selectedRefundPurchase.title} />
+                            <SummaryRow label='Efecto' value={selectedRefundPurchase.installmentPlanId ? 'Reduce la deuda y cancela cuotas futuras' : 'Reduce la deuda de la tarjeta'} />
+                        </>
                     )}
                     <SummaryRow label='Fecha' value={`${date} · ${time}`} />
                     {tagIds.length > 0 && (

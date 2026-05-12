@@ -90,6 +90,14 @@ const cardObligations = calculateCreditCardCycleObligations({
       amount: BigInt(-500000),
       occurredAt: new Date('2026-05-02T12:00:00.000Z'),
     },
+    {
+      id: 'refund-1',
+      walletId: 'card-1',
+      type: 'TARJETA_DEVOLUCION',
+      amount: BigInt(300000),
+      occurredAt: new Date('2026-05-03T12:00:00.000Z'),
+      refundedTransactionId: 'purchase-1',
+    },
   ],
   installmentOccurrences: [{
     id: 'installment-1',
@@ -106,9 +114,9 @@ const cardObligations = calculateCreditCardCycleObligations({
 })
 
 assert.equal(cardObligations.length, 1)
-assert.equal(cardObligations[0].totalDue, 23000)
+assert.equal(cardObligations[0].totalDue, 20000)
 assert.equal(cardObligations[0].paymentsApplied, 5000)
-assert.equal(cardObligations[0].pendingAmount, 18000)
+assert.equal(cardObligations[0].pendingAmount, 15000)
 
 const cardDebtFallback = calculateCreditCardCycleObligations({
   cards: [{
@@ -163,12 +171,13 @@ const reconciliationTransactions = [
   { id: 'initial-parent', walletId: 'wallet-parent', type: 'INGRESO', amount: 2500000 },
   { id: 'open-box', walletId: 'wallet-parent', type: 'TRANSFERENCIA', amount: -50000, fromWalletId: 'wallet-parent', toWalletId: 'wallet-box' },
   { id: 'card-buy', walletId: 'card-1', type: 'TARJETA_CONSUMO', amount: -333266.66 },
+  { id: 'card-refund', walletId: 'card-1', type: 'TARJETA_DEVOLUCION', amount: 100000 },
   { id: 'card-pay', walletId: 'wallet-parent', type: 'PAGO_TARJETA', amount: -100000, fromWalletId: 'wallet-parent', toWalletId: 'card-1' },
 ]
 const expectedBalances = buildExpectedWalletBalances(reconciliationTransactions)
 assert.equal(expectedBalances.get('wallet-parent'), BigInt(235000000))
 assert.equal(expectedBalances.get('wallet-box'), BigInt(5000000))
-assert.equal(expectedBalances.get('card-1'), BigInt(23326666))
+assert.equal(expectedBalances.get('card-1'), BigInt(13326666))
 
 const reconciledWallets = [
   {
@@ -198,7 +207,7 @@ const reconciledWallets = [
     id: 'card-1',
     userId: '1',
     name: 'Nu Crédito',
-    balance: 233266.66,
+    balance: 133266.66,
     type: 'Tarjeta de Crédito' as const,
     color: '#8b5cf6',
     includeInTotal: false,

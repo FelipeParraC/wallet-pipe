@@ -1,4 +1,4 @@
-import { getCategories, getTags, getWalletById, getWallets } from '@/actions'
+import { getCategories, getTags, getTransactions, getWalletById, getWallets } from '@/actions'
 import { CreateTransactionForm } from '@/components'
 import Link from 'next/link'
 
@@ -21,6 +21,8 @@ export default async function NuevaTransaccionPage({ searchParams }: Props) {
     const categories = respCategories.ok ? respCategories.categories : []
     const respTags = await getTags()
     const tags = respTags.ok && respTags.data ? respTags.data.tags : []
+    const respTransactions = await getTransactions()
+    const transactions = respTransactions.ok ? respTransactions.transactions : []
 
     if ( !wallets ) {
         return <></>
@@ -49,7 +51,7 @@ export default async function NuevaTransaccionPage({ searchParams }: Props) {
                     Elige el tipo y solo verás los campos que aplican.
                 </p>
             </section>
-            <CreateTransactionForm wallets={ wallets } categories={ categories } tags={ tags } wallet={ wallet || undefined } />
+            <CreateTransactionForm wallets={ wallets } categories={ categories } tags={ tags } wallet={ wallet || undefined } transactions={ transactions ?? [] } />
         </div>
     )
 }

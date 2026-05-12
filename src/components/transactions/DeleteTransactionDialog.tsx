@@ -16,6 +16,7 @@ interface DeleteTransactionDialogProps {
 }
 
 const deleteImpact = (transaction: Transaction) => {
+    if (transaction.type === 'TARJETA_DEVOLUCION') return 'Se revertirá la devolución: aumentará la deuda de la tarjeta y, si era una compra a cuotas, se reabrirán las cuotas pendientes.'
     if (transaction.installmentPlanId) return 'Esta compra a cuotas intentará eliminar también su plan asociado. Si ya existen pagos reales vinculados, el servidor puede bloquearlo para proteger la contabilidad.'
     if (transaction.installmentOccurrenceId) return 'La cuota vinculada volverá a quedar pendiente y el plan de cuotas se recalculará.'
     if (transaction.scheduledOccurrenceId) return 'El pago programado volverá a quedar pendiente para este ciclo.'

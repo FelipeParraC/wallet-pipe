@@ -6,6 +6,7 @@ const transactionTypeLabels: Record<TransactionType, string> = {
   TRANSPORTE: 'Transporte',
   TRANSFERENCIA: 'Transferencia',
   TARJETA_CONSUMO: 'Compra con tarjeta',
+  TARJETA_DEVOLUCION: 'Devolución de tarjeta',
   PAGO_TARJETA: 'Pago de tarjeta',
   DEUDA_PRESTAMO: 'Préstamo o deuda',
   DEUDA_ABONO: 'Abono a deuda',

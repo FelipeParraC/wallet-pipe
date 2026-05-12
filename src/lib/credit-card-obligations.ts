@@ -19,6 +19,7 @@ export interface CreditCardObligationTransaction {
   occurredAt: Date
   toWalletId?: string | null
   installmentPlanId?: string | null
+  refundedTransactionId?: string | null
 }
 
 export interface CreditCardObligationInstallment {
@@ -146,7 +147,17 @@ export const calculateCreditCardCycleObligations = ({
     ))
     .reduce((sum, transaction) => addMinorUnits(sum, absMinorUnits(moneyToMinorUnits(transaction.amount))), BigInt(0))
 
-  const totalDueMinor = addMinorUnits(purchasesTotalMinor, installmentsTotalMinor)
+  const refundsTotalMinor = transactions
+    .filter((transaction) => (
+      transaction.walletId === card.id
+      && transaction.type === 'TARJETA_DEVOLUCION'
+      && transaction.occurredAt >= cycleStartsAt
+      && transaction.occurredAt <= cycleEndsAt
+    ))
+    .reduce((sum, transaction) => addMinorUnits(sum, absMinorUnits(moneyToMinorUnits(transaction.amount))), BigInt(0))
+
+  const rawTotalDueMinor = addMinorUnits(purchasesTotalMinor, installmentsTotalMinor, -refundsTotalMinor)
+  const totalDueMinor = rawTotalDueMinor > BigInt(0) ? rawTotalDueMinor : BigInt(0)
   const cardDebtMinor = absMinorUnits(moneyToMinorUnits(card.balance))
   const effectiveTotalDueMinor = totalDueMinor > BigInt(0) ? totalDueMinor : cardDebtMinor
   const pendingAmountMinor = effectiveTotalDueMinor > paymentsAppliedMinor ? addMinorUnits(effectiveTotalDueMinor, -paymentsAppliedMinor) : BigInt(0)
