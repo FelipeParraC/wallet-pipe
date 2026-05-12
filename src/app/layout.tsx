@@ -3,8 +3,10 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Analytics } from '@vercel/analytics/react'
 import { Provider } from '@/components'
+import { getAppDisplayName } from '@/lib/app-environment'
 
 const inter = Inter({ subsets: ['latin'] })
+const appName = getAppDisplayName()
 
 export const viewport: Viewport = {
     themeColor: '#0f2740',
@@ -12,12 +14,13 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-    title: 'Wallet Pipe',
+    title: appName,
     description: 'La aplicación para gestionar tus finanzas personales',
-    manifest: '/manifest.json',
+    applicationName: appName,
+    manifest: '/manifest.webmanifest',
     appleWebApp: {
         capable: true,
-        title: 'Wallet Pipe',
+        title: appName,
         statusBarStyle: 'black-translucent',
     },
     icons: {
