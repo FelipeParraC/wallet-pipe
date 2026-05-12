@@ -2,7 +2,7 @@ export const revalidate = 0
 
 
 import { getCurrentCycleSummary, getWallets } from '@/actions'
-import { NewWallet, WalletCard, WalletsTotalBalance } from '@/components'
+import { DataUnavailableNotice, NewWallet, WalletCard, WalletsTotalBalance } from '@/components'
 
 export default async function BilleterasPage() {
 
@@ -11,11 +11,22 @@ export default async function BilleterasPage() {
         getCurrentCycleSummary(),
     ])
 
-    const wallets = respWallets.ok ? respWallets.wallets : []
+    const wallets = respWallets.ok && respWallets.wallets ? respWallets.wallets : []
     const cycleSummary = respCycleSummary.ok ? respCycleSummary.data : null
+    const readIssue = [respWallets, respCycleSummary].find((response) => !response.ok)
 
-    if ( !wallets ) {
-        return <></>
+    if ( !respWallets.ok ) {
+        return (
+            <div className='space-y-6'>
+                <DataUnavailableNotice message={respWallets.message} />
+                <div className='glass-panel rounded-[1.75rem] border border-dashed border-white/10 p-8 text-center'>
+                    <h2 className='text-xl font-semibold text-white'>Cuentas no disponibles</h2>
+                    <p className='mt-2 text-sm text-slate-400'>
+                        No pudimos cargar tus cuentas. Inténtalo de nuevo en unos segundos.
+                    </p>
+                </div>
+            </div>
+        )
     }
 
     const activeWallets = wallets.filter((wallet) => wallet.isActive)
@@ -37,6 +48,8 @@ export default async function BilleterasPage() {
                     <h1 className="text-2xl font-semibold text-white md:text-3xl">Billeteras</h1>
                 </div>
             </div>
+
+            {readIssue && <DataUnavailableNotice message={readIssue.message} />}
 
             <WalletsTotalBalance wallets={ wallets } cycleSummary={ cycleSummary } />
 

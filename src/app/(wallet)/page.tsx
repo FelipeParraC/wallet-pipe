@@ -2,7 +2,7 @@ export const revalidate = 0
 
 import { getCategories, getCurrentCycleSummary, getTransactions, getWallets } from '@/actions'
 import { auth } from '@/auth.config'
-import { DashboardHome } from '@/components'
+import { DashboardHome, DataUnavailableNotice } from '@/components'
 import { redirect } from 'next/navigation'
 
 
@@ -28,6 +28,7 @@ export default async function HomePage() {
     const categories = respCategories.ok ? respCategories.categories : []
 
     const cycleSummary = respCycleSummary.ok ? respCycleSummary.data : null
+    const readIssue = [respTransactions, respWallets, respCategories, respCycleSummary].find((response) => !response.ok)
 
     return (
         <div className='space-y-7'>
@@ -39,6 +40,8 @@ export default async function HomePage() {
                     </h1>
                 </div>
             </div>
+
+            {readIssue && <DataUnavailableNotice message={readIssue.message} />}
 
             <DashboardHome transactions={ transactions } categories={ categories } wallets={ wallets } cycleSummary={ cycleSummary } />
         </div>

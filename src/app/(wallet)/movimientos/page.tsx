@@ -1,7 +1,7 @@
 export const revalidate = 0
 
 import Link from 'next/link'
-import { NewTransactionFloatingButton, TransactionsGrid } from '@/components'
+import { DataUnavailableNotice, NewTransactionFloatingButton, TransactionsGrid } from '@/components'
 import { getCategories, getCurrentCycleSummary, getTransactions, getWallets } from '@/actions'
 
 export default async function MovimientosPage() {
@@ -19,6 +19,7 @@ export default async function MovimientosPage() {
     const categories = respCategories.ok ? respCategories.categories : []
 
     const cycleSummary = respSummary.ok ? respSummary.data : null
+    const readIssue = [walletsResponse, respTransactions, respCategories, respSummary].find((response) => !response.ok)
 
     return (
         <div className='space-y-6'>
@@ -32,7 +33,16 @@ export default async function MovimientosPage() {
                 </div>
             </div>
 
-            {wallets && wallets.length > 0 ? (
+            {readIssue && <DataUnavailableNotice message={readIssue.message} />}
+
+            {!walletsResponse.ok ? (
+                <div className='glass-panel rounded-[1.75rem] border border-dashed border-white/10 p-8 text-center'>
+                    <h2 className='text-xl font-semibold text-white'>Movimientos no disponibles</h2>
+                    <p className='mt-2 text-sm text-slate-400'>
+                        No pudimos comprobar tus cuentas en este momento. Inténtalo otra vez en unos segundos.
+                    </p>
+                </div>
+            ) : wallets && wallets.length > 0 ? (
                 <>
                     <TransactionsGrid transactions={ transactions } categories={ categories } wallets={ wallets } />
                     <NewTransactionFloatingButton walletId='' />

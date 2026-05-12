@@ -1,6 +1,7 @@
 export const revalidate = 0
 
 import { getPlanningCycleOverview } from '@/actions'
+import { PlanningUnavailable } from '@/components'
 import { PlanningWorkbench } from '@/components/planning/PlanningWorkbench'
 
 interface PlaneacionSectionPageProps {
@@ -30,6 +31,6 @@ export default async function PlaneacionPagadoPage({ searchParams }: PlaneacionS
       summary={overview.summary}
     />
   ) : (
-    <div className='glass-panel rounded-[1.75rem] p-8 text-center text-sm text-slate-400'>No se pudo cargar Planeación.</div>
+    <PlanningUnavailable message={overviewResponse.ok ? undefined : overviewResponse.message} />
   )
 }

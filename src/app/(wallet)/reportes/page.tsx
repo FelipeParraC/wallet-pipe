@@ -1,7 +1,7 @@
 export const revalidate = 0
 
 import { getCurrentCycleSummary, getPlanningCycleOverview } from '@/actions'
-import { CurrencyDisplay } from '@/components'
+import { CurrencyDisplay, DataUnavailableNotice } from '@/components'
 import { CycleEvolutionChart } from '@/components/reports/CycleEvolutionChart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import type { Category, Transaction, Wallet } from '@/interfaces'
@@ -19,6 +19,7 @@ export default async function ReportesPage() {
 
     const planning = planningResponse.ok ? planningResponse.data : null
     const cycleSummary = summaryResponse.ok ? summaryResponse.data : null
+    const readIssue = [planningResponse, summaryResponse].find((response) => !response.ok)
     const transactions = cycleSummary?.transactions ?? []
     const wallets = cycleSummary?.wallets ?? []
     const categories = planning?.categories ?? []
@@ -64,6 +65,8 @@ export default async function ReportesPage() {
                     </div>
                 </div>
             </div>
+
+            {readIssue && <DataUnavailableNotice message={readIssue.message} />}
 
             <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
                 <Card>

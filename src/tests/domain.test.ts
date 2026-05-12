@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { calculateCreditCardCycleObligations } from '../lib/credit-card-obligations'
 import { combineDateAndTime, getWalletTransferDelta, roundMoney, toSignedAmount, toTransferAmount } from '../lib/finance'
+import { isSavingsBoxInternalTransfer } from '../lib/savings-box'
 import { isTransferTransaction, isTransportTransaction, type Transaction } from '../interfaces/transaction.interface'
 
 const expense = toSignedAmount('GASTO', 10000)
@@ -122,5 +123,35 @@ const cardDebtFallback = calculateCreditCardCycleObligations({
 assert.equal(cardDebtFallback.length, 1)
 assert.equal(cardDebtFallback[0].totalDue, 333266.66)
 assert.equal(cardDebtFallback[0].pendingAmount, 333266.66)
+
+assert.equal(isSavingsBoxInternalTransfer({
+  ...transferTransaction,
+  fromWalletId: 'wallet-parent',
+  toWalletId: 'wallet-box',
+}, [
+  {
+    id: 'wallet-parent',
+    userId: '1',
+    name: 'Davivienda',
+    balance: 2450000,
+    type: 'Cuenta Bancaria',
+    color: '#ef4444',
+    includeInTotal: true,
+    isSavingsBox: false,
+    isActive: true,
+  },
+  {
+    id: 'wallet-box',
+    userId: '1',
+    parentWalletId: 'wallet-parent',
+    name: 'Viaje',
+    balance: 50000,
+    type: 'Ahorros',
+    color: '#38bdf8',
+    includeInTotal: false,
+    isSavingsBox: true,
+    isActive: true,
+  },
+]), true)
 
 console.log('domain.test.ts passed')
