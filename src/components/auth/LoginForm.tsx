@@ -104,7 +104,12 @@ export const LoginForm = () => {
                                     <AlertDescription>No pudimos crear la sesión. Revisa la configuración de Auth.</AlertDescription>
                                 </Alert>
                             )}
-                            {state && !['Success', 'Invalid credentials.', 'Google account.', 'Auth callback error.'].includes(state) && (
+                            {state === 'Database unavailable.' && (
+                                <Alert variant='destructive'>
+                                    <AlertDescription>No pudimos conectar con la base de datos. Inténtalo de nuevo en un momento.</AlertDescription>
+                                </Alert>
+                            )}
+                            {state && !['Success', 'Invalid credentials.', 'Google account.', 'Auth callback error.', 'Database unavailable.'].includes(state) && (
                                 <Alert variant='destructive'>
                                     <AlertDescription>No pudimos iniciar sesión. Inténtalo otra vez.</AlertDescription>
                                 </Alert>

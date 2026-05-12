@@ -14,38 +14,43 @@ const credentialsSchema = z.object({
 })
 
 const validateCredentials = async (email: string, password: string) => {
-    const parsedCredentials = credentialsSchema.safeParse({ email, password })
+    try {
+        const parsedCredentials = credentialsSchema.safeParse({ email, password })
 
-    if (!parsedCredentials.success) {
-        return { ok: false as const, message: 'Invalid credentials.' }
-    }
-
-    const normalizedEmail = parsedCredentials.data.email.toLowerCase()
-    const user = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
-        select: {
-            password: true,
-            googleId: true,
-        },
-    })
-
-    if (!user) return { ok: false as const, message: 'Invalid credentials.' }
-
-    if (!user.password) {
-        return {
-            ok: false as const,
-            message: user.googleId ? 'Google account.' : 'Invalid credentials.',
+        if (!parsedCredentials.success) {
+            return { ok: false as const, message: 'Invalid credentials.' }
         }
-    }
 
-    if (!bcryptjs.compareSync(parsedCredentials.data.password, user.password)) {
-        return { ok: false as const, message: 'Invalid credentials.' }
-    }
+        const normalizedEmail = parsedCredentials.data.email.toLowerCase()
+        const user = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+            select: {
+                password: true,
+                googleId: true,
+            },
+        })
 
-    return {
-        ok: true as const,
-        email: normalizedEmail,
-        password: parsedCredentials.data.password,
+        if (!user) return { ok: false as const, message: 'Invalid credentials.' }
+
+        if (!user.password) {
+            return {
+                ok: false as const,
+                message: user.googleId ? 'Google account.' : 'Invalid credentials.',
+            }
+        }
+
+        if (!bcryptjs.compareSync(parsedCredentials.data.password, user.password)) {
+            return { ok: false as const, message: 'Invalid credentials.' }
+        }
+
+        return {
+            ok: true as const,
+            email: normalizedEmail,
+            password: parsedCredentials.data.password,
+        }
+    } catch (error) {
+        console.error('validateCredentials', error)
+        return { ok: false as const, message: 'Database unavailable.' }
     }
 }
 

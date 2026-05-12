@@ -84,20 +84,30 @@ export const authConfig: NextAuthConfig = {
                 token.sub = user.id
             }
 
+            if (!user && token.data) {
+                return token
+            }
+
             const email = user?.email?.toLowerCase() ?? token.email?.toLowerCase() ?? (token.data as AuthUser | undefined)?.email?.toLowerCase()
             const userId = user?.id ?? token.sub ?? (token.data as AuthUser | undefined)?.id
 
-            if (email) {
-                const userDB = await prisma.user.findUnique({ where: { email } })
-                if (userDB) {
-                    token.data = toAuthUser(userDB)
+            try {
+                if (email) {
+                    const userDB = await prisma.user.findUnique({ where: { email } })
+                    if (userDB) {
+                        token.data = toAuthUser(userDB)
+                    }
+                } else if (userId) {
+                    const userDB = await prisma.user.findUnique({ where: { id: userId } })
+                    if (userDB) {
+                        token.data = toAuthUser(userDB)
+                    }
                 }
-            } else if (userId) {
-                const userDB = await prisma.user.findUnique({ where: { id: userId } })
-                if (userDB) {
-                    token.data = toAuthUser(userDB)
-                }
-            } else if (user) {
+            } catch (error) {
+                console.error('auth.jwt.user-sync', error)
+            }
+
+            if (!token.data && user) {
                 token.data = user
             }
 
@@ -114,33 +124,39 @@ export const authConfig: NextAuthConfig = {
         Google,
         Credentials({
             async authorize(credentials) {
-                const parsedCredentials = z
-                    .object({ email: z.string().email(), password: z.string().min(6) })
-                    .safeParse(credentials)
+                try {
+                    const parsedCredentials = z
+                        .object({ email: z.string().email(), password: z.string().min(6) })
+                        .safeParse(credentials)
 
-                if ( !parsedCredentials.success ) return null
+                    if ( !parsedCredentials.success ) return null
 
-                const { email, password } = parsedCredentials.data
+                    const { email, password } = parsedCredentials.data
 
-                // Buscar por correo
-                const userDB = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
+                    // Buscar por correo
+                    const userDB = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
 
-                if ( !userDB ) return null
+                    if ( !userDB ) return null
 
-                // Comparar contraseñas
-                if ( !userDB.password || !bcryptjs.compareSync( password, userDB.password ) ) return null
+                    // Comparar contraseñas
+                    if ( !userDB.password || !bcryptjs.compareSync( password, userDB.password ) ) return null
 
-                // Regresar el usuario sin el password
-                const user = {
-                    id: userDB.id,
-                    email: userDB.email,
-                    name: userDB.name,
-                    nickname: userDB.nickname,
-                    image: userDB.image,
-                    googleId: userDB.googleId,
-                } as User
+                    // Regresar el usuario sin el password
+                    const user = {
+                        id: userDB.id,
+                        email: userDB.email,
+                        name: userDB.name,
+                        nickname: userDB.nickname,
+                        emailVerified: userDB.emailVerified,
+                        image: userDB.image,
+                        googleId: userDB.googleId,
+                    } as User
 
-                return user
+                    return user
+                } catch (error) {
+                    console.error('auth.credentials.authorize', error)
+                    return null
+                }
             },
         }),
     ]
