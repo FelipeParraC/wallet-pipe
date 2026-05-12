@@ -34,7 +34,7 @@ export const isPrismaConnectionIssue = (error: unknown) => {
     ? (error as { code?: string }).code
     : undefined
 
-  if (code && ['P1001', 'P1002', 'P1017'].includes(code)) return true
+  if (code && ['P1001', 'P1002', 'P1017', 'P2021', 'P2022', 'P2037'].includes(code)) return true
 
   const message = error instanceof Error ? error.message : String(error)
 
@@ -42,5 +42,9 @@ export const isPrismaConnectionIssue = (error: unknown) => {
     message.includes("Can't reach database server")
     || message.includes('Timed out')
     || message.includes('Connection')
+    || message.includes('does not exist in the current database')
+    || message.includes('does not exist')
+    || message.includes('invalid input value for enum')
+    || message.includes('Unknown column')
   )
 }
