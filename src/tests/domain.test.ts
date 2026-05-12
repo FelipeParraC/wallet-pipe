@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { buildExpectedWalletBalances, calculateRealAvailable, getWalletDisplayBalance, reconcileWalletBalances } from '../lib/accounting-reconciliation'
 import { calculateCreditCardCycleObligations } from '../lib/credit-card-obligations'
 import { combineDateAndTime, getWalletTransferDelta, roundMoney, toSignedAmount, toTransferAmount } from '../lib/finance'
+import { getDebtBalanceAfterPaymentDeletion, getInstallmentPurchaseDeletionImpact } from '../lib/linked-transaction-accounting'
+import { assertProtectedTransactionAmountIsUnchanged, isAmountProtectedTransaction } from '../lib/linked-transaction-guards'
 import { PrismaOperationTimeoutError } from '../lib/prisma-timeout'
 import { classifyServerError, getSafeErrorMessage } from '../lib/server-action-logging'
 import { isSavingsBoxInternalTransfer } from '../lib/savings-box'
@@ -226,5 +228,38 @@ assert.equal(classifyServerError(new Error('El monto debe ser mayor a 0')), 'dom
 assert.equal(getSafeErrorMessage(new Error('El monto debe ser mayor a 0')), 'El monto debe ser mayor a 0')
 assert.equal(classifyServerError('boom'), 'unknown')
 assert.equal(getSafeErrorMessage('boom'), 'Ocurrió un error inesperado')
+
+const linkedPayment = {
+  amount: BigInt(-1200000),
+  type: 'GASTO',
+  scheduledOccurrenceId: 'occurrence-1',
+}
+assert.equal(isAmountProtectedTransaction(linkedPayment), true)
+assert.doesNotThrow(() => assertProtectedTransactionAmountIsUnchanged(linkedPayment, -12000))
+assert.throws(
+  () => assertProtectedTransactionAmountIsUnchanged(linkedPayment, -13000),
+  /No puedes cambiar el monto de un movimiento vinculado/,
+)
+assert.equal(isAmountProtectedTransaction({ amount: BigInt(-1200000), type: 'PAGO_TARJETA' }), true)
+assert.throws(
+  () => assertProtectedTransactionAmountIsUnchanged({ amount: BigInt(-1200000), type: 'PAGO_TARJETA' }, -11000),
+  /No puedes cambiar el monto de un movimiento vinculado/,
+)
+assert.equal(isAmountProtectedTransaction({ amount: BigInt(-1200000), type: 'GASTO' }), false)
+
+assert.deepEqual(
+  getInstallmentPurchaseDeletionImpact([
+    { status: 'EJECUTADA', linkedTransactionId: null, expectedAmount: BigInt(500000) },
+    { status: 'PENDIENTE', linkedTransactionId: null, expectedAmount: BigInt(500000) },
+  ]),
+  { hasRealInstallmentPayments: false, importedPaidAmount: BigInt(500000) },
+)
+assert.deepEqual(
+  getInstallmentPurchaseDeletionImpact([
+    { status: 'EJECUTADA', linkedTransactionId: 'tx-1', expectedAmount: BigInt(500000) },
+  ]),
+  { hasRealInstallmentPayments: true, importedPaidAmount: BigInt(0) },
+)
+assert.equal(getDebtBalanceAfterPaymentDeletion(BigInt(400000), BigInt(-150000)), BigInt(550000))
 
 console.log('domain.test.ts passed')

@@ -7,6 +7,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { deleteTransactionInTx } from '@/lib/transaction-service'
 import { absMinorUnits, addMinorUnits, moneyToMinorUnits } from '@/lib/finance'
+import { getDebtBalanceAfterPaymentDeletion, getInstallmentPurchaseDeletionImpact } from '@/lib/linked-transaction-accounting'
 import { logServerActionError } from '@/lib/server-action-logging'
 
 const updateCreditCardState = async (
@@ -49,17 +50,11 @@ export const deleteTransactionById = async (id: string) => {
             }
 
             if (transaction.type === 'TARJETA_CONSUMO' && transaction.installmentPlan) {
-                const hasRealInstallmentPayments = transaction.installmentPlan.occurrences.some((occurrence) => (
-                    occurrence.status === 'EJECUTADA' && Boolean(occurrence.linkedTransactionId)
-                ))
+                const { hasRealInstallmentPayments, importedPaidAmount } = getInstallmentPurchaseDeletionImpact(transaction.installmentPlan.occurrences)
 
                 if (hasRealInstallmentPayments) {
                     throw new Error('No puedes borrar una compra a cuotas con pagos reales vinculados. Borra o reabre esos pagos primero.')
                 }
-
-                const importedPaidAmount = transaction.installmentPlan.occurrences
-                    .filter((occurrence) => occurrence.status === 'EJECUTADA' && !occurrence.linkedTransactionId)
-                    .reduce((sum, occurrence) => addMinorUnits(sum, moneyToMinorUnits(occurrence.expectedAmount)), BigInt(0))
 
                 if (importedPaidAmount > BigInt(0)) {
                     const creditWallet = await tx.wallet.findUnique({ where: { id: transaction.walletId } })
@@ -114,7 +109,7 @@ export const deleteTransactionById = async (id: string) => {
                     await tx.debt.update({
                         where: { id: debt.id },
                         data: {
-                            currentBalance: addMinorUnits(moneyToMinorUnits(debt.currentBalance), absMinorUnits(moneyToMinorUnits(transaction.amount))),
+                            currentBalance: getDebtBalanceAfterPaymentDeletion(debt.currentBalance, transaction.amount),
                             status: 'ACTIVA',
                             settledAt: null,
                         },
