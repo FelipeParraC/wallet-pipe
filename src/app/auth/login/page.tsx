@@ -1,9 +1,15 @@
 import { LoginForm } from '@/components'
 
-export default function LoginPage() {
+interface LoginPageProps {
+    searchParams?: {
+        error?: string
+    }
+}
+
+export default function LoginPage({ searchParams }: LoginPageProps) {
     return (
         <div className="w-full">
-            <LoginForm />
+            <LoginForm authError={searchParams?.error} />
         </div>
     )
 }

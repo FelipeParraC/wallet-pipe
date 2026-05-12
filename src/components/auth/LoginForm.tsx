@@ -19,7 +19,18 @@ const formSchema = z.object({
     }),
 })
 
-export const LoginForm = () => {
+interface LoginFormProps {
+    authError?: string
+}
+
+const authErrorMessages: Record<string, string> = {
+    AccessDenied: 'No pudimos autorizar el ingreso con Google. Inténtalo de nuevo.',
+    CallbackRouteError: 'No pudimos completar el ingreso con Google. Inténtalo de nuevo.',
+    DatabaseUnavailable: 'No pudimos conectar con la base de datos. Inténtalo de nuevo en un momento.',
+    GoogleEmailMissing: 'Google no compartió un correo válido para crear la cuenta.',
+}
+
+export const LoginForm = ({ authError }: LoginFormProps) => {
 
     const [state, dispatch] = useFormState(authenticate, undefined)
     const [showEmailForm, setShowEmailForm] = useState(false)
@@ -55,6 +66,11 @@ export const LoginForm = () => {
             {!showEmailForm ? (
                 <div className='space-y-3'>
                     <GoogleButton />
+                    {authError && (
+                        <Alert variant='destructive'>
+                            <AlertDescription>{authErrorMessages[authError] ?? 'No pudimos iniciar sesión con Google. Inténtalo otra vez.'}</AlertDescription>
+                        </Alert>
+                    )}
                     <AuthDivider />
                     <EmailButton label='Ingresar con correo' onClick={() => setShowEmailForm(true)} />
                 </div>

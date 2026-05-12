@@ -5,6 +5,7 @@ import { z } from 'zod'
 import prisma from './lib/prisma'
 import bcryptjs from 'bcryptjs'
 import { AuthUser, User } from '@/interfaces'
+import { isPrismaConnectionIssue } from '@/lib/prisma-timeout'
 
 const toAuthUser = (user: {
     id: string
@@ -31,53 +32,61 @@ export const authConfig: NextAuthConfig = {
     },
     pages: {
         signIn: '/auth/login',
-        newUser: '/auth/register'
+        newUser: '/auth/register',
+        error: '/auth/login',
     },
     callbacks: {
         async signIn({ account, user }) {
             if (account?.provider !== 'google') return true
 
             const email = user.email?.toLowerCase()
-            if (!email) return false
+            if (!email) return '/auth/login?error=GoogleEmailMissing'
 
-            const googleId = account.providerAccountId
-            const name = user.name?.trim() || email.split('@')[0]
-            const image = user.image ?? null
-            const existingUser = await prisma.user.findFirst({
-                where: {
-                    OR: [
-                        { email },
-                        { googleId },
-                    ],
-                },
-            })
+            try {
+                const googleId = account.providerAccountId
+                const name = user.name?.trim() || email.split('@')[0]
+                const image = user.image ?? null
+                const existingUser = await prisma.user.findFirst({
+                    where: {
+                        OR: [
+                            { email },
+                            { googleId },
+                        ],
+                    },
+                })
 
-            if (existingUser) {
-                await prisma.user.update({
-                    where: { id: existingUser.id },
+                if (existingUser) {
+                    await prisma.user.update({
+                        where: { id: existingUser.id },
+                        data: {
+                            googleId,
+                            image,
+                            name,
+                            emailVerified: new Date(),
+                        },
+                    })
+                    return true
+                }
+
+                await prisma.user.create({
                     data: {
+                        email,
+                        name,
+                        nickname: '',
+                        password: null,
                         googleId,
                         image,
-                        name,
                         emailVerified: new Date(),
                     },
                 })
+
                 return true
+            } catch (error) {
+                console.error('auth.google.signIn', error)
+                return isPrismaConnectionIssue(error)
+                    ? '/auth/login?error=DatabaseUnavailable'
+                    : '/auth/login?error=AccessDenied'
             }
-
-            await prisma.user.create({
-                data: {
-                    email,
-                    name,
-                    nickname: '',
-                    password: null,
-                    googleId,
-                    image,
-                    emailVerified: new Date(),
-                },
-            })
-
-            return true
         },
         async jwt({ token, user }) {
             if (user?.id) {
