@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { buildExpectedWalletBalances, calculateRealAvailable, getWalletDisplayBalance, reconcileWalletBalances } from '../lib/accounting-reconciliation'
 import { calculateCreditCardCycleObligations } from '../lib/credit-card-obligations'
 import { combineDateAndTime, getWalletTransferDelta, roundMoney, toSignedAmount, toTransferAmount } from '../lib/finance'
 import { isSavingsBoxInternalTransfer } from '../lib/savings-box'
@@ -153,5 +154,64 @@ assert.equal(isSavingsBoxInternalTransfer({
     isActive: true,
   },
 ]), true)
+
+const reconciliationTransactions = [
+  { id: 'initial-parent', walletId: 'wallet-parent', type: 'INGRESO', amount: 2500000 },
+  { id: 'open-box', walletId: 'wallet-parent', type: 'TRANSFERENCIA', amount: -50000, fromWalletId: 'wallet-parent', toWalletId: 'wallet-box' },
+  { id: 'card-buy', walletId: 'card-1', type: 'TARJETA_CONSUMO', amount: -333266.66 },
+  { id: 'card-pay', walletId: 'wallet-parent', type: 'PAGO_TARJETA', amount: -100000, fromWalletId: 'wallet-parent', toWalletId: 'card-1' },
+]
+const expectedBalances = buildExpectedWalletBalances(reconciliationTransactions)
+assert.equal(expectedBalances.get('wallet-parent'), BigInt(235000000))
+assert.equal(expectedBalances.get('wallet-box'), BigInt(5000000))
+assert.equal(expectedBalances.get('card-1'), BigInt(23326666))
+
+const reconciledWallets = [
+  {
+    id: 'wallet-parent',
+    userId: '1',
+    name: 'Davivienda',
+    balance: 2350000,
+    type: 'Cuenta Bancaria' as const,
+    color: '#ef4444',
+    includeInTotal: true,
+    isSavingsBox: false,
+    isActive: true,
+  },
+  {
+    id: 'wallet-box',
+    userId: '1',
+    parentWalletId: 'wallet-parent',
+    name: 'Viaje',
+    balance: 50000,
+    type: 'Ahorros' as const,
+    color: '#38bdf8',
+    includeInTotal: false,
+    isSavingsBox: true,
+    isActive: true,
+  },
+  {
+    id: 'card-1',
+    userId: '1',
+    name: 'Nu Crédito',
+    balance: 233266.66,
+    type: 'Tarjeta de Crédito' as const,
+    color: '#8b5cf6',
+    includeInTotal: false,
+    isSavingsBox: false,
+    isActive: true,
+  },
+]
+
+assert.equal(reconcileWalletBalances(reconciledWallets, reconciliationTransactions).length, 0)
+assert.deepEqual(
+  reconcileWalletBalances([{ ...reconciledWallets[0], balance: 2350100 }, ...reconciledWallets.slice(1)], reconciliationTransactions).map((diff) => ({
+    walletId: diff.walletId,
+    difference: diff.difference,
+  })),
+  [{ walletId: 'wallet-parent', difference: 100 }],
+)
+assert.equal(getWalletDisplayBalance(reconciledWallets[0], reconciledWallets), 2400000)
+assert.equal(calculateRealAvailable(reconciledWallets), 2350000)
 
 console.log('domain.test.ts passed')

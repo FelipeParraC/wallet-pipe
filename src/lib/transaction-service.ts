@@ -267,7 +267,10 @@ export const updateTransactionInTx = async (tx: TransactionServiceTx, userId: st
       data: { balance: updateWalletBalance(sourceWallet, addMinorUnits(-moneyInputToMinorUnits(normalizedPreviousAmount), moneyInputToMinorUnits(normalizedNextAmount))) }
     })
 
-    await updateCreditCardState(tx, creditWallet, updateWalletBalance(creditWallet, addMinorUnits(moneyInputToMinorUnits(normalizedPreviousAmount), -absMinorUnits(moneyInputToMinorUnits(normalizedNextAmount)))))
+    await updateCreditCardState(tx, creditWallet, updateWalletBalance(creditWallet, addMinorUnits(
+      absMinorUnits(moneyInputToMinorUnits(normalizedPreviousAmount)),
+      -absMinorUnits(moneyInputToMinorUnits(normalizedNextAmount)),
+    )))
 
     return tx.transaction.update({
       where: { id },

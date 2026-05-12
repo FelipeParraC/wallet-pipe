@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { reconcileWalletBalances } from '../lib/accounting-reconciliation'
 import { createTransactionInTx, deleteTransactionInTx, updateTransactionInTx, type TransactionServiceTx } from '../lib/transaction-service'
 import { createWalletInTx } from '../lib/wallet-service'
 
@@ -233,6 +234,33 @@ const testDeleteStandardMovementsInTx = async () => {
   assert.equal(tx.state.transactions.has(income.id), false)
 }
 
+const testUpdateStandardMovementInTx = async () => {
+  const tx = createMemoryTx()
+  const expense = await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-1',
+    type: 'GASTO',
+    title: 'Mercado',
+    description: '',
+    date: Date.parse('2025-01-02T08:00:00.000Z'),
+    categoryId: '10',
+    amount: -75,
+  }) as TransactionRecord
+
+  await updateTransactionInTx(tx, 'user-1', expense.id, {
+    title: 'Mercado editado',
+    description: '',
+    date: Date.parse('2025-01-02T08:00:00.000Z'),
+    categoryId: '10',
+    newAmount: -110,
+    walletId: 'wallet-1',
+    type: 'GASTO',
+    amount: -75,
+  })
+
+  assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(890))
+  assert.equal(tx.state.transactions.get(expense.id)?.amount, cents(-110))
+}
+
 const testOwnershipValidation = async () => {
   const tx = createMemoryTx()
   await assert.rejects(
@@ -318,14 +346,117 @@ const testCreditCardChargeAndPayment = async () => {
   assert.equal(tx.state.transactions.has(payment.id), false)
 }
 
+const testUpdateCreditCardPayment = async () => {
+  const tx = createMemoryTx()
+
+  await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-credit',
+    type: 'TARJETA_CONSUMO',
+    title: 'Celular',
+    description: '',
+    date: Date.parse('2025-01-02T08:00:00.000Z'),
+    categoryId: '10',
+    amount: -300,
+  })
+
+  const payment = await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-1',
+    type: 'PAGO_TARJETA',
+    title: 'Pago TC',
+    description: '',
+    date: Date.parse('2025-01-03T10:00:00.000Z'),
+    categoryId: '11',
+    amount: -120,
+    fromWalletId: 'wallet-1',
+    toWalletId: 'wallet-credit',
+  }) as TransactionRecord
+
+  await updateTransactionInTx(tx, 'user-1', payment.id, {
+    title: 'Pago TC editado',
+    description: '',
+    date: Date.parse('2025-01-03T10:00:00.000Z'),
+    categoryId: '11',
+    newAmount: -180,
+    walletId: 'wallet-1',
+    type: 'PAGO_TARJETA',
+    amount: -120,
+    fromWalletId: 'wallet-1',
+    toWalletId: 'wallet-credit',
+  })
+
+  assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(820))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.balance, cents(120))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(880))
+}
+
+const testSavingsBoxTransferReconciliation = async () => {
+  const tx = createMemoryTx()
+  tx.state.wallets.set('wallet-box', {
+    id: 'wallet-box',
+    userId: 'user-1',
+    balance: cents(0),
+    isActive: true,
+    type: 'AHORROS',
+    createdAt: new Date('2025-01-01T10:00:00.000Z'),
+  })
+
+  await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-1',
+    type: 'TRANSFERENCIA',
+    title: 'Agregar a cajita: Viaje',
+    description: 'Movimiento interno de cajita',
+    date: Date.parse('2025-01-02T08:00:00.000Z'),
+    amount: -50,
+    fromWalletId: 'wallet-1',
+    toWalletId: 'wallet-box',
+  })
+
+  assert.equal(tx.state.wallets.get('wallet-1')?.balance, cents(950))
+  assert.equal(tx.state.wallets.get('wallet-box')?.balance, cents(50))
+  const baselineTransactions: TransactionRecord[] = [
+    {
+      id: 'baseline-wallet-1',
+      userId: 'user-1',
+      walletId: 'wallet-1',
+      type: 'INGRESO',
+      title: 'Saldo inicial',
+      description: '',
+      amount: cents(1000),
+      occurredAt: new Date(),
+      recordedAt: new Date(),
+      isVisible: false,
+    },
+    {
+      id: 'baseline-wallet-2',
+      userId: 'user-1',
+      walletId: 'wallet-2',
+      type: 'INGRESO',
+      title: 'Saldo inicial',
+      description: '',
+      amount: cents(200),
+      occurredAt: new Date(),
+      recordedAt: new Date(),
+      isVisible: false,
+    },
+  ]
+
+  assert.equal(reconcileWalletBalances(
+    Array.from(tx.state.wallets.values()).filter((wallet) => wallet.userId === 'user-1'),
+    [...baselineTransactions, ...Array.from(tx.state.transactions.values()).filter((transaction) => transaction.userId === 'user-1')],
+  ).length, 0)
+}
+
 ;(async () => {
   await testCreateWalletInTx()
   await testCreateTransferInTx()
   await testUpdateTransferInTx()
   await testDeleteTransferInTx()
   await testDeleteStandardMovementsInTx()
+  await testUpdateStandardMovementInTx()
   await testOwnershipValidation()
   await testCreditCardChargeAndPayment()
+  await testUpdateCreditCardPayment()
+  await testSavingsBoxTransferReconciliation()
 
   console.log('server-actions.integration.test.ts passed')
 })()
