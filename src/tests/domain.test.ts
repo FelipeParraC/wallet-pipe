@@ -81,7 +81,7 @@ const cardObligations = calculateCreditCardCycleObligations({
       walletId: 'card-1',
       type: 'TARJETA_CONSUMO',
       amount: BigInt(-2000000),
-      occurredAt: new Date('2026-04-10T12:00:00.000Z'),
+      occurredAt: new Date(2026, 4, 10, 12),
     },
     {
       id: 'payment-1',
@@ -89,20 +89,20 @@ const cardObligations = calculateCreditCardCycleObligations({
       toWalletId: 'card-1',
       type: 'PAGO_TARJETA',
       amount: BigInt(-500000),
-      occurredAt: new Date('2026-05-02T12:00:00.000Z'),
+      occurredAt: new Date(2026, 4, 2, 12),
     },
     {
       id: 'refund-1',
       walletId: 'card-1',
       type: 'TARJETA_DEVOLUCION',
       amount: BigInt(300000),
-      occurredAt: new Date('2026-05-03T12:00:00.000Z'),
+      occurredAt: new Date(2026, 4, 3, 12),
       refundedTransactionId: 'purchase-1',
     },
   ],
   installmentOccurrences: [{
     id: 'installment-1',
-    dueAt: new Date('2026-05-05T12:00:00.000Z'),
+    dueAt: new Date(2026, 4, 23, 12),
     expectedAmount: BigInt(300000),
     status: 'PENDIENTE',
     installmentPlan: {
@@ -110,8 +110,8 @@ const cardObligations = calculateCreditCardCycleObligations({
       title: 'Laptop',
     },
   }],
-  cycleStartsAt: new Date('2026-04-23T00:00:00.000Z'),
-  cycleEndsAt: new Date('2026-05-22T23:59:59.999Z'),
+  cycleStartsAt: new Date(2026, 3, 23, 0, 0, 0, 0),
+  cycleEndsAt: new Date(2026, 4, 22, 23, 59, 59, 999),
 })
 
 assert.equal(cardObligations.length, 1)
@@ -149,7 +149,7 @@ const cardDebtWithOnlyOnePendingInstallment = calculateCreditCardCycleObligation
   installmentOccurrences: [
     {
       id: 'installment-paid',
-      dueAt: new Date('2026-04-25T17:00:00.000Z'),
+      dueAt: new Date(2026, 3, 25, 12),
       expectedAmount: BigInt(16663334),
       status: 'EJECUTADA',
       installmentPlan: {
@@ -159,7 +159,7 @@ const cardDebtWithOnlyOnePendingInstallment = calculateCreditCardCycleObligation
     },
     {
       id: 'installment-current',
-      dueAt: new Date('2026-05-25T17:00:00.000Z'),
+      dueAt: new Date(2026, 4, 25, 12),
       expectedAmount: BigInt(16663333),
       status: 'PENDIENTE',
       installmentPlan: {
@@ -169,7 +169,7 @@ const cardDebtWithOnlyOnePendingInstallment = calculateCreditCardCycleObligation
     },
     {
       id: 'installment-next',
-      dueAt: new Date('2026-06-25T17:00:00.000Z'),
+      dueAt: new Date(2026, 5, 25, 12),
       expectedAmount: BigInt(16663333),
       status: 'PENDIENTE',
       installmentPlan: {
@@ -178,8 +178,8 @@ const cardDebtWithOnlyOnePendingInstallment = calculateCreditCardCycleObligation
       },
     },
   ],
-  cycleStartsAt: new Date('2026-05-25T00:00:00.000Z'),
-  cycleEndsAt: new Date('2026-06-24T23:59:59.999Z'),
+  cycleStartsAt: new Date(2026, 3, 25, 0, 0, 0, 0),
+  cycleEndsAt: new Date(2026, 4, 24, 23, 59, 59, 999),
 })
 
 assert.equal(cardDebtWithOnlyOnePendingInstallment.length, 1)

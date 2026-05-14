@@ -80,10 +80,12 @@ const buildPaymentDueDate = (cutoffAt: Date, paymentDueDay?: number | null) => {
   return endOfDay(new Date(dueYear, dueMonth, clampDay(dueYear, dueMonth, paymentDueDay)))
 }
 
-const statementForPaymentCycle = (card: CreditCardObligationWallet, cycleStartsAt: Date, cycleEndsAt: Date) => {
+const statementForPlanningCycle = (card: CreditCardObligationWallet, cycleStartsAt: Date, cycleEndsAt: Date) => {
   const closingDay = card.statementClosingDay ?? cycleEndsAt.getDate()
   const candidates: Array<{ startsAt: Date; endsAt: Date; dueAt: Date }> = []
   const cursor = new Date(cycleStartsAt.getFullYear(), cycleStartsAt.getMonth() - 2, 1)
+  const firstAllowedClosing = endOfDay(cycleStartsAt)
+  const cycleLookAhead = endOfDay(new Date(cycleEndsAt.getFullYear(), cycleEndsAt.getMonth(), cycleEndsAt.getDate() + 1))
 
   for (let index = 0; index < 6; index += 1) {
     const base = addMonths(cursor, index)
@@ -95,11 +97,12 @@ const statementForPaymentCycle = (card: CreditCardObligationWallet, cycleStartsA
     candidates.push({ startsAt, endsAt, dueAt })
   }
 
-  return candidates.find((candidate) => candidate.dueAt >= cycleStartsAt && candidate.dueAt <= cycleEndsAt)
+  return candidates.find((candidate) => candidate.endsAt > firstAllowedClosing && candidate.endsAt <= cycleLookAhead)
+    ?? candidates.find((candidate) => candidate.endsAt > firstAllowedClosing)
     ?? {
       startsAt: cycleStartsAt,
       endsAt: cycleEndsAt,
-      dueAt: cycleEndsAt,
+      dueAt: buildPaymentDueDate(cycleEndsAt, card.paymentDueDay),
     }
 }
 
@@ -116,7 +119,7 @@ export const calculateCreditCardCycleObligations = ({
   cycleStartsAt: Date
   cycleEndsAt: Date
 }) => cards.map((card) => {
-  const statement = statementForPaymentCycle(card, cycleStartsAt, cycleEndsAt)
+  const statement = statementForPlanningCycle(card, cycleStartsAt, cycleEndsAt)
 
   const purchasesTotalMinor = transactions
     .filter((transaction) => (
@@ -131,8 +134,8 @@ export const calculateCreditCardCycleObligations = ({
   const pendingInstallments = installmentOccurrences.filter((occurrence) => (
     occurrence.status === 'PENDIENTE'
     && occurrence.installmentPlan.chargeWalletId === card.id
-    && occurrence.dueAt >= cycleStartsAt
-    && occurrence.dueAt <= cycleEndsAt
+    && occurrence.dueAt >= statement.startsAt
+    && occurrence.dueAt <= statement.endsAt
   ))
 
   const installmentsTotalMinor = pendingInstallments

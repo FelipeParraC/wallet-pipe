@@ -56,7 +56,7 @@ export const getCurrentCycleSummary = async () => {
             const startsAt = ensuredCycle.startsAt
             const endsAt = ensuredCycle.endsAt
 
-            const [transactionsDb, walletsDb, scheduledDb, installmentDb, debtsDb, creditCardTransactionsDb] = await Promise.all([
+            const [transactionsDb, walletsDb, scheduledDb, installmentDb, debtsDb, creditCardTransactionsDb, creditCardInstallmentDb] = await Promise.all([
                 prismaClient.transaction.findMany({
                     where: {
                         userId: user.id,
@@ -94,6 +94,13 @@ export const getCurrentCycleSummary = async () => {
                     },
                     orderBy: { occurredAt: 'desc' },
                 }),
+                prismaClient.installmentOccurrence.findMany({
+                    where: {
+                        userId: user.id,
+                        status: 'PENDIENTE',
+                    },
+                    include: { installmentPlan: { select: { chargeWalletId: true, title: true } } }
+                }),
             ])
 
             const transactions: Transaction[] = transactionsDb.map((transaction: Parameters<typeof mapToTransaction>[0]) => mapToTransaction(transaction))
@@ -120,7 +127,7 @@ export const getCurrentCycleSummary = async () => {
                     ...transaction,
                     occurredAt: normalizeDateValue(transaction.occurredAt),
                 })),
-                installmentOccurrences: installmentDb.map((occurrence) => ({
+                installmentOccurrences: creditCardInstallmentDb.map((occurrence) => ({
                     ...occurrence,
                     dueAt: new Date(occurrence.dueAt),
                 })),

@@ -364,6 +364,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
       debts,
       transactions,
       creditCardTransactions,
+      creditCardInstallmentOccurrences,
     } = await withPrismaConnectionRetry(async () => {
       const wallets = await prisma.wallet.findMany({ where: { userId: user.id, isActive: true }, orderBy: { name: 'asc' } })
       const categories = await prisma.category.findMany({
@@ -402,6 +403,11 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
         },
         orderBy: { occurredAt: 'desc' },
       })
+      const creditCardInstallmentOccurrences = await prisma.installmentOccurrence.findMany({
+        where: { userId: user.id, status: 'PENDIENTE' },
+        include: { installmentPlan: { include: { category: true, paymentWallet: true, chargeWallet: true } }, linkedTransaction: true },
+        orderBy: { dueAt: 'asc' },
+      })
 
       return {
         wallets,
@@ -413,6 +419,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
         debts,
         transactions,
         creditCardTransactions,
+        creditCardInstallmentOccurrences,
       }
     })
 
@@ -431,7 +438,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
     const creditCardObligations = calculateCreditCardCycleObligations({
       cards: wallets.filter((wallet) => wallet.type === 'TARJETA_CREDITO'),
       transactions: creditCardTransactions,
-      installmentOccurrences,
+      installmentOccurrences: creditCardInstallmentOccurrences,
       cycleStartsAt: startsAt,
       cycleEndsAt: endsAt,
     })
