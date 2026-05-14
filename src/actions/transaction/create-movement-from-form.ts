@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 import { actionSuccess } from '@/lib/action-response'
 import { absMinorUnits, addMinorUnits, moneyInputToMinorUnits, moneyToMinorUnits, moneyToNumber } from '@/lib/finance'
+import { buildInstallmentCutoffDate } from '@/lib/installment-dates'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { syncTransactionTagsInTx } from '@/lib/tag-service'
 import { createTransactionInTx } from '@/lib/transaction-service'
@@ -89,40 +90,6 @@ const requirePositiveNumber = (value: number | undefined, fieldName: string) => 
 }
 
 const normalizeText = (value: string | undefined) => value?.trim() ?? ''
-
-const addMonthsPreservingTime = (date: Date, months: number) => {
-  const next = new Date(date)
-  next.setMonth(next.getMonth() + months)
-  return next
-}
-
-const clampDay = (year: number, month: number, day: number) => {
-  const lastDay = new Date(year, month + 1, 0).getDate()
-  return Math.min(Math.max(day, 1), lastDay)
-}
-
-const buildCardPaymentDueDate = (cutoffAt: Date, paymentDueDay?: number | null) => {
-  if (!paymentDueDay) return cutoffAt
-
-  let dueYear = cutoffAt.getFullYear()
-  let dueMonth = cutoffAt.getMonth()
-
-  if (paymentDueDay <= cutoffAt.getDate()) {
-    const nextMonth = addMonthsPreservingTime(new Date(dueYear, dueMonth, 1, cutoffAt.getHours(), cutoffAt.getMinutes(), cutoffAt.getSeconds()), 1)
-    dueYear = nextMonth.getFullYear()
-    dueMonth = nextMonth.getMonth()
-  }
-
-  return new Date(
-    dueYear,
-    dueMonth,
-    clampDay(dueYear, dueMonth, paymentDueDay),
-    cutoffAt.getHours(),
-    cutoffAt.getMinutes(),
-    cutoffAt.getSeconds(),
-    0,
-  )
-}
 
 const buildInstallmentAmounts = (totalAmount: number, totalInstallments: number) => {
   const totalMinor = moneyInputToMinorUnits(totalAmount)
@@ -317,7 +284,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
               installmentPlanId: plan.id,
               userId: user.id,
               installmentNumber: index + 1,
-              dueAt: buildCardPaymentDueDate(addMonthsPreservingTime(firstDueAt, index), creditCard.paymentDueDay),
+              dueAt: buildInstallmentCutoffDate(firstDueAt, index, creditCard.statementClosingDay),
               expectedAmount,
               status: index < paidInstallments ? 'EJECUTADA' as const : 'PENDIENTE' as const,
             })),
@@ -460,7 +427,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
             firstDueAt: true,
             installmentAmount: true,
             chargeWallet: {
-              select: { paymentDueDay: true },
+              select: { statementClosingDay: true },
             },
             occurrences: {
               select: { installmentNumber: true },
@@ -481,7 +448,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
                   installmentPlanId: plan.id,
                   userId: user.id,
                   installmentNumber,
-                  dueAt: buildCardPaymentDueDate(addMonthsPreservingTime(plan.firstDueAt, installmentNumber - 1), plan.chargeWallet?.paymentDueDay),
+                  dueAt: buildInstallmentCutoffDate(plan.firstDueAt, installmentNumber - 1, plan.chargeWallet?.statementClosingDay),
                   expectedAmount: plan.installmentAmount,
                   status: 'PENDIENTE' as const,
                 })),

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { buildExpectedWalletBalances, calculateRealAvailable, getWalletDisplayBalance, reconcileWalletBalances } from '../lib/accounting-reconciliation'
 import { calculateCreditCardCycleObligations } from '../lib/credit-card-obligations'
 import { combineDateAndTime, getWalletTransferDelta, roundMoney, toSignedAmount, toTransferAmount } from '../lib/finance'
+import { buildInstallmentCutoffDate } from '../lib/installment-dates'
 import { getDebtBalanceAfterPaymentDeletion, getInstallmentPurchaseDeletionImpact } from '../lib/linked-transaction-accounting'
 import { assertProtectedTransactionAmountIsUnchanged, isAmountProtectedTransaction } from '../lib/linked-transaction-guards'
 import { PrismaOperationTimeoutError } from '../lib/prisma-timeout'
@@ -118,7 +119,7 @@ assert.equal(cardObligations[0].totalDue, 20000)
 assert.equal(cardObligations[0].paymentsApplied, 5000)
 assert.equal(cardObligations[0].pendingAmount, 15000)
 
-const cardDebtFallback = calculateCreditCardCycleObligations({
+const cardDebtWithoutCurrentDueDates = calculateCreditCardCycleObligations({
   cards: [{
     id: 'card-2',
     name: 'Nu Credito',
@@ -133,9 +134,62 @@ const cardDebtFallback = calculateCreditCardCycleObligations({
   cycleEndsAt: new Date('2026-05-24T23:59:59.999Z'),
 })
 
-assert.equal(cardDebtFallback.length, 1)
-assert.equal(cardDebtFallback[0].totalDue, 333266.66)
-assert.equal(cardDebtFallback[0].pendingAmount, 333266.66)
+assert.equal(cardDebtWithoutCurrentDueDates.length, 0)
+
+const cardDebtWithOnlyOnePendingInstallment = calculateCreditCardCycleObligations({
+  cards: [{
+    id: 'card-3',
+    name: 'Nu Credito',
+    balance: BigInt(33326666),
+    type: 'TARJETA_CREDITO',
+    statementClosingDay: 25,
+    paymentDueDay: 14,
+  }],
+  transactions: [],
+  installmentOccurrences: [
+    {
+      id: 'installment-paid',
+      dueAt: new Date('2026-04-25T17:00:00.000Z'),
+      expectedAmount: BigInt(16663334),
+      status: 'EJECUTADA',
+      installmentPlan: {
+        chargeWalletId: 'card-3',
+        title: 'Mouse Logitech',
+      },
+    },
+    {
+      id: 'installment-current',
+      dueAt: new Date('2026-05-25T17:00:00.000Z'),
+      expectedAmount: BigInt(16663333),
+      status: 'PENDIENTE',
+      installmentPlan: {
+        chargeWalletId: 'card-3',
+        title: 'Mouse Logitech',
+      },
+    },
+    {
+      id: 'installment-next',
+      dueAt: new Date('2026-06-25T17:00:00.000Z'),
+      expectedAmount: BigInt(16663333),
+      status: 'PENDIENTE',
+      installmentPlan: {
+        chargeWalletId: 'card-3',
+        title: 'Mouse Logitech',
+      },
+    },
+  ],
+  cycleStartsAt: new Date('2026-05-25T00:00:00.000Z'),
+  cycleEndsAt: new Date('2026-06-24T23:59:59.999Z'),
+})
+
+assert.equal(cardDebtWithOnlyOnePendingInstallment.length, 1)
+assert.equal(cardDebtWithOnlyOnePendingInstallment[0].installmentCount, 1)
+assert.equal(cardDebtWithOnlyOnePendingInstallment[0].pendingAmount, 166633.33)
+
+const firstHistoricalCutoff = new Date('2026-04-23T17:00:00.000Z')
+assert.equal(buildInstallmentCutoffDate(firstHistoricalCutoff, 0, 25).toISOString(), '2026-04-23T17:00:00.000Z')
+assert.equal(buildInstallmentCutoffDate(firstHistoricalCutoff, 1, 25).toISOString(), '2026-05-25T17:00:00.000Z')
+assert.equal(buildInstallmentCutoffDate(firstHistoricalCutoff, 2, 25).toISOString(), '2026-06-25T17:00:00.000Z')
 
 assert.equal(isSavingsBoxInternalTransfer({
   ...transferTransaction,

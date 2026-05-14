@@ -158,9 +158,7 @@ export const calculateCreditCardCycleObligations = ({
 
   const rawTotalDueMinor = addMinorUnits(purchasesTotalMinor, installmentsTotalMinor, -refundsTotalMinor)
   const totalDueMinor = rawTotalDueMinor > BigInt(0) ? rawTotalDueMinor : BigInt(0)
-  const cardDebtMinor = absMinorUnits(moneyToMinorUnits(card.balance))
-  const effectiveTotalDueMinor = totalDueMinor > BigInt(0) ? totalDueMinor : cardDebtMinor
-  const pendingAmountMinor = effectiveTotalDueMinor > paymentsAppliedMinor ? addMinorUnits(effectiveTotalDueMinor, -paymentsAppliedMinor) : BigInt(0)
+  const pendingAmountMinor = totalDueMinor > paymentsAppliedMinor ? addMinorUnits(totalDueMinor, -paymentsAppliedMinor) : BigInt(0)
 
   return {
     walletId: card.id,
@@ -171,7 +169,7 @@ export const calculateCreditCardCycleObligations = ({
     purchasesTotal: moneyToNumber(purchasesTotalMinor),
     installmentsTotal: moneyToNumber(installmentsTotalMinor),
     paymentsApplied: moneyToNumber(paymentsAppliedMinor),
-    totalDue: moneyToNumber(effectiveTotalDueMinor),
+    totalDue: moneyToNumber(totalDueMinor),
     pendingAmount: moneyToNumber(pendingAmountMinor),
     installmentCount: pendingInstallments.length,
   }

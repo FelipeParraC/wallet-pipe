@@ -127,6 +127,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet, trans
     const [totalInstallments, setTotalInstallments] = useState('2')
     const [paidInstallments, setPaidInstallments] = useState('0')
     const [firstDueAt, setFirstDueAt] = useState('')
+    const [firstDueAtEdited, setFirstDueAtEdited] = useState(false)
     const [paymentMode, setPaymentMode] = useState<PaymentMode>('PARCIAL')
     const [refundedTransactionId, setRefundedTransactionId] = useState('')
     const [date, setDate] = useState(nowDate())
@@ -136,6 +137,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet, trans
 
     const selectedCard = creditCards.find((item) => item.id === cardWalletId)
     const selectedTransportWallet = transportWallets.find((item) => item.id === transportWalletId)
+    const calculatedFirstDueAt = useMemo(() => deriveCardCutoffAt(selectedCard, date), [selectedCard, date])
     const estimatedInstallment = installmentMode === 'INSTALLMENTS' && Number(totalInstallments) > 0
         ? Number(amount || 0) / Number(totalInstallments)
         : 0
@@ -177,8 +179,8 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet, trans
 
     useEffect(() => {
         if (kind !== 'CARD_PURCHASE' || installmentMode !== 'INSTALLMENTS') return
-        setFirstDueAt((current) => current || deriveCardCutoffAt(selectedCard, date))
-    }, [kind, installmentMode, selectedCard, date])
+        if (!firstDueAtEdited) setFirstDueAt(calculatedFirstDueAt)
+    }, [kind, installmentMode, calculatedFirstDueAt, firstDueAtEdited])
 
     useEffect(() => {
         if (kind === 'CARD_PAYMENT' && paymentMode === 'TOTAL') {
@@ -204,6 +206,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet, trans
         setPaidInstallments('0')
         setPaymentMode('PARCIAL')
         setFirstDueAt('')
+        setFirstDueAtEdited(false)
         setRefundedTransactionId('')
     }
 
@@ -516,7 +519,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet, trans
                                 value={installmentMode}
                                 onChange={(value) => {
                                     setInstallmentMode(value as InstallmentMode)
-                                    if (value === 'INSTALLMENTS') setFirstDueAt(deriveCardCutoffAt(selectedCard, date))
+                                    if (value === 'INSTALLMENTS' && !firstDueAtEdited) setFirstDueAt(calculatedFirstDueAt)
                                 }}
                                 options={[
                                     { value: 'SINGLE', label: 'Una cuota' },
@@ -551,14 +554,22 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet, trans
                                                 <Input type='number' min='0' max={Math.max(Number(totalInstallments) - 1, 0)} value={paidInstallments} onChange={(event) => setPaidInstallments(event.target.value)} />
                                             </Field>
                                         )}
-                                        <Field label='Primer corte asociado' className={installmentEntryMode === 'IN_PROGRESS' ? '' : 'sm:col-span-2'}>
-                                            <Input type='datetime-local' step='1' value={firstDueAt} onChange={(event) => setFirstDueAt(event.target.value)} />
+                                        <Field label='Primer corte real' className={installmentEntryMode === 'IN_PROGRESS' ? '' : 'sm:col-span-2'}>
+                                            <Input
+                                                type='datetime-local'
+                                                step='1'
+                                                value={firstDueAt}
+                                                onChange={(event) => {
+                                                    setFirstDueAtEdited(true)
+                                                    setFirstDueAt(event.target.value)
+                                                }}
+                                            />
                                         </Field>
                                     </div>
 
                                     <div className='rounded-2xl border border-sky-300/15 bg-sky-400/[0.07] p-3'>
                                         <p className='text-xs text-sky-100'>
-                                            El primer corte es donde entró la primera cuota. Si ya pagaste algunas, quedarán como historial importado y solo verás pendientes las que faltan.
+                                            Lo calculamos con la fecha de compra y el corte de la tarjeta. Ajústalo si ese mes el banco cerró otro día.
                                         </p>
                                     </div>
                                 </div>
@@ -620,7 +631,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet, trans
                         <Field label='Fecha'>
                             <Input type='date' value={date} onChange={(event) => {
                                 setDate(event.target.value)
-                                if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS') {
+                                if (kind === 'CARD_PURCHASE' && installmentMode === 'INSTALLMENTS' && !firstDueAtEdited) {
                                     setFirstDueAt(deriveCardCutoffAt(selectedCard, event.target.value))
                                 }
                             }} />

@@ -7,6 +7,7 @@ import { actionSuccess } from '@/lib/action-response'
 import { calculateCreditCardCycleObligations } from '@/lib/credit-card-obligations'
 import { getCyclePeriodForDate } from '@/lib/cycle'
 import { absMinorUnits, ensurePositiveMoney, moneyInputToMinorUnits, moneyToNumber, moneyToMinorUnits } from '@/lib/finance'
+import { buildInstallmentCutoffDate } from '@/lib/installment-dates'
 import { withPrismaTimeout } from '@/lib/prisma-timeout'
 import { asFailure, requireSessionUser } from '@/lib/server-validation'
 import { createTransactionInTx } from '@/lib/transaction-service'
@@ -127,21 +128,6 @@ const buildMonthlyDueDate = (year: number, month: number, day: number, timeSourc
   )
 )
 
-const buildCardPaymentDueDate = (cutoffAt: Date, paymentDueDay?: number | null) => {
-  if (!paymentDueDay) return cutoffAt
-
-  let dueYear = cutoffAt.getFullYear()
-  let dueMonth = cutoffAt.getMonth()
-
-  if (paymentDueDay <= cutoffAt.getDate()) {
-    const nextMonth = new Date(dueYear, dueMonth + 1, 1, cutoffAt.getHours(), cutoffAt.getMinutes(), cutoffAt.getSeconds(), 0)
-    dueYear = nextMonth.getFullYear()
-    dueMonth = nextMonth.getMonth()
-  }
-
-  return buildMonthlyDueDate(dueYear, dueMonth, paymentDueDay, cutoffAt)
-}
-
 const getCurrentCycle = async (db: Db, userId: string, referenceDate?: Date) => {
   const settings = await db.userCycleSettings.findUnique({
     where: { userId },
@@ -207,7 +193,7 @@ const installmentDueDatesForCycle = (
     firstDueAt: Date
     totalInstallments: number
     installmentAmount: bigint
-    chargeWallet?: { paymentDueDay: number | null } | null
+    chargeWallet?: { statementClosingDay: number | null } | null
   },
   startsAt: Date,
   endsAt: Date,
@@ -215,9 +201,7 @@ const installmentDueDatesForCycle = (
   const dates: Array<{ installmentNumber: number; dueAt: Date; expectedAmount: bigint }> = []
 
   for (let installmentNumber = 1; installmentNumber <= plan.totalInstallments; installmentNumber += 1) {
-    const cutoffAt = new Date(plan.firstDueAt)
-    cutoffAt.setMonth(plan.firstDueAt.getMonth() + installmentNumber - 1)
-    const dueAt = buildCardPaymentDueDate(cutoffAt, plan.chargeWallet?.paymentDueDay)
+    const dueAt = buildInstallmentCutoffDate(plan.firstDueAt, installmentNumber - 1, plan.chargeWallet?.statementClosingDay)
     if (dueAt >= startsAt && dueAt <= endsAt) {
       dates.push({ installmentNumber, dueAt, expectedAmount: plan.installmentAmount })
     }
