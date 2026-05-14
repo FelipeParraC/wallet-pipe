@@ -67,9 +67,10 @@ interface UpdateDebtInput {
 const defaultCycleSettings = (userId: string) => ({
   id: 'default',
   userId,
-  defaultStartDay: 1,
+  defaultStartDay: 24,
   timezone: 'America/Bogota',
   overrides: [],
+  periodOverrides: [],
 })
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -133,6 +134,16 @@ const getCurrentCycle = async (db: Db, userId: string, referenceDate?: Date) => 
     where: { userId },
     include: { overrides: true },
   })
+  const periodOverrides = await db.cyclePeriodOverride.findMany({
+    where: { userId },
+    orderBy: { startsAt: 'desc' },
+  })
+
+  const mappedPeriodOverrides = periodOverrides.map((override) => ({
+    ...override,
+    startsAt: override.startsAt.toISOString(),
+    endsAt: override.endsAt.toISOString(),
+  }))
 
   const safeSettings = settings
     ? {
@@ -141,8 +152,9 @@ const getCurrentCycle = async (db: Db, userId: string, referenceDate?: Date) => 
           ...override,
           effectiveFrom: override.effectiveFrom.toISOString(),
         })),
+        periodOverrides: mappedPeriodOverrides,
       }
-    : defaultCycleSettings(userId)
+    : { ...defaultCycleSettings(userId), periodOverrides: mappedPeriodOverrides }
 
   return getCyclePeriodForDate(safeSettings, referenceDate)
 }
@@ -214,13 +226,15 @@ export const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: strin
   const currentCycle = await getCurrentCycle(db, userId, referenceDate)
   const startsAt = new Date(currentCycle.startsAt)
   const endsAt = new Date(currentCycle.endsAt)
+  const installmentHorizonEndsAt = new Date(endsAt)
+  installmentHorizonEndsAt.setDate(installmentHorizonEndsAt.getDate() + 5)
 
   const scheduledPlans = await db.scheduledPlan.findMany({
     where: { userId, isActive: true, startsAt: { lte: endsAt }, OR: [{ endsAt: null }, { endsAt: { gte: startsAt } }] },
     include: { occurrences: { where: { dueAt: { gte: startsAt, lte: endsAt } } } },
   })
   const installmentPlans = await db.installmentPlan.findMany({
-    where: { userId, isActive: true, firstDueAt: { lte: endsAt }, remainingInstallments: { gt: 0 } },
+    where: { userId, isActive: true, firstDueAt: { lte: installmentHorizonEndsAt }, remainingInstallments: { gt: 0 } },
     include: { occurrences: true, chargeWallet: true },
   })
 
@@ -246,7 +260,7 @@ export const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: strin
 
   for (const plan of installmentPlans) {
     const existingByNumber = new Map(plan.occurrences.map((occurrence) => [occurrence.installmentNumber, occurrence]))
-    const dueDates = installmentDueDatesForCycle(plan, startsAt, endsAt)
+    const dueDates = installmentDueDatesForCycle(plan, startsAt, installmentHorizonEndsAt)
 
     for (const item of dueDates) {
       const existing = existingByNumber.get(item.installmentNumber)

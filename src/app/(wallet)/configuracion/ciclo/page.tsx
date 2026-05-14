@@ -21,8 +21,15 @@ export default async function CicloSettingsPage() {
           <CardTitle>Ciclo actual</CardTitle>
         </CardHeader>
         <CardContent className='space-y-4'>
-          {currentCycle && <SettingsInfoCard label='Actual' value={currentCycle.label} />}
-          {cycleSettings && <CycleSettingsForm defaultStartDay={cycleSettings.defaultStartDay} timezone={cycleSettings.timezone} />}
+          {currentCycle && <SettingsInfoCard label='Actual' value={`${currentCycle.label}${currentCycle.isManual ? ' · Manual' : ''}`} />}
+          {cycleSettings && (
+            <CycleSettingsForm
+              defaultStartDay={cycleSettings.defaultStartDay}
+              timezone={cycleSettings.timezone}
+              currentCycle={currentCycle}
+              periodOverrides={cycleSettings.periodOverrides ?? []}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

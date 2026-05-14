@@ -9,6 +9,25 @@ const resolveStartDay = (settings: UserCycleSettings, reference: Date) => {
 
 export const getCyclePeriodForDate = (settings: UserCycleSettings, referenceDate = new Date()): CyclePeriod => {
   const reference = new Date(referenceDate)
+  const manualPeriod = [...(settings.periodOverrides ?? [])]
+    .map((override) => ({
+      ...override,
+      startsAtDate: new Date(override.startsAt),
+      endsAtDate: new Date(override.endsAt),
+    }))
+    .filter((override) => override.startsAtDate.getTime() <= reference.getTime() && override.endsAtDate.getTime() >= reference.getTime())
+    .sort((a, b) => b.startsAtDate.getTime() - a.startsAtDate.getTime())[0]
+
+  if (manualPeriod) {
+    return {
+      startsAt: manualPeriod.startsAtDate.toISOString(),
+      endsAt: manualPeriod.endsAtDate.toISOString(),
+      label: `${format(manualPeriod.startsAtDate, 'dd/MM/yyyy')} - ${format(manualPeriod.endsAtDate, 'dd/MM/yyyy')}`,
+      isManual: true,
+      periodOverrideId: manualPeriod.id,
+    }
+  }
+
   const startDay = resolveStartDay(settings, reference)
 
   const cycleStart = new Date(reference.getFullYear(), reference.getMonth(), startDay, 0, 0, 0, 0)
@@ -25,5 +44,6 @@ export const getCyclePeriodForDate = (settings: UserCycleSettings, referenceDate
     startsAt: cycleStart.toISOString(),
     endsAt: cycleEnd.toISOString(),
     label: `${format(cycleStart, 'dd/MM/yyyy')} - ${format(cycleEnd, 'dd/MM/yyyy')}`,
+    isManual: false,
   }
 }

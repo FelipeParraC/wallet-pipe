@@ -646,7 +646,7 @@ export const CreateTransactionForm = ({ wallets, categories, tags, wallet, trans
                             <div className='grid gap-2 sm:grid-cols-3'>
                                 <span>Cuota estimada: <strong>{formatCurrency(estimatedInstallment)}</strong></span>
                                 {firstDueAt && <span>Primer corte: <strong>{formatDateTimePreview(firstDueAt)}</strong></span>}
-                                {paymentDueAt && <span>Límite pago: <strong>{formatDateTimePreview(paymentDueAt)}</strong></span>}
+                                {paymentDueAt && <span>Fecha límite: <strong>{formatDateTimePreview(paymentDueAt)}</strong></span>}
                             </div>
                             <InstallmentTimeline total={normalizedTotalInstallments} paid={normalizedPaidInstallments} />
                         </div>

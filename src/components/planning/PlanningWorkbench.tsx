@@ -423,13 +423,13 @@ const PayCreditCardObligationDialog = ({
         <DialogHeader>
           <DialogTitle>Pagar {obligation.walletName}</DialogTitle>
           <DialogDescription>
-            Corte {format(parseISO(obligation.statementStartsAt), 'd MMM', { locale: es })} - {format(parseISO(obligation.statementEndsAt), 'd MMM yyyy', { locale: es })}
+            Estado de cuenta {format(parseISO(obligation.statementStartsAt), 'd MMM', { locale: es })} - {format(parseISO(obligation.statementEndsAt), 'd MMM yyyy', { locale: es })}
           </DialogDescription>
         </DialogHeader>
         <div className='grid gap-4'>
           <div className='grid gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4'>
             <div className='flex items-center justify-between gap-3'>
-              <span className='text-sm text-slate-400'>Pendiente del ciclo</span>
+              <span className='text-sm text-slate-400'>Pago mínimo pendiente</span>
               <CurrencyDisplay amount={obligation.pendingAmount} showDecimals={true} className='font-semibold text-white' />
             </div>
             <div className='flex items-center justify-between gap-3'>
@@ -516,19 +516,20 @@ const CreditCardObligationCard = ({
           <div>
             <p className='font-semibold text-white'>Pago tarjeta: {obligation.walletName}</p>
             <p className='text-sm text-slate-400'>
-              Límite {format(parseISO(obligation.paymentDueAt), "d MMM yyyy", { locale: es })}
+              Fecha límite de pago {format(parseISO(obligation.paymentDueAt), "d MMM yyyy", { locale: es })}
             </p>
           </div>
         </div>
         <div className='mt-4 grid gap-2 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-4'>
-          <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>Corte {format(parseISO(obligation.statementStartsAt), 'd MMM', { locale: es })} - {format(parseISO(obligation.statementEndsAt), 'd MMM', { locale: es })}</span>
+          <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>Corte asignado {format(parseISO(obligation.statementEndsAt), 'd MMM', { locale: es })}</span>
+          <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>Pago mínimo {formatCurrency(obligation.totalDue)}</span>
           <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>Compras {formatCurrency(obligation.purchasesTotal)}</span>
           <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>{obligation.installmentCount} cuotas {formatCurrency(obligation.installmentsTotal)}</span>
           <span className='rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2'>Abonos {formatCurrency(obligation.paymentsApplied)}</span>
         </div>
       </div>
       <div className='shrink-0 rounded-[1.4rem] border border-white/10 bg-black/20 p-4 lg:min-w-56'>
-        <p className='text-[11px] uppercase tracking-[0.22em] text-slate-500'>Pendiente ciclo</p>
+        <p className='text-[11px] uppercase tracking-[0.22em] text-slate-500'>Pago mínimo pendiente</p>
         <CurrencyDisplay amount={obligation.pendingAmount} showDecimals={true} className='mt-1 text-2xl font-bold text-white' />
         <div className='mt-4 flex flex-wrap gap-2'>
           <PayCreditCardObligationDialog obligation={obligation} card={card} wallets={wallets} />

@@ -19,6 +19,7 @@ model User {
   updatedAt         DateTime            @updatedAt
   password          String?
   cycleSettings     UserCycleSettings?
+  cyclePeriodOverrides CyclePeriodOverride[]
   categories        Category[]
   debts             Debt[]
   installmentPlans  InstallmentPlan[]
@@ -53,6 +54,19 @@ model CycleOverride {
   cycleSettings   UserCycleSettings @relation(fields: [cycleSettingsId], references: [id], onDelete: Cascade)
 
   @@index([cycleSettingsId, effectiveFrom])
+}
+
+model CyclePeriodOverride {
+  id        String   @id @default(cuid())
+  userId    String
+  startsAt  DateTime
+  endsAt    DateTime
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startsAt, endsAt])
 }
 
 model Wallet {

@@ -178,13 +178,40 @@ const cardDebtWithOnlyOnePendingInstallment = calculateCreditCardCycleObligation
       },
     },
   ],
-  cycleStartsAt: new Date(2026, 3, 25, 0, 0, 0, 0),
-  cycleEndsAt: new Date(2026, 4, 24, 23, 59, 59, 999),
+  cycleStartsAt: new Date(2026, 3, 24, 0, 0, 0, 0),
+  cycleEndsAt: new Date(2026, 4, 23, 23, 59, 59, 999),
 })
 
 assert.equal(cardDebtWithOnlyOnePendingInstallment.length, 1)
 assert.equal(cardDebtWithOnlyOnePendingInstallment[0].installmentCount, 1)
+assert.equal(cardDebtWithOnlyOnePendingInstallment[0].statementEndsAt, new Date(2026, 4, 25, 23, 59, 59, 999).toISOString())
 assert.equal(cardDebtWithOnlyOnePendingInstallment[0].pendingAmount, 166633.33)
+
+const cardDebtOutsideGraceWindow = calculateCreditCardCycleObligations({
+  cards: [{
+    id: 'card-4',
+    name: 'Late Card',
+    balance: BigInt(10000000),
+    type: 'TARJETA_CREDITO',
+    statementClosingDay: 30,
+    paymentDueDay: 10,
+  }],
+  transactions: [],
+  installmentOccurrences: [{
+    id: 'late-installment',
+    dueAt: new Date(2026, 4, 30, 12),
+    expectedAmount: BigInt(10000000),
+    status: 'PENDIENTE',
+    installmentPlan: {
+      chargeWalletId: 'card-4',
+      title: 'Outside grace',
+    },
+  }],
+  cycleStartsAt: new Date(2026, 3, 24, 0, 0, 0, 0),
+  cycleEndsAt: new Date(2026, 4, 23, 23, 59, 59, 999),
+})
+
+assert.equal(cardDebtOutsideGraceWindow.length, 0)
 
 const firstHistoricalCutoff = new Date('2026-04-23T17:00:00.000Z')
 assert.equal(buildInstallmentCutoffDate(firstHistoricalCutoff, 0, 25).toISOString(), '2026-04-23T17:00:00.000Z')

@@ -1,6 +1,7 @@
 import { addMinorUnits, absMinorUnits, moneyToMinorUnits, moneyToNumber } from '@/lib/finance'
 
 type MoneyValue = bigint | number | { toNumber(): number } | null | undefined
+const CARD_CUTOFF_GRACE_DAYS = 5
 
 export interface CreditCardObligationWallet {
   id: string
@@ -84,8 +85,8 @@ const statementForPlanningCycle = (card: CreditCardObligationWallet, cycleStarts
   const closingDay = card.statementClosingDay ?? cycleEndsAt.getDate()
   const candidates: Array<{ startsAt: Date; endsAt: Date; dueAt: Date }> = []
   const cursor = new Date(cycleStartsAt.getFullYear(), cycleStartsAt.getMonth() - 2, 1)
-  const firstAllowedClosing = endOfDay(cycleStartsAt)
-  const cycleLookAhead = endOfDay(new Date(cycleEndsAt.getFullYear(), cycleEndsAt.getMonth(), cycleEndsAt.getDate() + 1))
+  const firstAllowedClosing = new Date(cycleStartsAt)
+  const cycleLookAhead = endOfDay(new Date(cycleEndsAt.getFullYear(), cycleEndsAt.getMonth(), cycleEndsAt.getDate() + CARD_CUTOFF_GRACE_DAYS))
 
   for (let index = 0; index < 6; index += 1) {
     const base = addMonths(cursor, index)
@@ -97,13 +98,9 @@ const statementForPlanningCycle = (card: CreditCardObligationWallet, cycleStarts
     candidates.push({ startsAt, endsAt, dueAt })
   }
 
-  return candidates.find((candidate) => candidate.endsAt > firstAllowedClosing && candidate.endsAt <= cycleLookAhead)
-    ?? candidates.find((candidate) => candidate.endsAt > firstAllowedClosing)
-    ?? {
-      startsAt: cycleStartsAt,
-      endsAt: cycleEndsAt,
-      dueAt: buildPaymentDueDate(cycleEndsAt, card.paymentDueDay),
-    }
+  return candidates
+    .filter((candidate) => candidate.endsAt >= firstAllowedClosing && candidate.endsAt <= cycleLookAhead)
+    .sort((left, right) => right.endsAt.getTime() - left.endsAt.getTime())[0] ?? null
 }
 
 export const calculateCreditCardCycleObligations = ({
@@ -118,8 +115,9 @@ export const calculateCreditCardCycleObligations = ({
   installmentOccurrences: CreditCardObligationInstallment[]
   cycleStartsAt: Date
   cycleEndsAt: Date
-}) => cards.map((card) => {
+}) => cards.flatMap((card) => {
   const statement = statementForPlanningCycle(card, cycleStartsAt, cycleEndsAt)
+  if (!statement) return []
 
   const purchasesTotalMinor = transactions
     .filter((transaction) => (
@@ -154,8 +152,8 @@ export const calculateCreditCardCycleObligations = ({
     .filter((transaction) => (
       transaction.walletId === card.id
       && transaction.type === 'TARJETA_DEVOLUCION'
-      && transaction.occurredAt >= cycleStartsAt
-      && transaction.occurredAt <= cycleEndsAt
+      && transaction.occurredAt >= statement.startsAt
+      && transaction.occurredAt <= statement.endsAt
     ))
     .reduce((sum, transaction) => addMinorUnits(sum, absMinorUnits(moneyToMinorUnits(transaction.amount))), BigInt(0))
 
@@ -163,7 +161,7 @@ export const calculateCreditCardCycleObligations = ({
   const totalDueMinor = rawTotalDueMinor > BigInt(0) ? rawTotalDueMinor : BigInt(0)
   const pendingAmountMinor = totalDueMinor > paymentsAppliedMinor ? addMinorUnits(totalDueMinor, -paymentsAppliedMinor) : BigInt(0)
 
-  return {
+  return [{
     walletId: card.id,
     walletName: card.name,
     statementStartsAt: statement.startsAt.toISOString(),
@@ -175,5 +173,5 @@ export const calculateCreditCardCycleObligations = ({
     totalDue: moneyToNumber(totalDueMinor),
     pendingAmount: moneyToNumber(pendingAmountMinor),
     installmentCount: pendingInstallments.length,
-  }
+  }]
 }).filter((obligation) => obligation.totalDue > 0 || obligation.paymentsApplied > 0)
