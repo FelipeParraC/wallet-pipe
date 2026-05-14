@@ -3,6 +3,7 @@ export const revalidate = 0
 
 import { getCurrentCycleSummary, getWallets } from '@/actions'
 import { DataUnavailableNotice, NewWallet, WalletCard, WalletsTotalBalance } from '@/components'
+import { attachCreditCardPaymentsToWallets } from '@/lib/wallet-card-summary'
 
 export default async function BilleterasPage() {
 
@@ -11,8 +12,11 @@ export default async function BilleterasPage() {
         getCurrentCycleSummary(),
     ])
 
-    const wallets = respWallets.ok && respWallets.wallets ? respWallets.wallets : []
     const cycleSummary = respCycleSummary.ok ? respCycleSummary.data : null
+    const wallets = attachCreditCardPaymentsToWallets(
+        respWallets.ok && respWallets.wallets ? respWallets.wallets : [],
+        cycleSummary?.summary.creditCardObligations ?? [],
+    )
     const readIssue = [respWallets, respCycleSummary].find((response) => !response.ok)
 
     if ( !respWallets.ok ) {

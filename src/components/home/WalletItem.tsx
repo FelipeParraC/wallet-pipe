@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { CurrencyDisplay } from '../CurrencyDisplay'
 import type { Wallet } from '@/interfaces'
 import { CreditCard, PiggyBank, WalletCards } from 'lucide-react'
+import { formatCurrency } from '@/utils'
 
 interface WalletItemProps {
     wallet: Wallet
@@ -13,7 +14,7 @@ interface WalletItemProps {
 export const WalletItem = ({ wallet, displayBalance }: WalletItemProps) => {
     const isCreditCard = wallet.type === 'Tarjeta de Crédito'
     const Icon = isCreditCard ? CreditCard : wallet.isSavingsBox ? PiggyBank : WalletCards
-    const balanceLabel = isCreditCard ? 'Deuda' : wallet.isSavingsBox ? 'Cajita' : 'Saldo'
+    const balanceLabel = isCreditCard ? 'Pago mínimo' : wallet.isSavingsBox ? 'Cajita' : 'Saldo'
     const balance = displayBalance ?? wallet.balance
 
     return (
@@ -43,7 +44,7 @@ export const WalletItem = ({ wallet, displayBalance }: WalletItemProps) => {
                 className='mt-3 truncate text-lg font-semibold text-white'
             />
             <p className='mt-1 truncate text-xs text-slate-400'>
-                { wallet.includeInTotal && !isCreditCard ? 'Suma al disponible' : isCreditCard ? 'No suma al disponible' : 'Apartada' }
+                { wallet.includeInTotal && !isCreditCard ? 'Suma al disponible' : isCreditCard ? `Deuda ${formatCurrency(wallet.balance)}` : 'Apartada' }
             </p>
         </Link>
     )

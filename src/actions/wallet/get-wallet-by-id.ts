@@ -11,7 +11,10 @@ export const getWalletById = async ( id: string ) => {
     try {
         const user = await requireSessionUser()
         
-        const prismaWallet = await prisma.wallet.findFirst({ where: { id: id } })
+        const prismaWallet = await prisma.wallet.findFirst({
+            where: { id: id },
+            include: { statementClosings: { orderBy: { statementMonth: 'desc' } } },
+        })
 
         if ( !prismaWallet ) {
             return {

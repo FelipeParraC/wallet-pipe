@@ -24,6 +24,18 @@ interface DashboardHomeProps {
             pendingDebtTotal?: number
             pendingCreditCardTotal?: number
             totalObligations?: number
+            creditCardObligations?: Array<{
+                walletId: string
+                statementStartsAt: string
+                statementEndsAt: string
+                paymentDueAt: string
+                purchasesTotal: number
+                installmentsTotal: number
+                paymentsApplied: number
+                totalDue: number
+                pendingAmount: number
+                installmentCount: number
+            }>
         }
     } | null
 }
@@ -161,7 +173,7 @@ export const DashboardHome = ({ transactions, categories, wallets, cycleSummary 
                             <WalletItem
                                 key={wallet.id}
                                 wallet={wallet}
-                                displayBalance={wallet.balance + (savingsBoxTotalsByParent.get(wallet.id) ?? 0)}
+                                displayBalance={wallet.type === 'Tarjeta de Crédito' ? wallet.creditCardPayment?.pendingAmount ?? 0 : wallet.balance + (savingsBoxTotalsByParent.get(wallet.id) ?? 0)}
                             />
                         ))}
                     </CardContent>

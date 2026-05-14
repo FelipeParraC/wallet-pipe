@@ -111,6 +111,7 @@ const ensureWalletKind = async (
 ) => {
   const wallet = await tx.wallet.findFirst({
     where: { id: walletId, userId, isActive: true },
+    include: { statementClosings: true },
   })
 
   if (!wallet) {
@@ -284,7 +285,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
               installmentPlanId: plan.id,
               userId: user.id,
               installmentNumber: index + 1,
-              dueAt: buildInstallmentCutoffDate(firstDueAt, index, creditCard.statementClosingDay),
+              dueAt: buildInstallmentCutoffDate(firstDueAt, index, creditCard.statementClosingDay, creditCard.statementClosings),
               expectedAmount,
               status: index < paidInstallments ? 'EJECUTADA' as const : 'PENDIENTE' as const,
             })),
@@ -427,7 +428,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
             firstDueAt: true,
             installmentAmount: true,
             chargeWallet: {
-              select: { statementClosingDay: true },
+              select: { statementClosingDay: true, statementClosings: true },
             },
             occurrences: {
               select: { installmentNumber: true },
@@ -448,7 +449,7 @@ export const createMovementFromForm = async (data: CreateMovementFromFormInput) 
                   installmentPlanId: plan.id,
                   userId: user.id,
                   installmentNumber,
-                  dueAt: buildInstallmentCutoffDate(plan.firstDueAt, installmentNumber - 1, plan.chargeWallet?.statementClosingDay),
+                  dueAt: buildInstallmentCutoffDate(plan.firstDueAt, installmentNumber - 1, plan.chargeWallet?.statementClosingDay, plan.chargeWallet?.statementClosings),
                   expectedAmount: plan.installmentAmount,
                   status: 'PENDIENTE' as const,
                 })),

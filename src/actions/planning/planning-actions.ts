@@ -205,7 +205,7 @@ const installmentDueDatesForCycle = (
     firstDueAt: Date
     totalInstallments: number
     installmentAmount: bigint
-    chargeWallet?: { statementClosingDay: number | null } | null
+    chargeWallet?: { statementClosingDay: number | null, statementClosings?: Array<{ statementMonth: Date, closingAt: Date }> } | null
   },
   startsAt: Date,
   endsAt: Date,
@@ -213,7 +213,7 @@ const installmentDueDatesForCycle = (
   const dates: Array<{ installmentNumber: number; dueAt: Date; expectedAmount: bigint }> = []
 
   for (let installmentNumber = 1; installmentNumber <= plan.totalInstallments; installmentNumber += 1) {
-    const dueAt = buildInstallmentCutoffDate(plan.firstDueAt, installmentNumber - 1, plan.chargeWallet?.statementClosingDay)
+    const dueAt = buildInstallmentCutoffDate(plan.firstDueAt, installmentNumber - 1, plan.chargeWallet?.statementClosingDay, plan.chargeWallet?.statementClosings)
     if (dueAt >= startsAt && dueAt <= endsAt) {
       dates.push({ installmentNumber, dueAt, expectedAmount: plan.installmentAmount })
     }
@@ -235,7 +235,7 @@ export const ensureCurrentCycleOccurrencesForUser = async (db: Db, userId: strin
   })
   const installmentPlans = await db.installmentPlan.findMany({
     where: { userId, isActive: true, firstDueAt: { lte: installmentHorizonEndsAt }, remainingInstallments: { gt: 0 } },
-    include: { occurrences: true, chargeWallet: true },
+    include: { occurrences: true, chargeWallet: { include: { statementClosings: true } } },
   })
 
   for (const plan of scheduledPlans) {
@@ -380,7 +380,7 @@ export const getPlanningCycleOverview = async (referenceDate?: string) => {
       creditCardTransactions,
       creditCardInstallmentOccurrences,
     } = await withPrismaConnectionRetry(async () => {
-      const wallets = await prisma.wallet.findMany({ where: { userId: user.id, isActive: true }, orderBy: { name: 'asc' } })
+      const wallets = await prisma.wallet.findMany({ where: { userId: user.id, isActive: true }, include: { statementClosings: true }, orderBy: { name: 'asc' } })
       const categories = await prisma.category.findMany({
         where: { OR: [{ userId: user.id }, { isSystem: true }] },
         orderBy: [{ parentId: 'asc' }, { name: 'asc' }],

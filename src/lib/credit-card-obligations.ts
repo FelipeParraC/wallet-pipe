@@ -10,6 +10,10 @@ export interface CreditCardObligationWallet {
   type?: string
   statementClosingDay?: number | null
   paymentDueDay?: number | null
+  statementClosings?: Array<{
+    statementMonth: Date | string
+    closingAt: Date | string
+  }>
 }
 
 export interface CreditCardObligationTransaction {
@@ -66,6 +70,23 @@ const buildMonthlyDate = (year: number, month: number, day: number) => (
   new Date(year, month, clampDay(year, month, day), 23, 59, 59, 999)
 )
 
+const monthKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, '0')}`
+
+const realClosingsByMonth = (card: CreditCardObligationWallet) => new Map(
+  (card.statementClosings ?? []).map((closing) => {
+    const statementMonth = new Date(closing.statementMonth)
+    return [monthKey(statementMonth.getFullYear(), statementMonth.getMonth()), new Date(closing.closingAt)] as const
+  }),
+)
+
+const buildStatementClosingDate = (
+  card: CreditCardObligationWallet,
+  year: number,
+  month: number,
+  fallbackClosingDay: number,
+  closingsByMonth: Map<string, Date>,
+) => closingsByMonth.get(monthKey(year, month)) ?? buildMonthlyDate(year, month, fallbackClosingDay)
+
 const buildPaymentDueDate = (cutoffAt: Date, paymentDueDay?: number | null) => {
   if (!paymentDueDay) return cutoffAt
 
@@ -87,11 +108,13 @@ const statementForPlanningCycle = (card: CreditCardObligationWallet, cycleStarts
   const cursor = new Date(cycleStartsAt.getFullYear(), cycleStartsAt.getMonth() - 2, 1)
   const firstAllowedClosing = new Date(cycleStartsAt)
   const cycleLookAhead = endOfDay(new Date(cycleEndsAt.getFullYear(), cycleEndsAt.getMonth(), cycleEndsAt.getDate() + CARD_CUTOFF_GRACE_DAYS))
+  const closingsByMonth = realClosingsByMonth(card)
 
   for (let index = 0; index < 6; index += 1) {
     const base = addMonths(cursor, index)
-    const endsAt = buildMonthlyDate(base.getFullYear(), base.getMonth(), closingDay)
-    const previousCutoff = buildMonthlyDate(addMonths(base, -1).getFullYear(), addMonths(base, -1).getMonth(), closingDay)
+    const previousBase = addMonths(base, -1)
+    const endsAt = buildStatementClosingDate(card, base.getFullYear(), base.getMonth(), closingDay, closingsByMonth)
+    const previousCutoff = buildStatementClosingDate(card, previousBase.getFullYear(), previousBase.getMonth(), closingDay, closingsByMonth)
     const startsAt = new Date(previousCutoff.getTime() + 1)
     const dueAt = buildPaymentDueDate(endsAt, card.paymentDueDay)
 

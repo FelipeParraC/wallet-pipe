@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Wallet } from '@/interfaces'
-import { getIcon } from '@/utils'
+import { formatCurrency, getIcon } from '@/utils'
 import { CurrencyDisplay } from '../CurrencyDisplay'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui'
 
@@ -9,13 +9,14 @@ interface WalletCardProps {
     displayBalance?: number
 }
 
+const formatDate = (value: string) => new Date(value).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })
 
 export const WalletCard = ({ wallet, displayBalance }: WalletCardProps) => {
 
     const Icon = getIcon( wallet.type )
     const isCreditCard = wallet.type === 'Tarjeta de Crédito'
     const isSavingsBox = wallet.isSavingsBox
-    const balance = displayBalance ?? wallet.balance
+    const balance = isCreditCard ? wallet.creditCardPayment?.pendingAmount ?? 0 : displayBalance ?? wallet.balance
 
     return (
         <Link href={`/billeteras/${wallet.id}`} className='block'>
@@ -36,15 +37,18 @@ export const WalletCard = ({ wallet, displayBalance }: WalletCardProps) => {
                 <CardContent className='relative'>
                     <CurrencyDisplay amount={balance} showDecimals={true} className='text-2xl font-bold text-white md:text-3xl' />
                     <p className='mt-2 text-xs uppercase tracking-[0.24em] text-slate-500'>
-                        {isCreditCard ? 'Deuda actual de la tarjeta' : isSavingsBox ? 'Cajita de ahorro' : wallet.type}
+                        {isCreditCard ? 'Pago mínimo pendiente' : isSavingsBox ? 'Cajita de ahorro' : wallet.type}
                     </p>
                     {isCreditCard && (
                         <>
                             <div className='mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-xs text-slate-300'>
-                                Cupo disponible:{' '}
-                                <CurrencyDisplay amount={wallet.availableCredit ?? 0} showDecimals={true} className='inline-block text-xs text-white' />
+                                Deuda total:{' '}
+                                <CurrencyDisplay amount={wallet.balance} showDecimals={true} className='inline-block text-xs text-white' />
                                 <p className='mt-2 text-slate-500'>
-                                    Corte {wallet.statementClosingDay} · Pago {wallet.paymentDueDay}
+                                    Cupo disponible {formatCurrency(wallet.availableCredit ?? 0)}
+                                </p>
+                                <p className='mt-1 text-slate-500'>
+                                    {wallet.creditCardPayment?.statementEndsAt ? `Corte ${formatDate(wallet.creditCardPayment.statementEndsAt)}` : 'Sin corte en este periodo'} · Pago {wallet.paymentDueDay ?? '-'}
                                 </p>
                             </div>
                         </>

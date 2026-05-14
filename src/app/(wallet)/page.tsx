@@ -3,6 +3,7 @@ export const revalidate = 0
 import { getCategories, getCurrentCycleSummary, getTransactions, getWallets } from '@/actions'
 import { auth } from '@/auth.config'
 import { DashboardHome, DataUnavailableNotice } from '@/components'
+import { attachCreditCardPaymentsToWallets } from '@/lib/wallet-card-summary'
 import { redirect } from 'next/navigation'
 
 
@@ -23,11 +24,13 @@ export default async function HomePage() {
 
     const transactions = respTransactions.ok ? respTransactions.transactions : []
 
-    const wallets = respWallets.ok ? respWallets.wallets : []
-
     const categories = respCategories.ok ? respCategories.categories : []
 
     const cycleSummary = respCycleSummary.ok ? respCycleSummary.data : null
+    const wallets = attachCreditCardPaymentsToWallets(
+        respWallets.ok ? respWallets.wallets ?? [] : [],
+        cycleSummary?.summary.creditCardObligations ?? [],
+    )
     const readIssue = [respTransactions, respWallets, respCategories, respCycleSummary].find((response) => !response.ok)
 
     return (

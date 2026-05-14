@@ -16,6 +16,28 @@ export interface Wallet {
     availableCredit?: number
     statementClosingDay?: number
     paymentDueDay?: number
+    statementClosings?: CreditCardStatementClosing[]
+    creditCardPayment?: CreditCardPaymentSummary
+}
+
+export interface CreditCardStatementClosing {
+    id: string
+    walletId: string
+    statementMonth: string
+    closingAt: string
+    note?: string | null
+}
+
+export interface CreditCardPaymentSummary {
+    statementStartsAt?: string
+    statementEndsAt?: string
+    paymentDueAt?: string
+    totalDue: number
+    pendingAmount: number
+    purchasesTotal: number
+    installmentsTotal: number
+    paymentsApplied: number
+    installmentCount: number
 }
 
 export interface CreateWalletInput {

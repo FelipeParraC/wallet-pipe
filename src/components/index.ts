@@ -51,6 +51,7 @@ export * from './transactions/TransactionsGrid'
 
 
 export * from './wallets/BalanceEvolutionChart'
+export * from './wallets/CreditCardStatementClosingsForm'
 export * from './wallets/DailyExpensesChart'
 export * from './wallets/DeleteWalletButton'
 export * from './wallets/EditWalletButton'

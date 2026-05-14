@@ -20,6 +20,7 @@ model User {
   password          String?
   cycleSettings     UserCycleSettings?
   cyclePeriodOverrides CyclePeriodOverride[]
+  creditCardStatementClosings CreditCardStatementClosing[]
   categories        Category[]
   debts             Debt[]
   installmentPlans  InstallmentPlan[]
@@ -89,6 +90,7 @@ model Wallet {
   updatedAt           DateTime            @updatedAt
   scheduledAsSource   ScheduledPlan[]     @relation("ScheduledSourceWallet")
   scheduledAsTarget   ScheduledPlan[]     @relation("ScheduledTargetWallet")
+  statementClosings    CreditCardStatementClosing[]
   installmentCharges  InstallmentPlan[]   @relation("InstallmentChargeWallet")
   installmentPayments InstallmentPlan[]   @relation("InstallmentPaymentWallet")
   transactions        Transaction[]       @relation("TransactionWallet")
@@ -99,6 +101,22 @@ model Wallet {
   user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, parentWalletId])
+}
+
+model CreditCardStatementClosing {
+  id             String   @id @default(cuid())
+  userId         String
+  walletId       String
+  statementMonth DateTime
+  closingAt      DateTime
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet         Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, statementMonth])
+  @@index([userId, walletId, statementMonth])
 }
 
 model Category {

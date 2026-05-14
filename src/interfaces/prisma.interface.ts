@@ -76,6 +76,13 @@ export interface PrismaWallet {
     availableCredit?: MoneyLike | null
     statementClosingDay?: number | null
     paymentDueDay?: number | null
+    statementClosings?: Array<{
+        id: string
+        walletId: string
+        statementMonth: Date
+        closingAt: Date
+        note: string | null
+    }>
     createdAt: Date
     updatedAt: Date
 }

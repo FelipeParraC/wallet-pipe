@@ -13,6 +13,7 @@ export const getWallets = async () => {
         
         const prismaWallets = await withPrismaTimeout(() => prisma.wallet.findMany({
             where: { userId: user.id },
+            include: { statementClosings: { orderBy: { statementMonth: 'desc' } } },
             orderBy: {
                 createdAt: 'asc'
             }

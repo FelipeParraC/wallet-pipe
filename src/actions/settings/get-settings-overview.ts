@@ -28,6 +28,7 @@ export const getSettingsOverview = async () => {
             }),
             prisma.wallet.findMany({
                 where: { userId: user.id, isActive: true },
+                include: { statementClosings: { orderBy: { statementMonth: 'desc' } } },
                 orderBy: { name: 'asc' }
             }),
             prisma.scheduledPlan.findMany({

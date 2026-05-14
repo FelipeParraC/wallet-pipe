@@ -127,8 +127,18 @@ const cardDebtWithoutCurrentDueDates = calculateCreditCardCycleObligations({
     type: 'TARJETA_CREDITO',
     statementClosingDay: 25,
     paymentDueDay: 14,
+    statementClosings: [
+      { statementMonth: new Date(2026, 3, 1), closingAt: new Date(2026, 3, 23, 17) },
+      { statementMonth: new Date(2026, 4, 1), closingAt: new Date(2026, 4, 25, 17) },
+    ],
   }],
-  transactions: [],
+  transactions: [{
+    id: 'single-purchase-current',
+    walletId: 'card-3',
+    type: 'TARJETA_CONSUMO',
+    amount: BigInt(-2400000),
+    occurredAt: new Date(2026, 3, 24, 12),
+  }],
   installmentOccurrences: [],
   cycleStartsAt: new Date('2026-04-25T00:00:00.000Z'),
   cycleEndsAt: new Date('2026-05-24T23:59:59.999Z'),
@@ -144,8 +154,18 @@ const cardDebtWithOnlyOnePendingInstallment = calculateCreditCardCycleObligation
     type: 'TARJETA_CREDITO',
     statementClosingDay: 25,
     paymentDueDay: 14,
+    statementClosings: [
+      { statementMonth: new Date(2026, 3, 1), closingAt: new Date(2026, 3, 23, 17) },
+      { statementMonth: new Date(2026, 4, 1), closingAt: new Date(2026, 4, 25, 17) },
+    ],
   }],
-  transactions: [],
+  transactions: [{
+    id: 'single-purchase-current',
+    walletId: 'card-3',
+    type: 'TARJETA_CONSUMO',
+    amount: BigInt(-2400000),
+    occurredAt: new Date(2026, 3, 24, 12),
+  }],
   installmentOccurrences: [
     {
       id: 'installment-paid',
@@ -184,8 +204,9 @@ const cardDebtWithOnlyOnePendingInstallment = calculateCreditCardCycleObligation
 
 assert.equal(cardDebtWithOnlyOnePendingInstallment.length, 1)
 assert.equal(cardDebtWithOnlyOnePendingInstallment[0].installmentCount, 1)
-assert.equal(cardDebtWithOnlyOnePendingInstallment[0].statementEndsAt, new Date(2026, 4, 25, 23, 59, 59, 999).toISOString())
-assert.equal(cardDebtWithOnlyOnePendingInstallment[0].pendingAmount, 166633.33)
+assert.equal(cardDebtWithOnlyOnePendingInstallment[0].statementEndsAt, new Date(2026, 4, 25, 17).toISOString())
+assert.equal(cardDebtWithOnlyOnePendingInstallment[0].purchasesTotal, 24000)
+assert.equal(cardDebtWithOnlyOnePendingInstallment[0].pendingAmount, 190633.33)
 
 const cardDebtOutsideGraceWindow = calculateCreditCardCycleObligations({
   cards: [{
@@ -215,7 +236,7 @@ assert.equal(cardDebtOutsideGraceWindow.length, 0)
 
 const firstHistoricalCutoff = new Date('2026-04-23T17:00:00.000Z')
 assert.equal(buildInstallmentCutoffDate(firstHistoricalCutoff, 0, 25).toISOString(), '2026-04-23T17:00:00.000Z')
-assert.equal(buildInstallmentCutoffDate(firstHistoricalCutoff, 1, 25).toISOString(), '2026-05-25T17:00:00.000Z')
+assert.equal(buildInstallmentCutoffDate(firstHistoricalCutoff, 1, 25, [{ statementMonth: new Date(2026, 4, 1), closingAt: new Date('2026-05-25T17:00:00.000Z') }]).toISOString(), '2026-05-25T17:00:00.000Z')
 assert.equal(buildInstallmentCutoffDate(firstHistoricalCutoff, 2, 25).toISOString(), '2026-06-25T17:00:00.000Z')
 
 assert.equal(isSavingsBoxInternalTransfer({

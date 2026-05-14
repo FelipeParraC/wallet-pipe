@@ -165,6 +165,13 @@ export const mapToWallet = (data: PrismaWallet): Wallet => {
         availableCredit: moneyToNumber(data.availableCredit),
         statementClosingDay: data.statementClosingDay ?? undefined,
         paymentDueDay: data.paymentDueDay ?? undefined,
+        statementClosings: data.statementClosings?.map((closing) => ({
+            id: closing.id,
+            walletId: closing.walletId,
+            statementMonth: closing.statementMonth.toISOString(),
+            closingAt: closing.closingAt.toISOString(),
+            note: closing.note,
+        })),
     }
 
     if ( data.fareValue ) {

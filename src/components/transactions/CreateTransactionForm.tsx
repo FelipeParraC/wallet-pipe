@@ -44,20 +44,31 @@ const clampDay = (year: number, month: number, day: number) => {
     return Math.min(day, lastDay)
 }
 
+const monthKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, '0')}`
+
+const realClosingForMonth = (card: Wallet | undefined, year: number, month: number) => {
+    const match = card?.statementClosings?.find((closing) => {
+        const statementMonth = new Date(closing.statementMonth)
+        return monthKey(statementMonth.getFullYear(), statementMonth.getMonth()) === monthKey(year, month)
+    })
+
+    return match ? toLocalDateTimeValue(new Date(match.closingAt)) : ''
+}
+
+const closingForMonth = (card: Wallet, year: number, month: number) => (
+    realClosingForMonth(card, year, month)
+    || toLocalDateTimeValue(new Date(year, month, clampDay(year, month, card.statementClosingDay ?? 1), 12, 0, 0))
+)
+
 const deriveCardCutoffAt = (card: Wallet | undefined, date: string) => {
     if (!card?.statementClosingDay || !date) return ''
 
     const purchase = new Date(`${date}T12:00:00`)
-    let statementYear = purchase.getFullYear()
-    let statementMonth = purchase.getMonth()
+    const currentClosing = closingForMonth(card, purchase.getFullYear(), purchase.getMonth())
+    if (new Date(currentClosing).getTime() >= purchase.getTime()) return currentClosing
 
-    if (purchase.getDate() > card.statementClosingDay) {
-        const nextStatement = addMonths(new Date(statementYear, statementMonth, 1), 1)
-        statementYear = nextStatement.getFullYear()
-        statementMonth = nextStatement.getMonth()
-    }
-
-    return toLocalDateTimeValue(new Date(statementYear, statementMonth, clampDay(statementYear, statementMonth, card.statementClosingDay), 12, 0, 0))
+    const nextStatement = addMonths(new Date(purchase.getFullYear(), purchase.getMonth(), 1), 1)
+    return closingForMonth(card, nextStatement.getFullYear(), nextStatement.getMonth())
 }
 
 const deriveCardPaymentDueAt = (card: Wallet | undefined, cutoffAt: string) => {

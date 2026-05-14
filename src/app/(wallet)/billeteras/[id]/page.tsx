@@ -1,10 +1,11 @@
 export const revalidate = 0
 
 
-import { getCategories, getTransactionsByWalletId, getWalletById, getWallets } from '@/actions'
+import { getCategories, getCurrentCycleSummary, getTransactionsByWalletId, getWalletById, getWallets } from '@/actions'
 import { BackButton, BalanceEvolutionChart, DailyExpensesChart, EditWalletButton, NewTransactionFloatingButton, SavingsBoxMoneyDialog, TransactionsList, TripsAvailable, WalletInfo, WalletSavingsBoxesSection } from '@/components'
 import { ArrowDownToLine, ArrowUpFromLine, PiggyBank } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import { attachCreditCardPaymentsToWallets } from '@/lib/wallet-card-summary'
 
 interface Props {
     params: { id: string }
@@ -19,7 +20,7 @@ export default async function BilleteraPage({ params }: Props) {
         redirect('/billeteras')
     }
 
-    const wallet = respWallet.wallet
+    let wallet = respWallet.wallet
     
     if (!wallet) {
         return <div>Cargando...</div>
@@ -28,6 +29,9 @@ export default async function BilleteraPage({ params }: Props) {
     if ( !wallet.isActive ) {
         redirect('/billeteras')
     }
+
+    const respCycleSummary = await getCurrentCycleSummary()
+    wallet = attachCreditCardPaymentsToWallets([wallet], respCycleSummary.ok ? respCycleSummary.data?.summary.creditCardObligations ?? [] : [])[0]
 
     const respTransactions = await getTransactionsByWalletId( walletId )
     const transactions = respTransactions.ok ? respTransactions.transactions : []

@@ -66,6 +66,7 @@ export const getCurrentCycleSummary = async () => {
                 }),
                 prismaClient.wallet.findMany({
                     where: { userId: user.id, isActive: true },
+                    include: { statementClosings: true },
                     orderBy: { createdAt: 'asc' }
                 }),
                 prismaClient.scheduledOccurrence.findMany({
