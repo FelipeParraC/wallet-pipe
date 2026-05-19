@@ -268,6 +268,7 @@ const PayOccurrenceDialog = ({
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
+  const selectedWallet = wallets.find((wallet) => wallet.id === walletId)
 
   const submit = async () => {
     setError(null)
@@ -305,13 +306,16 @@ const PayOccurrenceDialog = ({
         </DialogHeader>
         <div className='grid gap-4'>
           <div className='grid gap-2'>
-            <Label>Cuenta de pago</Label>
+            <Label>Cuenta donde se cobró</Label>
             <Select value={walletId} onValueChange={setWalletId}>
               <SelectTrigger><SelectValue placeholder='Elige una cuenta' /></SelectTrigger>
               <SelectContent>
                 {wallets.map((wallet) => <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            <p className='text-xs text-slate-500'>
+              {selectedWallet?.type === 'Tarjeta de Crédito' ? 'Se registrará como compra con tarjeta.' : 'Se registrará como gasto de cuenta.'}
+            </p>
           </div>
           <div className='grid gap-2'>
             <Label>{amountMode === 'VARIABLE' ? 'Valor real' : 'Valor pagado'}</Label>
@@ -679,7 +683,7 @@ const PlanEditDialog = ({
               </Select>
             </div>
             <div className='grid gap-2'>
-              <Label>Cuenta sugerida</Label>
+              <Label>{isScheduledPlan ? 'Cuenta donde se cobra' : 'Cuenta sugerida'}</Label>
               <Select value={walletId} onValueChange={setWalletId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -883,6 +887,7 @@ export const PlanningWorkbench = ({
   const activeDebts = debts.filter((debt) => debt.status === 'ACTIVA')
   const walletById = useMemo(() => new Map(wallets.map((wallet) => [wallet.id, wallet])), [wallets])
   const paymentWallets = useMemo(() => wallets.filter((wallet) => wallet.isActive && wallet.type !== 'Tarjeta de Crédito' && wallet.type !== 'Transporte'), [wallets])
+  const scheduledPaymentWallets = useMemo(() => wallets.filter((wallet) => wallet.isActive && wallet.type !== 'Transporte'), [wallets])
   const cycleNavDates = useMemo(() => getCycleNavDates(currentCycle.startsAt, currentCycle.endsAt), [currentCycle.startsAt, currentCycle.endsAt])
   const realAccountAvailable = wallets
     .filter((wallet) => wallet.includeInTotal && wallet.type !== 'Tarjeta de Crédito')
@@ -1047,11 +1052,11 @@ export const PlanningWorkbench = ({
                 >
                   <PayOccurrenceDialog
                     title={occurrence.plan.title}
-                    description={occurrence.plan.amountMode === 'VARIABLE' ? 'Ingresa el valor real antes de registrarlo.' : 'Confirma cuenta, fecha y hora del pago.'}
+                    description={occurrence.plan.amountMode === 'VARIABLE' ? 'Ingresa el valor real cobrado en COP antes de registrarlo.' : 'Confirma dónde se cobró y la fecha del cargo.'}
                     defaultAmount={occurrence.expectedAmount}
                     amountMode={occurrence.plan.amountMode}
                     dueAt={occurrence.dueAt}
-                    wallets={paymentWallets}
+                    wallets={scheduledPaymentWallets}
                     defaultWalletId={occurrence.plan.sourceWalletId}
                     onPay={(values) => payScheduledOccurrence({ occurrenceId: occurrence.id, ...values })}
                   />
@@ -1140,7 +1145,7 @@ export const PlanningWorkbench = ({
                         <p className='mt-1 text-sm text-slate-400'>{getScheduledPlanKindLabel(plan.kind)} · {getRecurrenceFrequencyLabel(plan.frequency)} · {plan.amountMode === 'VARIABLE' ? 'Variable' : formatCurrency(plan.fixedAmount ?? 0)}</p>
                       </div>
                       <div className='flex flex-wrap gap-2'>
-                        <PlanEditDialog plan={plan} categories={categories} wallets={paymentWallets} />
+                        <PlanEditDialog plan={plan} categories={categories} wallets={scheduledPaymentWallets} />
                         <Button variant='outline' size='sm' onClick={() => runAction(() => updateScheduledPlan({ id: plan.id, isActive: !plan.isActive }))}>
                           <PauseCircle className='h-4 w-4' />
                           {plan.isActive ? 'Pausar' : 'Activar'}
@@ -1263,7 +1268,7 @@ export const PlanningWorkbench = ({
       )}
 
       {activeTab === 'crear' && (
-        <PlanningCreateFlow categories={categories} wallets={paymentWallets} />
+        <PlanningCreateFlow categories={categories} wallets={scheduledPaymentWallets} />
       )}
     </div>
   )

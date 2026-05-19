@@ -120,7 +120,7 @@ export const ScheduledPlanForm = ({ categories, wallets }: ScheduledPlanFormProp
                         <FormItem><FormLabel>Empieza en</FormLabel><FormControl><Input type='datetime-local' {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name='sourceWalletId' render={({ field }) => (
-                        <FormItem><FormLabel>Cuenta asociada</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder='Opcional' /></SelectTrigger></FormControl><SelectContent>{wallets.map((wallet) => <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Cuenta donde se cobra</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder='Opcional' /></SelectTrigger></FormControl><SelectContent>{wallets.filter((wallet) => wallet.type !== 'Transporte').map((wallet) => <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                     )} />
                 </div>
                 <FormField control={form.control} name='categoryId' render={({ field }) => (

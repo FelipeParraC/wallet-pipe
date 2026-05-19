@@ -642,13 +642,13 @@ export const payScheduledOccurrence = async (data: PayOccurrenceInput) => {
 
       const transaction = await createTransactionInTx(tx as unknown as Parameters<typeof createTransactionInTx>[0], user.id, {
         walletId: wallet.id,
-        type: 'GASTO',
+        type: wallet.type === 'TARJETA_CREDITO' ? 'TARJETA_CONSUMO' : 'GASTO',
         title: occurrence.plan.title,
         description: data.description?.trim() || occurrence.plan.description || 'Pago programado',
         date: occurredAt.getTime(),
         recordedAt: Date.now(),
         categoryId: occurrence.plan.categoryId ?? undefined,
-        amount: -Math.abs(realAmount),
+        amount: wallet.type === 'TARJETA_CREDITO' ? Math.abs(realAmount) : -Math.abs(realAmount),
         scheduledPlanId: occurrence.planId,
         scheduledOccurrenceId: occurrence.id,
       }) as { id: string }
@@ -667,6 +667,7 @@ export const payScheduledOccurrence = async (data: PayOccurrenceInput) => {
 
     revalidatePath('/planeacion')
     revalidatePath('/movimientos')
+    revalidatePath('/billeteras')
     revalidatePath('/reportes')
     revalidatePath('/')
     return actionSuccess({ transactionId: result.id }, 'Pago registrado')

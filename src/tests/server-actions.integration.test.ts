@@ -347,6 +347,32 @@ const testCreditCardChargeAndPayment = async () => {
   assert.equal(tx.state.transactions.has(payment.id), false)
 }
 
+const testScheduledCardCharge = async () => {
+  const tx = createMemoryTx()
+
+  const charge = await createTransactionInTx(tx, 'user-1', {
+    walletId: 'wallet-credit',
+    type: 'TARJETA_CONSUMO',
+    title: 'ChatGPT Plus',
+    description: 'Pago programado variable',
+    date: Date.parse('2025-01-02T08:00:00.000Z'),
+    categoryId: '10',
+    amount: 92.5,
+    scheduledPlanId: 'scheduled-plan-1',
+    scheduledOccurrenceId: 'scheduled-occurrence-1',
+  }) as TransactionRecord
+
+  assert.equal(tx.state.wallets.get('wallet-credit')?.balance, cents(92.5))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(907.5))
+  assert.equal(charge.type, 'TARJETA_CONSUMO')
+  assert.equal(charge.amount, cents(-92.5))
+
+  await deleteTransactionInTx(tx, 'user-1', charge.id)
+
+  assert.equal(tx.state.wallets.get('wallet-credit')?.balance, cents(0))
+  assert.equal(tx.state.wallets.get('wallet-credit')?.availableCredit, cents(1000))
+}
+
 const testUpdateCreditCardPayment = async () => {
   const tx = createMemoryTx()
 
@@ -493,6 +519,7 @@ const testSavingsBoxTransferReconciliation = async () => {
   await testUpdateStandardMovementInTx()
   await testOwnershipValidation()
   await testCreditCardChargeAndPayment()
+  await testScheduledCardCharge()
   await testUpdateCreditCardPayment()
   await testCreditCardRefund()
   await testSavingsBoxTransferReconciliation()
